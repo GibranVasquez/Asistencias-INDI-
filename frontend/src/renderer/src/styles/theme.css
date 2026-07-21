@@ -1,0 +1,133 @@
+/* Tokens y estilos base tomados 1:1 del mockup de referencia
+   (App INDI Asistencia.dc.html) para mantener paridad visual exacta. */
+:root {
+  --indi: #0b1e3d;
+  --indi2: #1b4f9c;
+  --indi3: #3e7bc4;
+  --pastel: #a9c6f0;
+  --bg: #f3f5fa;
+  --ink: #101828;
+  --muted: #667085;
+  --ok: #2fae66;
+  --warn: #f2a93b;
+  --err: #e5484d;
+  --line: #e6ebf4;
+  --white: #ffffff;
+  --surface: #ffffff;
+  --desk: #dde3ee;
+  --dots: radial-gradient(rgba(255, 255, 255, 0.18) 1.4px, transparent 1.5px);
+}
+
+[data-theme="dark"] {
+  --surface: #161f2e;
+  --bg: #0f1626;
+  --desk: #080d16;
+  --ink: #e7ecf5;
+  --muted: #93a1b8;
+  --line: rgba(255, 255, 255, 0.12);
+  --indi: #0a2550;
+  --pastel: #8fb2e6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Montserrat", sans-serif;
+  margin: 0;
+}
+
+a {
+  color: var(--indi2);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--indi);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+@keyframes ringpulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes fppulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes scanmove {
+  0% {
+    top: 6%;
+  }
+  50% {
+    top: 88%;
+  }
+  100% {
+    top: 6%;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 180;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
