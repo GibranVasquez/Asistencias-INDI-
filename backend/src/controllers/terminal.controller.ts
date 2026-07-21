@@ -1,0 +1,12 @@
+import { Request, Response } from "express";
+import { crearTerminal, listarTerminales } from "../services/terminal.service";
+
+export async function listar(_req: Request, res: Response): Promise<void> {
+  const terminales = await listarTerminales();
+  res.json({ terminales });
+}
+
+export async function crear(req: Request, res: Response): Promise<void> {
+  const terminal = await crearTerminal(req.user!.usuarioId, req.body);
+  res.status(201).json({ terminal });
+}
