@@ -1,0 +1,961 @@
+[
+  {
+    "no": "1",
+    "nombreCompleto": "ANTONIO HERNANDEZ PONCE",
+    "categoria": "SOBRESTANTE",
+    "jefeInmediato": "ING. ULISES ABIMAEL MARTINEZ CAMBERO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "2",
+    "nombreCompleto": "LUIS FRANCISCO LOPEZ MARTINEZ",
+    "categoria": "OP TRACTOR",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "3",
+    "nombreCompleto": "VICTOR SAUCEDA OLVEDA",
+    "categoria": "VELADOR",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "4",
+    "nombreCompleto": "RUBEN VELAZQUEZ ESPINOZA",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "5",
+    "nombreCompleto": "JUAN CARLOS CASTRO ESCOBAR",
+    "categoria": "OP TRACTOR",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "6",
+    "nombreCompleto": "RAUL ALEJANDRO ZARATE GARCIA",
+    "categoria": "CHOFER DE MARIMBA",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "7",
+    "nombreCompleto": "JUAN BEDA ZENTENO CORDOVA",
+    "categoria": "OP EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "8",
+    "nombreCompleto": "BRANDON EMILIANO SAUCEDA CAMPOS",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "9",
+    "nombreCompleto": "MARIA DEL ROSARIO GUZMAN CASTRO",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "10",
+    "nombreCompleto": "SANTOS ABDIEL CHAVEZ MORENO",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "11",
+    "nombreCompleto": "VICTOR MIGUEL GARCIA GARCIA",
+    "categoria": "OP. PIPA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "12",
+    "nombreCompleto": "SAMUEL MARCHAN FABELA",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "13",
+    "nombreCompleto": "GERARDO FORTUNATO TORRES MANCINAS",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "14",
+    "nombreCompleto": "JAIRO JEHUDIEL TREVIÑO MANCINAS",
+    "categoria": "OP VIBROCOMPACTADOR",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "15",
+    "nombreCompleto": "JUAN CARLOS LARA BAZA",
+    "categoria": "OP MOTONIVELADORA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "16",
+    "nombreCompleto": "XITLALIC ANAHIS DURAN MARTINEZ",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "17",
+    "nombreCompleto": "JOSE GUADALUPE MARQUEZ CANTU",
+    "categoria": "ALBAÑIL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "18",
+    "nombreCompleto": "PROSPERO ISLAS IBARRA",
+    "categoria": "OP VIBROCOMPACTADOR",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "19",
+    "nombreCompleto": "ROBERTO ALONSO SANCHEZ JIMENEZ",
+    "categoria": "OP CRIBA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "20",
+    "nombreCompleto": "RUPERTO RAMIREZ GARZA",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "21",
+    "nombreCompleto": "JOSE IGNACIO CRUZ CHI CHI",
+    "categoria": "OP TRITURADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "22",
+    "nombreCompleto": "ANASTACIO CERVANTES MARTINEZ",
+    "categoria": "VELADOR",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "23",
+    "nombreCompleto": "CRISTIAN CRUZ PADRON",
+    "categoria": "OP PATA DE CABRA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "24",
+    "nombreCompleto": "GERMAN HERNANDEZ SANCHEZ",
+    "categoria": "TOPOGRAFO",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "25",
+    "nombreCompleto": "EBERTO RAMOS AGUILAR",
+    "categoria": "OP VIBROCOMPACTADOR",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "26",
+    "nombreCompleto": "WILBERTH KANTUN VARGAS",
+    "categoria": "OP MOTONIVELADORA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "27",
+    "nombreCompleto": "FERMIN GABINO ISIDORO NAVARRETE",
+    "categoria": "MECANICO",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "28",
+    "nombreCompleto": "ANTONIO EMMANUEL LOZANO MORALES",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "29",
+    "nombreCompleto": "JESUS AUGUSTO CAMACHO RANGEL",
+    "categoria": "VELADOR",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "30",
+    "nombreCompleto": "SALOMON ARGUELLES ARGUELLES",
+    "categoria": "OP EXCAVADORA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "31",
+    "nombreCompleto": "MANUEL DE JESUS CANTUN MATA",
+    "categoria": "OP TRACTOR",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "32",
+    "nombreCompleto": "JESUS JAVIER RODRIGUEZ BECERRA",
+    "categoria": "OP RETROEXCAVADORA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "33",
+    "nombreCompleto": "BENITO VILLA RAMIREZ",
+    "categoria": "VELADOR",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "34",
+    "nombreCompleto": "JESUS MARCHAN FABELA",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "35",
+    "nombreCompleto": "SAMUEL MARCHAN GAYTAN",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "36",
+    "nombreCompleto": "ERIC RICARDO ALVAREZ HERNANDEZ",
+    "categoria": "OP EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "37",
+    "nombreCompleto": "ULISES TORIBIO RUIZ",
+    "categoria": "OP CARGADOR FRONTAL",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "38",
+    "nombreCompleto": "AARON ISAIAS MUÑIZ LIRA",
+    "categoria": "CHOFER DE MARIMBA",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "39",
+    "nombreCompleto": "CLAUDIO ROBERTO GONZALEZ RAMOS",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "40",
+    "nombreCompleto": "RAMON ISAI BOTELLO SOLAR",
+    "categoria": "BANDERERO",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "41",
+    "nombreCompleto": "EDUARDO TELLO GARCIA",
+    "categoria": "AYUDANTE DE ALBAÑIL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "42",
+    "nombreCompleto": "MIGUEL ANGEL DE LUNA ALVAREZ",
+    "categoria": "OP EXCAVADORA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "43",
+    "nombreCompleto": "JOAN MANUEL LOPEZ GARCIA",
+    "categoria": "OP CARGADOR FRONTAL",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "44",
+    "nombreCompleto": "CARLOS AQUINO DOMINGUEZ",
+    "categoria": "MECANICO",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "45",
+    "nombreCompleto": "ERIC MONTECLARO PENSADO",
+    "categoria": "OP MOTONIVELADORA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "46",
+    "nombreCompleto": "GISELA IBETH DURAN RODRIGUEZ",
+    "categoria": "TOPOGRAFO",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "47",
+    "nombreCompleto": "JUAN CARLOS REYNA HERNANDEZ",
+    "categoria": "OP EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "48",
+    "nombreCompleto": "LUIS ANGEL RIVERA ROSALES",
+    "categoria": "POSTURERO",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "49",
+    "nombreCompleto": "MIGUEL MORALES DE LA CRUZ",
+    "categoria": "SOLDADOR",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "50",
+    "nombreCompleto": "LUIS MIGUEL AVILA GONZALEZ",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "51",
+    "nombreCompleto": "JORGE ISAI VAZQUEZ ZAVALA",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "52",
+    "nombreCompleto": "JUAN OSBALDO VILLASANA BANDA",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "53",
+    "nombreCompleto": "JOSE RAFAEL DE HOYOS FLORES",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "54",
+    "nombreCompleto": "NOE HELIODORO VIDAURRI ABUNDIZ",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "55",
+    "nombreCompleto": "PEDRO JESUS CASTRO RAMIREZ",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "56",
+    "nombreCompleto": "JESUS GUADALUPE MENDOZA GARZA",
+    "categoria": "AYUDANTE GENERAL INAH",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "57",
+    "nombreCompleto": "GUSTAVO ADOLFO GUTIERREZ CRUZ",
+    "categoria": "AYUDANTE GENERAL AMBIENTAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "58",
+    "nombreCompleto": "VIKTOR VIKTOROVICH ARAUJO PALOMO",
+    "categoria": "AYUDANTE GENERAL AMBIENTAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "59",
+    "nombreCompleto": "JOSE JOEL DURAN DURAN GARCIA",
+    "categoria": "AYUDANTE GENERAL AMBIENTAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "60",
+    "nombreCompleto": "CESAR COLUNGA RODRIGUEZ",
+    "categoria": "AYUDANTE GENERAL AMBIENTAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "61",
+    "nombreCompleto": "LORENZO ARIAS MIS",
+    "categoria": "OP TRACTOR",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "62",
+    "nombreCompleto": "JUAN ANTONIO ZENTENO CORDOVA",
+    "categoria": "OP MOTOCONFORMADORA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "63",
+    "nombreCompleto": "JUAN JOSE GARCIA PEREZ",
+    "categoria": "TOPOGRAFO",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "64",
+    "nombreCompleto": "JAIME GARCIA RAMIREZ",
+    "categoria": "OP PATA DE CABRA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "65",
+    "nombreCompleto": "ERICK YUNUETH MONTECLARO HUESCA",
+    "categoria": "OP DE PIPA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "66",
+    "nombreCompleto": "ULISES MORALES SILVA",
+    "categoria": "OP DE PIPA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "67",
+    "nombreCompleto": "LUIS ARTURO RAMON GARCIA",
+    "categoria": "OP DE PIPA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "68",
+    "nombreCompleto": "DANIEL EDUARDO REYES SOLIS",
+    "categoria": "OP PIPA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "69",
+    "nombreCompleto": "WILBER HERNANDEZ LOPEZ",
+    "categoria": "OP PAYLOADER",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "70",
+    "nombreCompleto": "MARIA AADYLENE LOPEZ RAMOS",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "71",
+    "nombreCompleto": "KEVIN GAEL ALVAREZ RIVERA",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "72",
+    "nombreCompleto": "MARGARITO MARTINEZ OVALLES",
+    "categoria": "OFICIAL ALBAÑIL",
+    "jefeInmediato": "ING. ARELI IVETTE GARCIA ERASMO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "73",
+    "nombreCompleto": "EDDER IVAN BARAHONA PILIDO",
+    "categoria": "OP DE PIPA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "74",
+    "nombreCompleto": "ROMAN GONZALEZ LOPEZ",
+    "categoria": "OP PIPA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "75",
+    "nombreCompleto": "MACEDONEO VELAZQUEZ VELAZQUEZ",
+    "categoria": "OPERADOR DE VIBROCOMPACTADORA",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "76",
+    "nombreCompleto": "JOSE LUIS LOPEZ BAILLERES",
+    "categoria": "OP PIPA",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "77",
+    "nombreCompleto": "MARTIN JULIAN CASTILLO CEBALLOS",
+    "categoria": "AYUDANTE DE ALBAÑIL",
+    "jefeInmediato": "ING. ARELI IVETTE GARCIA ERASMO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "78",
+    "nombreCompleto": "JOSE ILDEGARDO PEREZ HERNANDEZ",
+    "categoria": "OPERADOR DE TRACTOR D6",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "79",
+    "nombreCompleto": "DANIEL GARCIA RAMIREZ",
+    "categoria": "OPERADOR DE PATA DE CABRA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "80",
+    "nombreCompleto": "JESUS ALBERTO GALDAMEZ GONZALEZ",
+    "categoria": "OPERADOR DE EXCAVADORA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "81",
+    "nombreCompleto": "ANGEL EDUARDO IBARRA RIVERA",
+    "categoria": "LAVA AUTOS",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "82",
+    "nombreCompleto": "MANUEL ARNOLDO RAMOS CELESTINO",
+    "categoria": "OP. DE PIPA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "84",
+    "nombreCompleto": "EDWIN MANUEL PERALTA JIMENEZ",
+    "categoria": "OP. DE VIBRO",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "85",
+    "nombreCompleto": "MIGUEL ANGEL ELIZONDO ROSALES",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "86",
+    "nombreCompleto": "LEONARDO ANTONIO  VALDEZ TORRES",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "87",
+    "nombreCompleto": "EDGAR EDUARDO CAVAZOS MARTINEZ",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "88",
+    "nombreCompleto": "MARTHA MARISOL MARTINEZ VARGAS",
+    "categoria": "AUXILIAR ADMINISTRATIVO",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "89",
+    "nombreCompleto": "JOSE DANIEL LUNA LUNA",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "90",
+    "nombreCompleto": "EMMANUEL CALVILLO CARREON",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "91",
+    "nombreCompleto": "ANA LAURA VELAZQUEZ ALBEAR",
+    "categoria": "AFANADORA",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "92",
+    "nombreCompleto": "EDUARDO DOMINGUEZ MARTINEZ",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "93",
+    "nombreCompleto": "SALVADOR LAZARO RODRIGUEZ",
+    "categoria": "OP.EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "94",
+    "nombreCompleto": "JUAN SANTOS SANDOVAL REYES",
+    "categoria": "VELADOR",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "95",
+    "nombreCompleto": "JESUS MANUEL GARCIA SANCHEZ",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "96",
+    "nombreCompleto": "EDUARDO SANCHEZ ELIAS",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "97",
+    "nombreCompleto": "OSCAR GONZALEZ MENDOZA",
+    "categoria": "OP. EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "98",
+    "nombreCompleto": "JORGE ALBERTO LARA CARRERA",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "99",
+    "nombreCompleto": "ESTEBAN TELLEZ MARTINEZ",
+    "categoria": "OP. DE CRIBA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "100",
+    "nombreCompleto": "DIEGO TORRES GONZALEZ",
+    "categoria": "AYUDANTE DE SOLDADOR",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "101",
+    "nombreCompleto": "MOISES RAMOS LOPEZ",
+    "categoria": "OFICIAL ALBAÑIL",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "102",
+    "nombreCompleto": "EMMANUEL FLORES ROSAS",
+    "categoria": "OP. DE TRITURADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "103",
+    "nombreCompleto": "CARLOS SANTANA BUENDIA",
+    "categoria": "OP.EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "104",
+    "nombreCompleto": "ULISES PEREZ RAMIREZ",
+    "categoria": "OPERADOR DE EXCAVADORA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "105",
+    "nombreCompleto": "AGUEDA LUCIA MARTINEZ CASTRO",
+    "categoria": "AFANADORA",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "106",
+    "nombreCompleto": "EMELY FERNANDA CASTRO CASTRO",
+    "categoria": "RECEPCIONISTA",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "107",
+    "nombreCompleto": "JESUS SOLIS GUERRERO",
+    "categoria": "OP. EXCAVADORA",
+    "jefeInmediato": "ING. ANGEL LOPEZ CORONEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "108",
+    "nombreCompleto": "EDUARDO GONZALEZ ESCOBEDO",
+    "categoria": "OPERADOR DE RETRO EXCAVADORA",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "109",
+    "nombreCompleto": "ZAID ALFREDO MENDOZA PRIETO",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "110",
+    "nombreCompleto": "JORGE LUIS SIFUENTES HUITRON",
+    "categoria": "OPERADOR DE EXCAVADORA",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "111",
+    "nombreCompleto": "JENNIFER ZAVALA PALOMARES",
+    "categoria": "LAVA AUTOS",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "112",
+    "nombreCompleto": "SAMANTHA AIMME RIVERA GELACIO",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "113",
+    "nombreCompleto": "MISAEL TORRES MANCINAS",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "114",
+    "nombreCompleto": "KENIA LOPEZ GUERRERO",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "115",
+    "nombreCompleto": "OSWALDO REYES SANDOVAL",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ARQ. ERIKA GAUDALUPE NUCAMENDI MOGUEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "116",
+    "nombreCompleto": "MARCO ANTONIO HERNANDEZ GARCIA",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ARQ. ERIKA GAUDALUPE NUCAMENDI MOGUEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "117",
+    "nombreCompleto": "WENDY MARITZA ORTIZ SANTOS",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ARQ. ERIKA GAUDALUPE NUCAMENDI MOGUEL",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "118",
+    "nombreCompleto": "TOMAS CASTILLO MEDINA",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "119",
+    "nombreCompleto": "JUAN JOSE HERNANDEZ PEREZ",
+    "categoria": "OFICIAL ALBAÑIL",
+    "jefeInmediato": "ING. RAFAEL ARGÜELLES HERNÁNDEZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "120",
+    "nombreCompleto": "JOSE RIGOBERTO RUIZ HERNANDEZ",
+    "categoria": "OP MOTOCONFORMADORA",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "121",
+    "nombreCompleto": "MARVIN BONIFACIO MUÑIZ CENICEROS",
+    "categoria": "CHECADOR",
+    "jefeInmediato": "ING. YOHANA YADHIRA LEON REYES",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "122",
+    "nombreCompleto": "AMEL ARTURO GARCIA BARRON",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "123",
+    "nombreCompleto": "ERIK IVAN LOPEZ RANGEL",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. GEOVANNY ANTONIO AVILA GUTIERREZ",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "124",
+    "nombreCompleto": "EDDI WILLIAM GONZALEZ LEON",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "125",
+    "nombreCompleto": "GIBRAN JESUS VASQUEZ REYES",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ING. LIZBETH LOPEZ CEDANO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "126",
+    "nombreCompleto": "OSIEL JUAN HERNANDEZ",
+    "categoria": "OPERADOR DE EXCAVADORA",
+    "jefeInmediato": "ING. PABLO CESAR HERNANDEZ ESPINOZA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "127",
+    "nombreCompleto": "EDUARDO LOPEZ MORALES",
+    "categoria": "OPERADOR DE RETROEXCAVADORA",
+    "jefeInmediato": "ING. PABLO CESAR HERNANDEZ ESPINOZA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "128",
+    "nombreCompleto": "SERGIO ALAVEZ CONTRERAS",
+    "categoria": "OPERADOR DE MOTOCONFORMADORA",
+    "jefeInmediato": "ING. PABLO CESAR HERNANDEZ ESPINOZA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "129",
+    "nombreCompleto": "ERICK REYES MERCADO",
+    "categoria": "OPERADOR DE EXCAVADORA",
+    "jefeInmediato": "ING. PABLO CESAR HERNANDEZ ESPINOZA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "130",
+    "nombreCompleto": "TRINIDAD MIRAMONTES HERNANDEZ",
+    "categoria": "COORDINADOR DE ESTIMACIONES",
+    "jefeInmediato": "ING. ULISES ABIMAEL MARTINEZ CAMBERO",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "131",
+    "nombreCompleto": "OMAR ANDRES PEREZ GARCIA",
+    "categoria": "COORDINADOR AMBIENTAL",
+    "jefeInmediato": "ING. LUIS ALEJANDRO MORENO MAYORGA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "132",
+    "nombreCompleto": "JUAN LUIS GARCIA GUERRERO",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "133",
+    "nombreCompleto": "RAUL TORRES VELAZQUEZ",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ING. PAZ ELIZABETH HERNANDEZ RENTERIA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "134",
+    "nombreCompleto": "EDGAR EMMANUEL ESPARZA GUTIERREZ",
+    "categoria": "AYUDANTE GENERAL",
+    "jefeInmediato": "ANTONIO HERNANDEZ PONCE",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "135",
+    "nombreCompleto": "SERGIO ALFREDO GALAN CISNEROS",
+    "categoria": "OPERADOR DE RETROEXCAVADORA",
+    "jefeInmediato": "ING. EMMANUEL BERNAL MEDINA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "137",
+    "nombreCompleto": "DIEGO ENRIQUE BARAHONA PULIDO",
+    "categoria": "OPERADOR DE PIPA",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "138",
+    "nombreCompleto": "HIROMI YAMILETH GARCIA CARREON",
+    "categoria": "AUXILIAR DE VIVERO",
+    "jefeInmediato": "ING. MARIO OSWALDO TREJO ARISTA",
+    "obra": "Tren Golfo de México"
+  },
+  {
+    "no": "139",
+    "nombreCompleto": "IRMA GONZALEZ BAUTISTA",
+    "categoria": "BECARIO",
+    "jefeInmediato": "ARQ. MIRIAM CANDELARIA ZAMBRANO ZAMORA",
+    "obra": "Tren Golfo de México"
+  }
+]

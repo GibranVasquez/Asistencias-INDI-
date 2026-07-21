@@ -1,0 +1,314 @@
+// Sistema INDI de Asistencia y Nomina — Obra Tren Golfo de Mexico.
+// Convenciones (alineadas con backend/Control_Grupo_INDIv2, el otro backend
+// de Grupo INDI): campos camelCase en Prisma mapeados a columnas snake_case
+// via @map()/@@map(); ids uuid generados por Postgres (gen_random_uuid(),
+// nativo desde PG13, sin necesidad de extensiones); dinero en Decimal;
+// timestamps en Timestamptz(6); fechas sin hora en Date.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------
+// 1. ENUMS
+// ---------------------------------------------------------------------
+
+enum RolUsuario {
+  trabajador
+  recepcion
+  encargado_seccion
+  rh
+  administrador
+
+  @@map("rol_usuario")
+}
+
+enum TrabajadorTipo {
+  empleado
+  contratista
+
+  @@map("trabajador_tipo")
+}
+
+enum TrabajadorEstatus {
+  activo
+  baja
+  becario
+
+  @@map("trabajador_estatus")
+}
+
+enum MetodoAsistencia {
+  huella
+  rostro
+
+  @@map("metodo_asistencia")
+}
+
+enum NominaEstatus {
+  pendiente
+  pagado
+  con_incidencia
+
+  @@map("nomina_estatus")
+}
+
+enum EstadoConexionTerminal {
+  conectado
+  desconectado
+
+  @@map("estado_conexion_terminal")
+}
+
+// ---------------------------------------------------------------------
+// 2. USUARIOS (cuentas del sistema — no confundir con Trabajador)
+// ---------------------------------------------------------------------
+
+model Usuario {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username     String     @unique
+  passwordHash String     @map("password_hash")
+  rol          RolUsuario
+  activo       Boolean    @default(true)
+  // Solo se llena para cuentas rol=trabajador (el kiosco autentica al
+  // trabajador contra su propio registro). Único: un trabajador tiene a lo
+  // más una cuenta.
+  trabajadorId String?    @unique @map("trabajador_id") @db.Uuid
+  creadoEn     DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  trabajador         Trabajador? @relation(fields: [trabajadorId], references: [id])
+  seccionesAsignadas Seccion[]   @relation("SeccionEncargados")
+  auditLogs          AuditLog[]
+
+  @@index([rol], map: "idx_usuarios_rol")
+  @@map("usuarios")
+}
+
+// ---------------------------------------------------------------------
+// 3. TRABAJADORES
+// ---------------------------------------------------------------------
+
+model Trabajador {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombreCompleto      String            @map("nombre_completo")
+  categoria           String
+  // Texto libre (nombre del jefe/encargado inmediato tal como viene del
+  // roster de nomina) — no es FK: muchos jefes/ingenieros no son ellos
+  // mismos un Trabajador dado de alta en el sistema.
+  jefeInmediato       String            @map("jefe_inmediato")
+  tipo                TrabajadorTipo    @default(empleado)
+  // Nullable: el alta inicial (ej. roster de enrolamiento biometrico) no
+  // siempre trae los datos de nomina todavia — RH los completa despues.
+  fechaIngreso        DateTime?         @map("fecha_ingreso") @db.Date
+  sueldoBase          Decimal?          @map("sueldo_base") @db.Decimal(12, 2)
+  banco               String?
+  clabe               String?
+  cuentaBancaria      String?           @map("cuenta_bancaria")
+  // Solo informativo — no se usa para calcular nada, INFONAVIT no se deriva
+  // de este plazo.
+  infonavitPlazoMeses Int?              @map("infonavit_plazo_meses")
+  huellaRegistrada    Boolean           @default(false) @map("huella_registrada")
+  rostroRegistrado    Boolean           @default(false) @map("rostro_registrado")
+  estatus             TrabajadorEstatus @default(activo)
+  creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  usuario     Usuario?
+  asistencias AsistenciaDiaria[]
+  movimientos MovimientoTrabajador[]
+  nominas     NominaSemanal[]
+
+  @@index([estatus], map: "idx_trabajadores_estatus")
+  @@map("trabajadores")
+}
+
+// ---------------------------------------------------------------------
+// 4. OBRA Y SECCIONES
+// ---------------------------------------------------------------------
+
+model Obra {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre   String
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  secciones Seccion[]
+
+  @@map("obras")
+}
+
+model Seccion {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  obraId   String   @map("obra_id") @db.Uuid
+  nombre   String
+  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  obra        Obra               @relation(fields: [obraId], references: [id])
+  encargados  Usuario[]          @relation("SeccionEncargados")
+  asistencias AsistenciaDiaria[]
+
+  @@unique([obraId, nombre])
+  @@index([obraId], map: "idx_secciones_obra")
+  @@map("secciones")
+}
+
+// ---------------------------------------------------------------------
+// 5. HORARIOS (catalogo abierto — oficina, y los de campo por definir)
+// ---------------------------------------------------------------------
+
+model Horario {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String    @unique
+  horaEntrada       DateTime  @map("hora_entrada") @db.Time(0)
+  horaSalida        DateTime  @map("hora_salida") @db.Time(0)
+  toleranciaMinutos Int       @map("tolerancia_minutos")
+  // Receso opcional (ej. "Oficina" 08:00-20:00 con receso 14:00-16:00). Nulos
+  // en horarios sin receso definido (ej. los de campo, aun por confirmar).
+  recesoInicio      DateTime? @map("receso_inicio") @db.Time(0)
+  recesoFin         DateTime? @map("receso_fin") @db.Time(0)
+  creadoEn          DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("horarios")
+}
+
+// ---------------------------------------------------------------------
+// 6. ASISTENCIA DIARIA
+// ---------------------------------------------------------------------
+
+model AsistenciaDiaria {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trabajadorId     String           @map("trabajador_id") @db.Uuid
+  fecha            DateTime         @db.Date
+  hora             DateTime         @db.Time(0)
+  // La seccion se registra junto con la asistencia del dia (un trabajador NO
+  // pertenece de forma fija a una seccion, puede cambiar de un dia a otro).
+  seccionId        String           @map("seccion_id") @db.Uuid
+  turno            String
+  metodoUsado      MetodoAsistencia @map("metodo_usado")
+  terminalOrigenId String           @map("terminal_origen_id") @db.Uuid
+  ubicacionGPS     String?          @map("ubicacion_gps")
+  creadoEn         DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  trabajador     Trabajador @relation(fields: [trabajadorId], references: [id])
+  seccion        Seccion    @relation(fields: [seccionId], references: [id])
+  terminalOrigen Terminal   @relation(fields: [terminalOrigenId], references: [id])
+
+  @@index([trabajadorId, fecha], map: "idx_asistencias_trabajador_fecha")
+  @@index([seccionId, fecha], map: "idx_asistencias_seccion_fecha")
+  @@map("asistencias_diarias")
+}
+
+// ---------------------------------------------------------------------
+// 7. MOVIMIENTOS (catalogo configurable por RH + bitacora por trabajador)
+// ---------------------------------------------------------------------
+
+model TipoMovimiento {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre                 String   @unique
+  cuentaComoDiaTrabajado Boolean  @map("cuenta_como_dia_trabajado")
+  esInformativo          Boolean  @map("es_informativo")
+  requiereAutorizacion   Boolean  @map("requiere_autorizacion")
+  creadoEn               DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  movimientos MovimientoTrabajador[]
+
+  @@map("tipos_movimiento")
+}
+
+model MovimientoTrabajador {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trabajadorId     String    @map("trabajador_id") @db.Uuid
+  tipoMovimientoId String    @map("tipo_movimiento_id") @db.Uuid
+  fechaInicio      DateTime  @map("fecha_inicio") @db.Date
+  fechaFin         DateTime? @map("fecha_fin") @db.Date
+  nota             String?
+  creadoEn         DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  trabajador     Trabajador     @relation(fields: [trabajadorId], references: [id])
+  tipoMovimiento TipoMovimiento @relation(fields: [tipoMovimientoId], references: [id])
+
+  @@index([trabajadorId], map: "idx_movimientos_trabajador")
+  @@index([tipoMovimientoId], map: "idx_movimientos_tipo")
+  @@map("movimientos_trabajador")
+}
+
+// ---------------------------------------------------------------------
+// 8. NOMINA
+// ---------------------------------------------------------------------
+
+model TarifaHoraExtra {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  valor        Decimal  @db.Decimal(10, 2)
+  vigenteDesde DateTime @unique @map("vigente_desde") @db.Date
+  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("tarifas_hora_extra")
+}
+
+model NominaSemanal {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trabajadorId       String        @map("trabajador_id") @db.Uuid
+  periodoInicio      DateTime      @map("periodo_inicio") @db.Date
+  periodoFin         DateTime      @map("periodo_fin") @db.Date
+  diasLaborados      Decimal       @map("dias_laborados") @db.Decimal(4, 2)
+  montoSueldo        Decimal       @map("monto_sueldo") @db.Decimal(12, 2)
+  horasExtra         Decimal       @map("horas_extra") @db.Decimal(6, 2)
+  montoHorasExtra    Decimal       @map("monto_horas_extra") @db.Decimal(12, 2)
+  viaticosSemanal    Decimal       @map("viaticos_semanal") @db.Decimal(12, 2)
+  viaticosMensual    Decimal       @map("viaticos_mensual") @db.Decimal(12, 2)
+  infonavitDescuento Decimal       @map("infonavit_descuento") @db.Decimal(12, 2)
+  descuentosVarios   Decimal       @map("descuentos_varios") @db.Decimal(12, 2)
+  aguinaldo          Decimal?      @db.Decimal(12, 2)
+  totalAPagar        Decimal       @map("total_a_pagar") @db.Decimal(12, 2)
+  estatus            NominaEstatus @default(pendiente)
+  creadoEn           DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  trabajador Trabajador @relation(fields: [trabajadorId], references: [id])
+
+  @@unique([trabajadorId, periodoInicio])
+  @@index([trabajadorId], map: "idx_nominas_trabajador")
+  @@index([periodoInicio], map: "idx_nominas_periodo")
+  @@map("nominas_semanales")
+}
+
+// ---------------------------------------------------------------------
+// 9. TERMINALES (kioscos biometricos)
+// ---------------------------------------------------------------------
+
+model Terminal {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Texto libre a proposito: el hardware de campo (ZKTeco Horus E1-FP) y el
+  // lector fijo de oficina aun no tienen un SDK/protocolo unico confirmado.
+  tipo                 String
+  ubicacion            String
+  estadoConexion       EstadoConexionTerminal @default(desconectado) @map("estado_conexion")
+  ultimaSincronizacion DateTime?              @map("ultima_sincronizacion") @db.Timestamptz(6)
+  creadoEn             DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  asistencias AsistenciaDiaria[]
+
+  @@map("terminales")
+}
+
+// ---------------------------------------------------------------------
+// 10. AUDITORIA
+// ---------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  accion    String
+  entidad   String
+  entidadId String   @map("entidad_id") @db.Uuid
+  fecha     DateTime @default(now()) @db.Timestamptz(6)
+  detalle   Json?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([entidad, entidadId], map: "idx_audit_log_entidad")
+  @@index([usuarioId], map: "idx_audit_log_usuario")
+  @@map("audit_log")
+}
