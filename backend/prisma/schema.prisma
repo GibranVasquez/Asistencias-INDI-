@@ -147,18 +147,26 @@ model Obra {
 }
 
 model Seccion {
-  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  obraId   String   @map("obra_id") @db.Uuid
-  nombre   String
-  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  obraId    String   @map("obra_id") @db.Uuid
+  nombre    String
+  // Nullable: no toda seccion tiene un horario esperado asignado desde el
+  // alta. Resuelve el vinculo que faltaba entre asistencia y horario --
+  // AsistenciaDiaria ya registra en que seccion se marco cada asistencia,
+  // asi que puntualidad/tardanza se calculan via seccion.horarioId, sin
+  // inventar una relacion nueva ni fijar Trabajador a un horario.
+  horarioId String?  @map("horario_id") @db.Uuid
+  creadoEn  DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   obra         Obra               @relation(fields: [obraId], references: [id])
+  horario      Horario?           @relation(fields: [horarioId], references: [id])
   encargados   Usuario[]          @relation("SeccionEncargados")
   asistencias  AsistenciaDiaria[]
   asignaciones AsignacionDiaria[]
 
   @@unique([obraId, nombre])
   @@index([obraId], map: "idx_secciones_obra")
+  @@index([horarioId], map: "idx_secciones_horario")
   @@map("secciones")
 }
 
@@ -177,6 +185,8 @@ model Horario {
   recesoInicio      DateTime? @map("receso_inicio") @db.Time(0)
   recesoFin         DateTime? @map("receso_fin") @db.Time(0)
   creadoEn          DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  secciones Seccion[]
 
   @@map("horarios")
 }
