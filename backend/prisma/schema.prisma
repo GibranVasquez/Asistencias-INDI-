@@ -81,9 +81,10 @@ model Usuario {
   trabajadorId String?    @unique @map("trabajador_id") @db.Uuid
   creadoEn     DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  trabajador         Trabajador? @relation(fields: [trabajadorId], references: [id])
-  seccionesAsignadas Seccion[]   @relation("SeccionEncargados")
-  auditLogs          AuditLog[]
+  trabajador          Trabajador?        @relation(fields: [trabajadorId], references: [id])
+  seccionesAsignadas  Seccion[]          @relation("SeccionEncargados")
+  auditLogs           AuditLog[]
+  asignacionesCreadas AsignacionDiaria[]
 
   @@index([rol], map: "idx_usuarios_rol")
   @@map("usuarios")
@@ -121,10 +122,11 @@ model Trabajador {
   estatus                  TrabajadorEstatus @default(activo)
   creadoEn                 DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  usuario     Usuario?
-  asistencias AsistenciaDiaria[]
-  movimientos MovimientoTrabajador[]
-  nominas     NominaSemanal[]
+  usuario      Usuario?
+  asistencias  AsistenciaDiaria[]
+  movimientos  MovimientoTrabajador[]
+  nominas      NominaSemanal[]
+  asignaciones AsignacionDiaria[]
 
   @@index([estatus], map: "idx_trabajadores_estatus")
   @@map("trabajadores")
@@ -150,9 +152,10 @@ model Seccion {
   nombre   String
   creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  obra        Obra               @relation(fields: [obraId], references: [id])
-  encargados  Usuario[]          @relation("SeccionEncargados")
-  asistencias AsistenciaDiaria[]
+  obra         Obra               @relation(fields: [obraId], references: [id])
+  encargados   Usuario[]          @relation("SeccionEncargados")
+  asistencias  AsistenciaDiaria[]
+  asignaciones AsignacionDiaria[]
 
   @@unique([obraId, nombre])
   @@index([obraId], map: "idx_secciones_obra")
@@ -203,6 +206,29 @@ model AsistenciaDiaria {
   @@index([trabajadorId, fecha], map: "idx_asistencias_trabajador_fecha")
   @@index([seccionId, fecha], map: "idx_asistencias_seccion_fecha")
   @@map("asistencias_diarias")
+}
+
+// ---------------------------------------------------------------------
+// 6B. ASIGNACIONES DIARIAS (a que seccion se espera cada trabajador cada
+// dia — separado de AsistenciaDiaria, que registra donde SI se presento).
+// Un trabajador solo puede estar asignado a una seccion por dia.
+// ---------------------------------------------------------------------
+
+model AsignacionDiaria {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  trabajadorId String   @map("trabajador_id") @db.Uuid
+  seccionId    String   @map("seccion_id") @db.Uuid
+  fecha        DateTime @db.Date
+  asignadoPor  String   @map("asignado_por") @db.Uuid
+  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  trabajador Trabajador @relation(fields: [trabajadorId], references: [id])
+  seccion    Seccion    @relation(fields: [seccionId], references: [id])
+  usuario    Usuario    @relation(fields: [asignadoPor], references: [id])
+
+  @@unique([trabajadorId, fecha])
+  @@index([seccionId, fecha], map: "idx_asignaciones_seccion_fecha")
+  @@map("asignaciones_diarias")
 }
 
 // ---------------------------------------------------------------------
