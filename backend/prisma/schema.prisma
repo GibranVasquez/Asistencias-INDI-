@@ -31,6 +31,7 @@ enum RolUsuario {
 enum TrabajadorTipo {
   empleado
   contratista
+  becario
 
   @@map("trabajador_tipo")
 }
@@ -38,7 +39,6 @@ enum TrabajadorTipo {
 enum TrabajadorEstatus {
   activo
   baja
-  becario
 
   @@map("trabajador_estatus")
 }
@@ -94,28 +94,32 @@ model Usuario {
 // ---------------------------------------------------------------------
 
 model Trabajador {
-  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombreCompleto      String            @map("nombre_completo")
-  categoria           String
+  id                       String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombreCompleto           String            @map("nombre_completo")
+  categoria                String
   // Texto libre (nombre del jefe/encargado inmediato tal como viene del
   // roster de nomina) — no es FK: muchos jefes/ingenieros no son ellos
   // mismos un Trabajador dado de alta en el sistema.
-  jefeInmediato       String            @map("jefe_inmediato")
-  tipo                TrabajadorTipo    @default(empleado)
+  jefeInmediato            String            @map("jefe_inmediato")
+  tipo                     TrabajadorTipo    @default(empleado)
   // Nullable: el alta inicial (ej. roster de enrolamiento biometrico) no
   // siempre trae los datos de nomina todavia — RH los completa despues.
-  fechaIngreso        DateTime?         @map("fecha_ingreso") @db.Date
-  sueldoBase          Decimal?          @map("sueldo_base") @db.Decimal(12, 2)
-  banco               String?
-  clabe               String?
-  cuentaBancaria      String?           @map("cuenta_bancaria")
+  fechaIngreso             DateTime?         @map("fecha_ingreso") @db.Date
+  sueldoBase               Decimal?          @map("sueldo_base") @db.Decimal(12, 2)
+  banco                    String?
+  clabe                    String?
+  cuentaBancaria           String?           @map("cuenta_bancaria")
   // Solo informativo — no se usa para calcular nada, INFONAVIT no se deriva
-  // de este plazo.
-  infonavitPlazoMeses Int?              @map("infonavit_plazo_meses")
-  huellaRegistrada    Boolean           @default(false) @map("huella_registrada")
-  rostroRegistrado    Boolean           @default(false) @map("rostro_registrado")
-  estatus             TrabajadorEstatus @default(activo)
-  creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  // de este plazo. Ver infonavitMontoPorPeriodo.
+  infonavitPlazoMeses      Int?              @map("infonavit_plazo_meses")
+  // Monto que INFONAVIT ya notificó para este trabajador; RH lo captura a
+  // mano y la nómina lo usa tal cual como descuento, sin derivarlo de
+  // infonavitPlazoMeses ni de ningún otro campo.
+  infonavitMontoPorPeriodo Decimal?          @map("infonavit_monto_por_periodo") @db.Decimal(12, 2)
+  huellaRegistrada         Boolean           @default(false) @map("huella_registrada")
+  rostroRegistrado         Boolean           @default(false) @map("rostro_registrado")
+  estatus                  TrabajadorEstatus @default(activo)
+  creadoEn                 DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   usuario     Usuario?
   asistencias AsistenciaDiaria[]
@@ -280,6 +284,14 @@ model NominaSemanal {
 
 model Terminal {
   id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Credencial propia del dispositivo (no es un Usuario/RolUsuario): el
+  // kiosco autentica como terminal, nunca como el trabajador que se marca.
+  username             String                 @unique
+  passwordHash         String                 @map("password_hash")
+  // Independiente de estadoConexion: activo/inactivo es si el terminal está
+  // dado de alta y autorizado a operar; estadoConexion es su conectividad
+  // momentánea (heartbeat/sincronización).
+  activo               Boolean                @default(true)
   // Texto libre a proposito: el hardware de campo (ZKTeco Horus E1-FP) y el
   // lector fijo de oficina aun no tienen un SDK/protocolo unico confirmado.
   tipo                 String
