@@ -70,16 +70,21 @@ enum EstadoConexionTerminal {
 // ---------------------------------------------------------------------
 
 model Usuario {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username     String     @unique
-  passwordHash String     @map("password_hash")
-  rol          RolUsuario
-  activo       Boolean    @default(true)
+  id                     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username               String     @unique
+  passwordHash           String     @map("password_hash")
+  rol                    RolUsuario
+  activo                 Boolean    @default(true)
+  // true tras un reseteo de contraseña por administrador (password
+  // temporal); el login sigue funcionando con esa temporal, pero el
+  // frontend bloquea el resto de la app hasta que el usuario la cambie por
+  // una propia via PATCH /auth/cambiar-password.
+  requiereCambioPassword Boolean    @default(false) @map("requiere_cambio_password")
   // Solo se llena para cuentas rol=trabajador (el kiosco autentica al
   // trabajador contra su propio registro). Único: un trabajador tiene a lo
   // más una cuenta.
-  trabajadorId String?    @unique @map("trabajador_id") @db.Uuid
-  creadoEn     DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  trabajadorId           String?    @unique @map("trabajador_id") @db.Uuid
+  creadoEn               DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   trabajador          Trabajador?        @relation(fields: [trabajadorId], references: [id])
   seccionesAsignadas  Seccion[]          @relation("SeccionEncargados")

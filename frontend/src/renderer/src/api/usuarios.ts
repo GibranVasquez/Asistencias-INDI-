@@ -37,3 +37,9 @@ export function crearUsuario(token: string, datos: DatosAltaUsuario) {
 export function cambiarEstadoUsuario(token: string, id: string, activo: boolean) {
   return apiClient.patch<{ usuario: UsuarioListado }>(`/usuarios/${id}/estado`, { activo }, token);
 }
+
+// Deja la cuenta con requiereCambioPassword=true — el usuario debe cambiarla
+// por una propia (PATCH /auth/cambiar-password) en su siguiente login.
+export function resetearPasswordUsuario(token: string, id: string, passwordTemporal: string) {
+  return apiClient.patch<void>(`/usuarios/${id}/password`, { passwordTemporal }, token);
+}

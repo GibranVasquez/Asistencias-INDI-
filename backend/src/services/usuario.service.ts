@@ -151,3 +151,38 @@ export async function cambiarEstadoUsuario(
 
   return serializarUsuario(actualizado);
 }
+
+// Reseteo por administrador: no requiere conocer la contraseña actual (a
+// diferencia de auth.service.cambiarPropiaPassword) y deja
+// requiereCambioPassword=true para forzar que la cuenta la cambie por una
+// propia en su siguiente login. El AuditLog registra que ocurrió, nunca la
+// contraseña en sí (ni la temporal ni un hash).
+export async function resetearPassword(
+  usuarioActorId: string,
+  usuarioObjetivoId: string,
+  passwordTemporal: string
+): Promise<void> {
+  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioObjetivoId } });
+  if (!usuario) {
+    throw new AppError(404, "Usuario no encontrado.");
+  }
+
+  const passwordHash = await bcrypt.hash(passwordTemporal, RONDAS_BCRYPT);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({
+      where: { id: usuarioObjetivoId },
+      data: { passwordHash, requiereCambioPassword: true },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "resetear_password",
+        entidad: "Usuario",
+        entidadId: usuarioObjetivoId,
+        detalle: { username: usuario.username },
+      },
+    });
+  });
+}

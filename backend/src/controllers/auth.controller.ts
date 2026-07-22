@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { iniciarSesion, obtenerUsuarioPublicoPorId } from "../services/auth.service";
+import { cambiarPropiaPassword, iniciarSesion, obtenerUsuarioPublicoPorId } from "../services/auth.service";
 import { AppError } from "../utils/AppError";
 
 // Express 5 reenvía automáticamente los rechazos de promesas de handlers
@@ -21,4 +21,10 @@ export async function usuarioActual(req: Request, res: Response): Promise<void> 
   }
 
   res.json({ usuario });
+}
+
+export async function cambiarPassword(req: Request, res: Response): Promise<void> {
+  const { passwordActual, passwordNueva } = req.body;
+  await cambiarPropiaPassword(req.user!.usuarioId, passwordActual, passwordNueva);
+  res.status(204).send();
 }

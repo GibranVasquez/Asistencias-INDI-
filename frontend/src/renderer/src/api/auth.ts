@@ -8,6 +8,10 @@ export interface UsuarioPublico {
   rol: RolUsuario;
   activo: boolean;
   trabajadorId: string | null;
+  // true tras un reseteo de contraseña por administrador — App.tsx bloquea
+  // el resto de la app con un formulario de cambio obligatorio hasta que
+  // se limpie via PATCH /auth/cambiar-password.
+  requiereCambioPassword: boolean;
   // Solo relevante para encargado_seccion: en qué secciones puede ver/asignar
   // (mismo scoping que ya aplica el backend vía verificarAccesoSeccion).
   // Vacío para el resto de los roles.
@@ -36,4 +40,8 @@ export function loginTerminal(username: string, password: string) {
 
 export function usuarioActual(token: string) {
   return apiClient.get<{ usuario: UsuarioPublico }>("/auth/usuario-actual", token);
+}
+
+export function cambiarPassword(token: string, passwordActual: string, passwordNueva: string) {
+  return apiClient.patch<void>("/auth/cambiar-password", { passwordActual, passwordNueva }, token);
 }

@@ -25,6 +25,10 @@ interface AuthContextValor {
   // iniciar sesión, solo degradar a sesión en memoria para esta ejecución.
   iniciarSesion: (sesion: SesionAuth, recordar: boolean) => Promise<{ persistida: boolean }>;
   cerrarSesion: () => Promise<void>;
+  // Actualiza campos del usuario de la sesión actual (ej. requiereCambioPassword
+  // tras cambiarla) sin volver a loguearse — re-persiste con el mismo modo
+  // (memoria/safeStorage) que ya tenía la sesión.
+  actualizarUsuario: (cambios: Partial<UsuarioPublico>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValor | null>(null);
@@ -85,6 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await window.indiApp?.sesionSegura.borrar();
         setSesion(null);
         setSesionPersistida(null);
+      },
+      actualizarUsuario: async (cambios) => {
+        setSesion((actual) => {
+          if (!actual) return actual;
+          const actualizada = { ...actual, usuario: { ...actual.usuario, ...cambios } };
+          window.indiApp?.sesionSegura.guardar(JSON.stringify(actualizada), sesionPersistida ?? false).catch(() => {});
+          return actualizada;
+        });
       },
     }),
     [sesion, cargando, sesionPersistida]

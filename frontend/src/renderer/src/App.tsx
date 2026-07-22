@@ -10,6 +10,7 @@ import EncargadoPage from "./pages/EncargadoPage";
 import NominaPage from "./pages/NominaPage";
 import UsuariosPage from "./pages/UsuariosPage";
 import ConfiguracionPage from "./pages/ConfiguracionPage";
+import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
 import ProximamentePage from "./pages/ProximamentePage";
 import KioscoPage from "./pages/KioscoPage";
 
@@ -30,6 +31,14 @@ export default function App() {
   // parpadeo hacia Login seguido de un salto a /panel.
   if (cargando) {
     return <div style={{ height: "100vh", background: "var(--bg)" }} />;
+  }
+
+  // Cuenta con contraseña temporal (reseteada por un administrador): bloquea
+  // TODA la app hasta que la cambie por una propia — ni sidebar ni rutas,
+  // sin importar el rol. No aplica a Kiosco (usa sesión de Terminal, no de
+  // Usuario, así que sesion aquí siempre es null para ese flujo).
+  if (sesion?.usuario.requiereCambioPassword) {
+    return <CambiarPasswordObligatorioPage />;
   }
 
   const esRecepcion = sesion?.usuario.rol === "recepcion";

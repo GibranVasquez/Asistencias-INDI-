@@ -78,3 +78,44 @@ export async function obtenerUsuarioPublicoPorId(usuarioId: string): Promise<Usu
   });
   return usuario ? serializarUsuarioConSecciones(usuario) : null;
 }
+
+const RONDAS_BCRYPT = 10;
+
+// Autoservicio: cualquier cuenta logueada cambia su propia contraseña
+// conociendo la actual — independiente del reseteo por administrador
+// (usuario.service.ts resetearPassword), que no requiere la actual pero
+// marca requiereCambioPassword=true. Este camino la limpia.
+export async function cambiarPropiaPassword(
+  usuarioId: string,
+  passwordActual: string,
+  passwordNueva: string
+): Promise<void> {
+  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  if (!usuario) {
+    throw new AppError(404, "Usuario no encontrado.");
+  }
+
+  const passwordValida = await bcrypt.compare(passwordActual, usuario.passwordHash);
+  if (!passwordValida) {
+    throw new AppError(401, "La contraseña actual no es correcta.");
+  }
+
+  const passwordHash = await bcrypt.hash(passwordNueva, RONDAS_BCRYPT);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({
+      where: { id: usuarioId },
+      data: { passwordHash, requiereCambioPassword: false },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId,
+        accion: "cambiar_propia_password",
+        entidad: "Usuario",
+        entidadId: usuarioId,
+        detalle: { username: usuario.username },
+      },
+    });
+  });
+}

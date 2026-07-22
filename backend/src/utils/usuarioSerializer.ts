@@ -11,6 +11,7 @@ export interface UsuarioPublico {
   rol: string;
   activo: boolean;
   trabajadorId: string | null;
+  requiereCambioPassword: boolean;
 }
 
 export function serializarUsuario(usuario: Usuario): UsuarioPublico {
@@ -20,6 +21,7 @@ export function serializarUsuario(usuario: Usuario): UsuarioPublico {
     rol: usuario.rol,
     activo: usuario.activo,
     trabajadorId: usuario.trabajadorId,
+    requiereCambioPassword: usuario.requiereCambioPassword,
   };
 }
 

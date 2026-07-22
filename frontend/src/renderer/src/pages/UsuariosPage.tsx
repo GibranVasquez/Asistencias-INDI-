@@ -3,7 +3,15 @@ import { RolUsuario } from "../api/auth";
 import { listarAuditoria, RegistroAuditoria } from "../api/auditoria";
 import { ApiError } from "../api/client";
 import { listarSecciones, Seccion } from "../api/secciones";
-import { cambiarEstadoUsuario, crearUsuario, DatosAltaUsuario, listarUsuarios, ROLES_CREABLES, UsuarioListado } from "../api/usuarios";
+import {
+  cambiarEstadoUsuario,
+  crearUsuario,
+  DatosAltaUsuario,
+  listarUsuarios,
+  resetearPasswordUsuario,
+  ROLES_CREABLES,
+  UsuarioListado,
+} from "../api/usuarios";
 import { useAuth } from "../context/AuthContext";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
@@ -18,6 +26,8 @@ const ETIQUETA_ACCION: Record<string, string> = {
   crear_usuario: "Creó la cuenta",
   dar_de_baja_usuario: "Dio de baja",
   reactivar_usuario: "Reactivó",
+  resetear_password: "Reseteó la contraseña",
+  cambiar_propia_password: "Cambió su propia contraseña",
 };
 
 const estilosCampo = { padding: "10px 12px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" };
@@ -42,6 +52,11 @@ export default function UsuariosPage() {
 
   const [erroresFila, setErroresFila] = useState<Record<string, string>>({});
   const [filaEnProceso, setFilaEnProceso] = useState<string | null>(null);
+
+  const [reseteando, setReseteando] = useState<UsuarioListado | null>(null);
+  const [passwordTemporal, setPasswordTemporal] = useState("");
+  const [errorReseteo, setErrorReseteo] = useState<string | null>(null);
+  const [guardandoReseteo, setGuardandoReseteo] = useState(false);
 
   const [mostrarAuditoria, setMostrarAuditoria] = useState(false);
   const [auditoria, setAuditoria] = useState<RegistroAuditoria[] | null>(null);
@@ -113,6 +128,23 @@ export default function UsuariosPage() {
       setErroresFila((prev) => ({ ...prev, [u.id]: mensaje }));
     } finally {
       setFilaEnProceso(null);
+    }
+  }
+
+  async function enviarReseteo(e: FormEvent) {
+    e.preventDefault();
+    if (!reseteando) return;
+    setErrorReseteo(null);
+    setGuardandoReseteo(true);
+    try {
+      await resetearPasswordUsuario(token, reseteando.id, passwordTemporal);
+      setReseteando(null);
+      setPasswordTemporal("");
+      if (mostrarAuditoria) cargarAuditoria();
+    } catch (err) {
+      setErrorReseteo(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+    } finally {
+      setGuardandoReseteo(false);
     }
   }
 
@@ -237,7 +269,25 @@ export default function UsuariosPage() {
                       </td>
                       <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{vinculoDe(u)}</td>
                       <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{new Date(u.creadoEn).toLocaleDateString("es-MX")}</td>
-                      <td style={{ padding: "11px 20px" }}>
+                      <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => {
+                            setReseteando(u);
+                            setPasswordTemporal("");
+                            setErrorReseteo(null);
+                          }}
+                          style={{
+                            padding: "7px 14px",
+                            borderRadius: 8,
+                            border: "1.5px solid var(--line)",
+                            background: "var(--surface)",
+                            color: "var(--ink)",
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                          }}
+                        >
+                          Resetear contraseña
+                        </button>
                         <button
                           onClick={() => alternarEstado(u)}
                           disabled={filaEnProceso === u.id}
@@ -360,6 +410,60 @@ export default function UsuariosPage() {
                 style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "#fff", opacity: guardando ? 0.7 : 1 }}
               >
                 {guardando ? "Guardando…" : "Crear cuenta"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {reseteando && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
+          onClick={() => setReseteando(null)}
+        >
+          <form
+            onSubmit={enviarReseteo}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 380, display: "flex", flexDirection: "column", gap: 14 }}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)" }}>Resetear contraseña</h2>
+            <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+              Asigna una contraseña temporal para <strong>{reseteando.username}</strong>. Deberá cambiarla por una propia en su
+              siguiente inicio de sesión.
+            </p>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
+              Contraseña temporal
+              <input
+                type="password"
+                required
+                autoFocus
+                value={passwordTemporal}
+                onChange={(e) => setPasswordTemporal(e.target.value)}
+                style={estilosCampo}
+              />
+            </label>
+
+            {errorReseteo && (
+              <div style={{ fontSize: 13, color: "var(--err)", background: "rgba(229,72,77,.1)", border: "1px solid rgba(229,72,77,.25)", borderRadius: 8, padding: "10px 12px" }}>
+                {errorReseteo}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setReseteando(null)}
+                style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={guardandoReseteo}
+                style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "#fff", opacity: guardandoReseteo ? 0.7 : 1 }}
+              >
+                {guardandoReseteo ? "Guardando…" : "Resetear"}
               </button>
             </div>
           </form>
