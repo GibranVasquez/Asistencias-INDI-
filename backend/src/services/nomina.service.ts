@@ -1,9 +1,30 @@
-import { NominaSemanal, Prisma, Trabajador } from "@prisma/client";
+import { MovimientoTrabajador, NominaEstatus, NominaSemanal, Prisma, Trabajador, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 
 const DIAS_POR_PERIODO = 7;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
+
+export interface VistaPreviaTrabajador {
+  id: string;
+  nombreCompleto: string;
+  categoria: string;
+  seccionesTrabajadas: string[];
+  diasLaborados: number;
+  datosIncompletos: boolean;
+  nominaExistente: {
+    id: string;
+    horasExtra: string;
+    viaticosSemanal: string;
+    viaticosMensual: string;
+    descuentosVarios: string;
+    aguinaldo: string | null;
+    montoHorasExtra: string;
+    infonavitDescuento: string;
+    totalAPagar: string;
+    estatus: NominaEstatus;
+  } | null;
+}
 
 export interface DatosGeneracionNomina {
   periodoInicio: string; // YYYY-MM-DD
@@ -44,11 +65,39 @@ function generarRangoDias(inicio: Date, fin: Date): Date[] {
 }
 
 /**
- * Cuenta los días laborados día por día en [inicio, fin]: cuenta si hay una
- * AsistenciaDiaria ese día, o si no la hay pero existe un MovimientoTrabajador
- * activo ese día cuyo TipoMovimiento.cuentaComoDiaTrabajado sea true. Si hay
- * ambos el mismo día, gana la asistencia real (ya cuenta con solo eso).
+ * Cuenta los días laborados día por día en [inicio, fin] a partir de datos ya
+ * cargados: cuenta si hay una AsistenciaDiaria ese día, o si no la hay pero
+ * existe un MovimientoTrabajador activo ese día cuyo TipoMovimiento.
+ * cuentaComoDiaTrabajado sea true. Si hay ambos el mismo día, gana la
+ * asistencia real (ya cuenta con solo eso). Pura (sin acceso a datos) para
+ * que el path por-trabajador (una consulta por trabajador) y el de vista
+ * previa en lote (una consulta para todos) compartan exactamente la misma
+ * regla y no puedan divergir.
  */
+function contarDiasLaboradosPuro(
+  diasConAsistencia: Set<string>,
+  movimientosQueCuentan: Pick<MovimientoTrabajador, "fechaInicio" | "fechaFin">[],
+  inicio: Date,
+  fin: Date
+): number {
+  let diasLaborados = 0;
+  for (const dia of generarRangoDias(inicio, fin)) {
+    if (diasConAsistencia.has(aClaveDia(dia))) {
+      diasLaborados++;
+      continue;
+    }
+
+    const cubiertoPorMovimiento = movimientosQueCuentan.some(
+      (m) => m.fechaInicio.getTime() <= dia.getTime() && (m.fechaFin === null || m.fechaFin.getTime() >= dia.getTime())
+    );
+    if (cubiertoPorMovimiento) {
+      diasLaborados++;
+    }
+  }
+
+  return diasLaborados;
+}
+
 async function contarDiasLaborados(trabajadorId: string, inicio: Date, fin: Date): Promise<number> {
   const [asistencias, movimientos] = await Promise.all([
     prisma.asistenciaDiaria.findMany({
@@ -68,22 +117,33 @@ async function contarDiasLaborados(trabajadorId: string, inicio: Date, fin: Date
   const diasConAsistencia = new Set(asistencias.map((a) => aClaveDia(a.fecha)));
   const movimientosQueCuentan = movimientos.filter((m) => m.tipoMovimiento.cuentaComoDiaTrabajado);
 
-  let diasLaborados = 0;
-  for (const dia of generarRangoDias(inicio, fin)) {
-    if (diasConAsistencia.has(aClaveDia(dia))) {
-      diasLaborados++;
-      continue;
-    }
+  return contarDiasLaboradosPuro(diasConAsistencia, movimientosQueCuentan, inicio, fin);
+}
 
-    const cubiertoPorMovimiento = movimientosQueCuentan.some(
-      (m) => m.fechaInicio.getTime() <= dia.getTime() && (m.fechaFin === null || m.fechaFin.getTime() >= dia.getTime())
+/**
+ * totalAPagar negativo no es un estado válido a guardar ni mostrar: es una
+ * señal de que los montos manuales (normalmente descuentosVarios) se
+ * capturaron mal para lo que el trabajador realmente devengó esa semana.
+ * Rechaza con 400 y deja que RH decida manualmente cómo corregirlo — no es
+ * decisión nuestra "recortar a 0" ni "acarrear" el faltante a otra semana.
+ */
+function verificarTotalNoNegativo(devengado: Prisma.Decimal, descontado: Prisma.Decimal, totalAPagar: Prisma.Decimal): void {
+  if (totalAPagar.isNegative()) {
+    throw new AppError(
+      400,
+      `El total de descuentos ($${descontado.toFixed(2)}) supera lo devengado esta semana ($${devengado.toFixed(2)}). Revisa los montos capturados antes de generar/corregir esta nómina.`
     );
-    if (cubiertoPorMovimiento) {
-      diasLaborados++;
-    }
   }
+}
 
-  return diasLaborados;
+function datosNominaIncompletos(trabajador: Trabajador): boolean {
+  return (
+    trabajador.sueldoBase === null ||
+    trabajador.fechaIngreso === null ||
+    trabajador.banco === null ||
+    trabajador.clabe === null ||
+    trabajador.cuentaBancaria === null
+  );
 }
 
 /**
@@ -167,13 +227,10 @@ export async function generarNominaSemanal(
 
   const montoSueldo = trabajador.sueldoBase.dividedBy(DIAS_POR_PERIODO).times(diasLaborados);
 
-  const totalAPagar = montoSueldo
-    .plus(montoHorasExtra)
-    .plus(viaticosSemanal)
-    .plus(viaticosMensual)
-    .plus(aguinaldo ?? new Prisma.Decimal(0))
-    .minus(infonavitDescuento)
-    .minus(descuentosVarios);
+  const devengado = montoSueldo.plus(montoHorasExtra).plus(viaticosSemanal).plus(viaticosMensual).plus(aguinaldo ?? new Prisma.Decimal(0));
+  const descontado = infonavitDescuento.plus(descuentosVarios);
+  const totalAPagar = devengado.minus(descontado);
+  verificarTotalNoNegativo(devengado, descontado, totalAPagar);
 
   return prisma.$transaction(async (tx) => {
     const nomina = await tx.nominaSemanal.create({
@@ -205,6 +262,84 @@ export async function generarNominaSemanal(
     });
 
     return nomina;
+  });
+}
+
+/**
+ * Vista de solo lectura para la captura masiva de nómina semanal: por cada
+ * trabajador activo resuelve días laborados, secciones trabajadas esa
+ * semana y si ya tiene nómina generada para ese periodo — todo en 4
+ * consultas (no una por trabajador) para que sea viable con ~137
+ * trabajadores. No persiste nada; POST/PATCH /nominas siguen siendo el
+ * único camino de escritura.
+ */
+export async function obtenerVistaPreviaNomina(periodoInicioISO: string, periodoFinISO: string): Promise<VistaPreviaTrabajador[]> {
+  const periodoInicio = aFechaUTC(periodoInicioISO);
+  const periodoFin = aFechaUTC(periodoFinISO);
+
+  const [trabajadores, asistencias, movimientos, nominas] = await Promise.all([
+    prisma.trabajador.findMany({ where: { estatus: TrabajadorEstatus.activo }, orderBy: { nombreCompleto: "asc" } }),
+    prisma.asistenciaDiaria.findMany({
+      where: { fecha: { gte: periodoInicio, lte: periodoFin } },
+      include: { seccion: { select: { nombre: true } } },
+    }),
+    prisma.movimientoTrabajador.findMany({
+      where: {
+        fechaInicio: { lte: periodoFin },
+        OR: [{ fechaFin: null }, { fechaFin: { gte: periodoInicio } }],
+      },
+      include: { tipoMovimiento: true },
+    }),
+    prisma.nominaSemanal.findMany({ where: { periodoInicio } }),
+  ]);
+
+  const asistenciasPorTrabajador = new Map<string, typeof asistencias>();
+  for (const a of asistencias) {
+    const lista = asistenciasPorTrabajador.get(a.trabajadorId) ?? [];
+    lista.push(a);
+    asistenciasPorTrabajador.set(a.trabajadorId, lista);
+  }
+
+  const movimientosPorTrabajador = new Map<string, typeof movimientos>();
+  for (const m of movimientos) {
+    if (!m.tipoMovimiento.cuentaComoDiaTrabajado) continue;
+    const lista = movimientosPorTrabajador.get(m.trabajadorId) ?? [];
+    lista.push(m);
+    movimientosPorTrabajador.set(m.trabajadorId, lista);
+  }
+
+  const nominaPorTrabajador = new Map(nominas.map((n) => [n.trabajadorId, n]));
+
+  return trabajadores.map((trabajador) => {
+    const asistenciasTrabajador = asistenciasPorTrabajador.get(trabajador.id) ?? [];
+    const diasConAsistencia = new Set(asistenciasTrabajador.map((a) => aClaveDia(a.fecha)));
+    const movimientosQueCuentan = movimientosPorTrabajador.get(trabajador.id) ?? [];
+    const diasLaborados = contarDiasLaboradosPuro(diasConAsistencia, movimientosQueCuentan, periodoInicio, periodoFin);
+    const seccionesTrabajadas = [...new Set(asistenciasTrabajador.map((a) => a.seccion.nombre))];
+    const nominaExistente = nominaPorTrabajador.get(trabajador.id);
+
+    return {
+      id: trabajador.id,
+      nombreCompleto: trabajador.nombreCompleto,
+      categoria: trabajador.categoria,
+      seccionesTrabajadas,
+      diasLaborados,
+      datosIncompletos: datosNominaIncompletos(trabajador),
+      nominaExistente: nominaExistente
+        ? {
+            id: nominaExistente.id,
+            horasExtra: nominaExistente.horasExtra.toString(),
+            viaticosSemanal: nominaExistente.viaticosSemanal.toString(),
+            viaticosMensual: nominaExistente.viaticosMensual.toString(),
+            descuentosVarios: nominaExistente.descuentosVarios.toString(),
+            aguinaldo: nominaExistente.aguinaldo?.toString() ?? null,
+            montoHorasExtra: nominaExistente.montoHorasExtra.toString(),
+            infonavitDescuento: nominaExistente.infonavitDescuento.toString(),
+            totalAPagar: nominaExistente.totalAPagar.toString(),
+            estatus: nominaExistente.estatus,
+          }
+        : null,
+    };
   });
 }
 
@@ -251,13 +386,10 @@ export async function corregirNominaSemanal(
 
   const montoSueldo = trabajador.sueldoBase.dividedBy(DIAS_POR_PERIODO).times(diasLaborados);
 
-  const totalAPagar = montoSueldo
-    .plus(montoHorasExtra)
-    .plus(viaticosSemanal)
-    .plus(viaticosMensual)
-    .plus(aguinaldo ?? new Prisma.Decimal(0))
-    .minus(infonavitDescuento)
-    .minus(descuentosVarios);
+  const devengado = montoSueldo.plus(montoHorasExtra).plus(viaticosSemanal).plus(viaticosMensual).plus(aguinaldo ?? new Prisma.Decimal(0));
+  const descontado = infonavitDescuento.plus(descuentosVarios);
+  const totalAPagar = devengado.minus(descontado);
+  verificarTotalNoNegativo(devengado, descontado, totalAPagar);
 
   return prisma.$transaction(async (tx) => {
     const nominaActualizada = await tx.nominaSemanal.update({

@@ -38,6 +38,28 @@ export function validarNomina(req: Request, res: Response, next: NextFunction): 
   next();
 }
 
+export function validarVistaPreviaNomina(req: Request, res: Response, next: NextFunction): void {
+  const { periodoInicio, periodoFin } = req.query;
+
+  if (!esFechaISO(periodoInicio)) {
+    res.status(400).json({ error: "periodoInicio es requerido en formato YYYY-MM-DD (query)." });
+    return;
+  }
+
+  if (!esFechaISO(periodoFin)) {
+    res.status(400).json({ error: "periodoFin es requerido en formato YYYY-MM-DD (query)." });
+    return;
+  }
+
+  const diffDias = (Date.parse(periodoFin) - Date.parse(periodoInicio)) / UN_DIA_MS;
+  if (diffDias !== DIAS_POR_PERIODO - 1) {
+    res.status(400).json({ error: `periodoInicio y periodoFin deben abarcar exactamente ${DIAS_POR_PERIODO} días.` });
+    return;
+  }
+
+  next();
+}
+
 export function validarFiltroNomina(req: Request, res: Response, next: NextFunction): void {
   const { trabajadorId } = req.query;
   if (trabajadorId !== undefined && !esUUID(trabajadorId)) {

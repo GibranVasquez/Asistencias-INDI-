@@ -4,12 +4,20 @@ import {
   generarNominaSemanal,
   listarNominasSemanales,
   obtenerNominaSemanal,
+  obtenerVistaPreviaNomina,
 } from "../services/nomina.service";
 
 export async function generar(req: Request, res: Response): Promise<void> {
   const { trabajadorId, ...datos } = req.body;
   const nomina = await generarNominaSemanal(req.user!.usuarioId, trabajadorId, datos);
   res.status(201).json({ nomina });
+}
+
+export async function vistaPrevia(req: Request, res: Response): Promise<void> {
+  const periodoInicio = req.query.periodoInicio as string;
+  const periodoFin = req.query.periodoFin as string;
+  const trabajadores = await obtenerVistaPreviaNomina(periodoInicio, periodoFin);
+  res.json({ trabajadores });
 }
 
 export async function listar(req: Request, res: Response): Promise<void> {

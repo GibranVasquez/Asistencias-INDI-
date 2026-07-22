@@ -7,11 +7,11 @@ import AsistenciasPage from "./pages/AsistenciasPage";
 import TrabajadoresPage from "./pages/TrabajadoresPage";
 import TrabajadorFormPage from "./pages/TrabajadorFormPage";
 import EncargadoPage from "./pages/EncargadoPage";
+import NominaPage from "./pages/NominaPage";
 import ProximamentePage from "./pages/ProximamentePage";
 import KioscoPage from "./pages/KioscoPage";
 
 const PANTALLAS_PENDIENTES: { ruta: string; titulo: string }[] = [
-  { ruta: "nomina", titulo: "Nómina RH" },
   { ruta: "usuarios", titulo: "Usuarios y accesos" },
   { ruta: "reportes", titulo: "Reportes" },
   { ruta: "configuracion", titulo: "Configuración" },
@@ -61,6 +61,10 @@ export default function App() {
         <Route
           path="encargado"
           element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <EncargadoPage />}
+        />
+        <Route
+          path="nomina"
+          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <NominaPage />}
         />
         {PANTALLAS_PENDIENTES.map((p) => (
           <Route key={p.ruta} path={p.ruta} element={<ProximamentePage titulo={p.titulo} />} />
