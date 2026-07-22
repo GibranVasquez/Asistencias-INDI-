@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asignacionRouter } from "./asignacion.routes";
 import { asistenciaRouter } from "./asistencia.routes";
+import { auditoriaRouter } from "./auditoria.routes";
 import { authRouter } from "./auth.routes";
 import { horarioRouter } from "./horario.routes";
 import { movimientoTrabajadorRouter } from "./movimientoTrabajador.routes";
@@ -19,6 +20,7 @@ router.get("/health", (_req, res) => {
 });
 
 router.use("/auth", authRouter);
+router.use("/auditoria", auditoriaRouter);
 router.use("/asistencias", asistenciaRouter);
 router.use("/nominas", nominaRouter);
 router.use("/usuarios", usuarioRouter);

@@ -14,9 +14,30 @@ export interface DatosAltaUsuario {
   seccionesAsignadas?: string[];
 }
 
-export async function listarUsuarios(): Promise<UsuarioPublico[]> {
-  const usuarios = await prisma.usuario.findMany({ orderBy: { username: "asc" } });
-  return usuarios.map(serializarUsuario);
+export interface UsuarioListado extends UsuarioPublico {
+  creadoEn: string;
+  trabajadorNombre: string | null;
+  seccionesAsignadas: { id: string; nombre: string }[];
+}
+
+// Vista enriquecida para la pantalla de administración (GET /usuarios,
+// rol=administrador únicamente) — distinta de UsuarioPublico (usada en
+// login/usuario-actual) porque acá sí tiene sentido resolver el nombre del
+// trabajador vinculado y las secciones asignadas en vez de dejar solo IDs.
+export async function listarUsuarios(): Promise<UsuarioListado[]> {
+  const usuarios = await prisma.usuario.findMany({
+    orderBy: { username: "asc" },
+    include: {
+      trabajador: { select: { nombreCompleto: true } },
+      seccionesAsignadas: { select: { id: true, nombre: true } },
+    },
+  });
+  return usuarios.map((u) => ({
+    ...serializarUsuario(u),
+    creadoEn: u.creadoEn.toISOString(),
+    trabajadorNombre: u.trabajador?.nombreCompleto ?? null,
+    seccionesAsignadas: u.seccionesAsignadas.map((s) => ({ id: s.id, nombre: s.nombre })),
+  }));
 }
 
 export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsuario): Promise<UsuarioPublico> {

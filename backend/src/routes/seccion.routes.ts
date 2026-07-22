@@ -20,10 +20,17 @@ seccionRouter.get(
 );
 
 // Lectura: un Terminal (kiosco) necesita el catálogo de secciones para
-// configurarse, sin heredar el resto de permisos de RH — por eso estas dos
-// van antes del blanket de abajo, con su propio middleware combinado.
-seccionRouter.get("/", permitirTerminalOUsuarioConRol(RolUsuario.rh), listar);
-seccionRouter.get("/:id", permitirTerminalOUsuarioConRol(RolUsuario.rh), validarIdSeccion, obtener);
+// configurarse, sin heredar el resto de permisos de RH; administrador lo
+// necesita para el multi-select de secciones al dar de alta una cuenta
+// encargado_seccion (Usuarios y accesos) — por eso estas dos van antes del
+// blanket de abajo, con su propio middleware combinado.
+seccionRouter.get("/", permitirTerminalOUsuarioConRol(RolUsuario.rh, RolUsuario.administrador), listar);
+seccionRouter.get(
+  "/:id",
+  permitirTerminalOUsuarioConRol(RolUsuario.rh, RolUsuario.administrador),
+  validarIdSeccion,
+  obtener
+);
 
 seccionRouter.use(authMiddleware, permitirRoles(RolUsuario.rh));
 

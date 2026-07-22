@@ -118,7 +118,12 @@ export default function AdminLayout() {
   // recepcion: "solo visualiza la lista de asistencia y nada más" (decision
   // del usuario 2026-07-21) — el sidebar no debe insinuar acceso a
   // pantallas que su rol no puede usar en absoluto, ni siquiera degradadas.
-  const itemsNav = sesion.usuario.rol === "recepcion" ? ITEMS_NAV.filter((i) => i.ruta === "asistencias") : ITEMS_NAV;
+  // "usuarios" (gestión de cuentas) es exclusivo de administrador para
+  // todos los demás roles, ni siquiera aparece en el sidebar.
+  const itemsNav =
+    sesion.usuario.rol === "recepcion"
+      ? ITEMS_NAV.filter((i) => i.ruta === "asistencias")
+      : ITEMS_NAV.filter((i) => i.ruta !== "usuarios" || sesion.usuario.rol === "administrador");
 
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)" }}>
