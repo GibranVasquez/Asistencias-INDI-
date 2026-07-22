@@ -1,0 +1,134 @@
+import { Prisma, Trabajador, TrabajadorEstatus, TrabajadorTipo } from "@prisma/client";
+import { prisma } from "../utils/prisma";
+import { AppError } from "../utils/AppError";
+
+export interface DatosAltaTrabajador {
+  nombreCompleto: string;
+  categoria: string;
+  jefeInmediato: string;
+  tipo?: TrabajadorTipo;
+  fechaIngreso?: string | null; // YYYY-MM-DD
+  sueldoBase?: number | null;
+  banco?: string | null;
+  clabe?: string | null;
+  cuentaBancaria?: string | null;
+  infonavitPlazoMeses?: number | null;
+  infonavitMontoPorPeriodo?: number | null;
+  huellaRegistrada?: boolean;
+  rostroRegistrado?: boolean;
+}
+
+export interface DatosEdicionTrabajador extends Partial<DatosAltaTrabajador> {
+  estatus?: TrabajadorEstatus;
+}
+
+function aFechaUTC(fechaISO: string): Date {
+  return new Date(`${fechaISO}T00:00:00Z`);
+}
+
+function datosAltaParaPrisma(datos: DatosAltaTrabajador): Prisma.TrabajadorCreateInput {
+  return {
+    nombreCompleto: datos.nombreCompleto,
+    categoria: datos.categoria,
+    jefeInmediato: datos.jefeInmediato,
+    tipo: datos.tipo ?? TrabajadorTipo.empleado,
+    fechaIngreso: datos.fechaIngreso ? aFechaUTC(datos.fechaIngreso) : null,
+    sueldoBase: datos.sueldoBase != null ? new Prisma.Decimal(datos.sueldoBase) : null,
+    banco: datos.banco ?? null,
+    clabe: datos.clabe ?? null,
+    cuentaBancaria: datos.cuentaBancaria ?? null,
+    infonavitPlazoMeses: datos.infonavitPlazoMeses ?? null,
+    infonavitMontoPorPeriodo:
+      datos.infonavitMontoPorPeriodo != null ? new Prisma.Decimal(datos.infonavitMontoPorPeriodo) : null,
+    huellaRegistrada: datos.huellaRegistrada ?? false,
+    rostroRegistrado: datos.rostroRegistrado ?? false,
+  };
+}
+
+/**
+ * Actualización parcial: solo se tocan las claves presentes en `datos`, para
+ * que RH pueda ir completando sueldoBase/banco/clabe/fechaIngreso sin tener
+ * que reenviar el registro completo cada vez.
+ */
+function datosEdicionParaPrisma(datos: DatosEdicionTrabajador): Prisma.TrabajadorUpdateInput {
+  const data: Prisma.TrabajadorUpdateInput = {};
+
+  if (datos.nombreCompleto !== undefined) data.nombreCompleto = datos.nombreCompleto;
+  if (datos.categoria !== undefined) data.categoria = datos.categoria;
+  if (datos.jefeInmediato !== undefined) data.jefeInmediato = datos.jefeInmediato;
+  if (datos.tipo !== undefined) data.tipo = datos.tipo;
+  if (datos.estatus !== undefined) data.estatus = datos.estatus;
+  if (datos.fechaIngreso !== undefined) data.fechaIngreso = datos.fechaIngreso ? aFechaUTC(datos.fechaIngreso) : null;
+  if (datos.sueldoBase !== undefined) {
+    data.sueldoBase = datos.sueldoBase != null ? new Prisma.Decimal(datos.sueldoBase) : null;
+  }
+  if (datos.banco !== undefined) data.banco = datos.banco;
+  if (datos.clabe !== undefined) data.clabe = datos.clabe;
+  if (datos.cuentaBancaria !== undefined) data.cuentaBancaria = datos.cuentaBancaria;
+  if (datos.infonavitPlazoMeses !== undefined) data.infonavitPlazoMeses = datos.infonavitPlazoMeses;
+  if (datos.infonavitMontoPorPeriodo !== undefined) {
+    data.infonavitMontoPorPeriodo =
+      datos.infonavitMontoPorPeriodo != null ? new Prisma.Decimal(datos.infonavitMontoPorPeriodo) : null;
+  }
+  if (datos.huellaRegistrada !== undefined) data.huellaRegistrada = datos.huellaRegistrada;
+  if (datos.rostroRegistrado !== undefined) data.rostroRegistrado = datos.rostroRegistrado;
+
+  return data;
+}
+
+export async function crearTrabajador(datos: DatosAltaTrabajador): Promise<Trabajador> {
+  return prisma.trabajador.create({ data: datosAltaParaPrisma(datos) });
+}
+
+export async function listarTrabajadores(): Promise<Trabajador[]> {
+  return prisma.trabajador.findMany({ orderBy: { nombreCompleto: "asc" } });
+}
+
+export interface TrabajadorBasico {
+  id: string;
+  nombreCompleto: string;
+  estatus: TrabajadorEstatus;
+}
+
+// Subconjunto de solo lectura (sin sueldo/banco/clabe/etc.) para roles que
+// necesitan resolver nombres o buscar un trabajador (ej. encargado_seccion
+// armando una asignación diaria) sin acceso al catálogo completo de RH.
+export async function listarTrabajadoresBasico(): Promise<TrabajadorBasico[]> {
+  return prisma.trabajador.findMany({
+    select: { id: true, nombreCompleto: true, estatus: true },
+    orderBy: { nombreCompleto: "asc" },
+  });
+}
+
+export async function obtenerTrabajador(id: string): Promise<Trabajador> {
+  const trabajador = await prisma.trabajador.findUnique({ where: { id } });
+  if (!trabajador) {
+    throw new AppError(404, "Trabajador no encontrado.");
+  }
+  return trabajador;
+}
+
+export async function editarTrabajador(id: string, datos: DatosEdicionTrabajador): Promise<Trabajador> {
+  await obtenerTrabajador(id);
+  return prisma.trabajador.update({ where: { id }, data: datosEdicionParaPrisma(datos) });
+}
+
+export async function borrarTrabajador(id: string): Promise<void> {
+  await obtenerTrabajador(id);
+
+  const [tieneUsuario, asistencias, movimientos, nominas] = await Promise.all([
+    prisma.usuario.count({ where: { trabajadorId: id } }),
+    prisma.asistenciaDiaria.count({ where: { trabajadorId: id } }),
+    prisma.movimientoTrabajador.count({ where: { trabajadorId: id } }),
+    prisma.nominaSemanal.count({ where: { trabajadorId: id } }),
+  ]);
+
+  if (tieneUsuario > 0 || asistencias > 0 || movimientos > 0 || nominas > 0) {
+    throw new AppError(
+      409,
+      "No se puede borrar: el trabajador está en uso (tiene cuenta de usuario, asistencias, movimientos o nóminas asociadas). Da de baja su estatus en vez de borrarlo."
+    );
+  }
+
+  await prisma.trabajador.delete({ where: { id } });
+}

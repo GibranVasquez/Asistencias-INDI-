@@ -1,0 +1,125 @@
+import { AsistenciaDiaria, MetodoAsistencia, RolUsuario, TrabajadorEstatus } from "@prisma/client";
+import { prisma } from "../utils/prisma";
+import { AppError } from "../utils/AppError";
+import { verificarAccesoSeccion } from "../utils/accesoSeccion";
+
+// Denormaliza trabajadorNombre/seccionNombre directo en la respuesta de
+// listarAsistencias: recepcion puede leer /asistencias pero NO
+// /trabajadores ni /secciones (ambos rol=rh), asi que sin esto el listado
+// solo tendria UUIDs — inutilizable para la pantalla que es literalmente
+// la razon de ser de ese rol. Evita ademas tener que ampliarle a recepcion
+// el acceso a esos catalogos completos (categoria, jefeInmediato, etc.)
+// solo para resolver un nombre.
+export interface AsistenciaListada extends AsistenciaDiaria {
+  trabajadorNombre: string;
+  seccionNombre: string;
+}
+
+export interface DatosRegistroAsistencia {
+  fecha: string; // YYYY-MM-DD
+  hora: string; // HH:MM o HH:MM:SS
+  seccionId: string;
+  turno: string;
+  metodoUsado: MetodoAsistencia;
+  ubicacionGPS?: string | null;
+}
+
+export interface FiltrosAsistencia {
+  fecha?: string; // YYYY-MM-DD, coincidencia exacta
+  fechaInicio?: string; // YYYY-MM-DD, usado junto con fechaFin si fecha no se envía
+  fechaFin?: string;
+  seccionId?: string;
+  trabajadorId?: string;
+}
+
+function normalizarHora(hora: string): string {
+  return hora.length === 5 ? `${hora}:00` : hora;
+}
+
+function aFechaUTC(fechaISO: string): Date {
+  return new Date(`${fechaISO}T00:00:00Z`);
+}
+
+export async function registrarAsistencia(
+  trabajadorId: string,
+  terminalOrigenId: string,
+  datos: DatosRegistroAsistencia
+): Promise<AsistenciaDiaria> {
+  const trabajador = await prisma.trabajador.findUnique({ where: { id: trabajadorId } });
+
+  if (!trabajador) {
+    throw new AppError(404, "Trabajador no encontrado.");
+  }
+
+  if (trabajador.estatus !== TrabajadorEstatus.activo) {
+    throw new AppError(403, "El trabajador no está activo.");
+  }
+
+  const seccion = await prisma.seccion.findUnique({ where: { id: datos.seccionId } });
+  if (!seccion) {
+    throw new AppError(400, "La sección indicada no existe.");
+  }
+
+  // terminalOrigenId no se valida contra la BD aquí: terminalAuthMiddleware
+  // ya garantizó que corresponde a un Terminal existente y activo.
+  return prisma.asistenciaDiaria.create({
+    data: {
+      trabajadorId,
+      fecha: aFechaUTC(datos.fecha),
+      hora: new Date(`1970-01-01T${normalizarHora(datos.hora)}Z`),
+      seccionId: datos.seccionId,
+      turno: datos.turno,
+      metodoUsado: datos.metodoUsado,
+      terminalOrigenId,
+      ubicacionGPS: datos.ubicacionGPS ?? null,
+    },
+  });
+}
+
+/**
+ * encargado_seccion no tiene un scoping implicito como rh (que ve todo) —
+ * debe mandar un seccionId, y tiene que ser una de las suyas
+ * (verificarAccesoSeccion), sin importar que mas venga en el filtro. Sin
+ * esto, cualquier encargado podria leer asistencias de OTRA seccion con
+ * solo cambiar el query param.
+ */
+export async function listarAsistencias(
+  usuarioId: string,
+  rol: RolUsuario,
+  filtros: FiltrosAsistencia
+): Promise<AsistenciaListada[]> {
+  if (rol === RolUsuario.encargado_seccion) {
+    if (!filtros.seccionId) {
+      throw new AppError(400, "seccionId es requerido para tu rol.");
+    }
+    await verificarAccesoSeccion(usuarioId, rol, filtros.seccionId);
+  }
+
+  const filtroFecha = filtros.fecha
+    ? aFechaUTC(filtros.fecha)
+    : filtros.fechaInicio || filtros.fechaFin
+      ? {
+          ...(filtros.fechaInicio ? { gte: aFechaUTC(filtros.fechaInicio) } : {}),
+          ...(filtros.fechaFin ? { lte: aFechaUTC(filtros.fechaFin) } : {}),
+        }
+      : undefined;
+
+  const registros = await prisma.asistenciaDiaria.findMany({
+    where: {
+      ...(filtroFecha ? { fecha: filtroFecha } : {}),
+      ...(filtros.seccionId ? { seccionId: filtros.seccionId } : {}),
+      ...(filtros.trabajadorId ? { trabajadorId: filtros.trabajadorId } : {}),
+    },
+    include: {
+      trabajador: { select: { nombreCompleto: true } },
+      seccion: { select: { nombre: true } },
+    },
+    orderBy: [{ fecha: "desc" }, { hora: "desc" }],
+  });
+
+  return registros.map(({ trabajador, seccion, ...resto }) => ({
+    ...resto,
+    trabajadorNombre: trabajador.nombreCompleto,
+    seccionNombre: seccion.nombre,
+  }));
+}
