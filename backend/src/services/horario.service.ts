@@ -36,8 +36,18 @@ export async function crearHorario(datos: DatosHorario): Promise<Horario> {
   return prisma.horario.create({ data: datosParaPrisma(datos) });
 }
 
-export async function listarHorarios(): Promise<Horario[]> {
-  return prisma.horario.findMany({ orderBy: { nombre: "asc" } });
+export interface HorarioConSecciones extends Horario {
+  secciones: { id: string; nombre: string }[];
+}
+
+// Incluye qué secciones usan cada horario para que RH vea el impacto antes
+// de editar/borrar uno (el mismo dato que borrarHorario usa para decidir
+// si rechaza el borrado).
+export async function listarHorarios(): Promise<HorarioConSecciones[]> {
+  return prisma.horario.findMany({
+    orderBy: { nombre: "asc" },
+    include: { secciones: { select: { id: true, nombre: true } } },
+  });
 }
 
 export async function obtenerHorario(id: string): Promise<Horario> {
@@ -61,7 +71,14 @@ export async function editarHorario(id: string, datos: DatosHorario): Promise<Ho
 
 export async function borrarHorario(id: string): Promise<void> {
   await obtenerHorario(id);
-  // Horario no tiene ninguna relación en el schema todavía (catálogo aún no
-  // referenciado desde Trabajador/AsistenciaDiaria) — no hay "en uso" que validar.
+
+  // Seccion.horarioId tiene ON DELETE SET NULL: sin este guardrail, borrar
+  // un horario en uso no truena, sino que desasigna en silencio el horario
+  // de esas secciones.
+  const enUso = await prisma.seccion.count({ where: { horarioId: id } });
+  if (enUso > 0) {
+    throw new AppError(409, "No se puede borrar: hay secciones que usan este horario.");
+  }
+
   await prisma.horario.delete({ where: { id } });
 }

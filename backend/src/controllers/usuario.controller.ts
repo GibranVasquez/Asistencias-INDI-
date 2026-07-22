@@ -1,8 +1,13 @@
 import { Request, Response } from "express";
-import { cambiarEstadoUsuario, crearUsuario, listarUsuarios } from "../services/usuario.service";
+import { cambiarEstadoUsuario, crearUsuario, listarEncargados, listarUsuarios } from "../services/usuario.service";
 
 export async function listar(_req: Request, res: Response): Promise<void> {
   const usuarios = await listarUsuarios();
+  res.json({ usuarios });
+}
+
+export async function encargados(_req: Request, res: Response): Promise<void> {
+  const usuarios = await listarEncargados();
   res.json({ usuarios });
 }
 

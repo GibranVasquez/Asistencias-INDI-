@@ -40,4 +40,5 @@ export const apiClient = {
     solicitud<T>(ruta, { method: "POST", body, token }),
   patch: <T>(ruta: string, body: unknown, token?: string | null) =>
     solicitud<T>(ruta, { method: "PATCH", body, token }),
+  del: <T>(ruta: string, token?: string | null) => solicitud<T>(ruta, { method: "DELETE", token }),
 };

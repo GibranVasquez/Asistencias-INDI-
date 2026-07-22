@@ -10,8 +10,12 @@ function horarioIdValido(valor: unknown): boolean {
   return valor === undefined || valor === null || esUUID(valor);
 }
 
+function encargadoIdsValidos(valor: unknown): boolean {
+  return valor === undefined || (Array.isArray(valor) && valor.every((v) => esUUID(v)));
+}
+
 export function validarAltaSeccion(req: Request, res: Response, next: NextFunction): void {
-  const { obraId, nombre, horarioId } = req.body ?? {};
+  const { obraId, nombre, horarioId, encargadoIds } = req.body ?? {};
 
   if (!esUUID(obraId)) {
     res.status(400).json({ error: "obraId es requerido y debe ser un UUID válido." });
@@ -25,6 +29,11 @@ export function validarAltaSeccion(req: Request, res: Response, next: NextFuncti
 
   if (!horarioIdValido(horarioId)) {
     res.status(400).json({ error: "horarioId debe ser un UUID válido, null, u omitirse." });
+    return;
+  }
+
+  if (!encargadoIdsValidos(encargadoIds)) {
+    res.status(400).json({ error: "encargadoIds debe ser un arreglo de UUIDs si se envía." });
     return;
   }
 
@@ -44,6 +53,11 @@ export function validarEdicionSeccion(req: Request, res: Response, next: NextFun
 
   if (!horarioIdValido(req.body?.horarioId)) {
     res.status(400).json({ error: "horarioId debe ser un UUID válido, null, u omitirse." });
+    return;
+  }
+
+  if (!encargadoIdsValidos(req.body?.encargadoIds)) {
+    res.status(400).json({ error: "encargadoIds debe ser un arreglo de UUIDs si se envía." });
     return;
   }
 

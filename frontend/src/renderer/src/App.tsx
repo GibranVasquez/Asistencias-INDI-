@@ -9,13 +9,11 @@ import TrabajadorFormPage from "./pages/TrabajadorFormPage";
 import EncargadoPage from "./pages/EncargadoPage";
 import NominaPage from "./pages/NominaPage";
 import UsuariosPage from "./pages/UsuariosPage";
+import ConfiguracionPage from "./pages/ConfiguracionPage";
 import ProximamentePage from "./pages/ProximamentePage";
 import KioscoPage from "./pages/KioscoPage";
 
-const PANTALLAS_PENDIENTES: { ruta: string; titulo: string }[] = [
-  { ruta: "reportes", titulo: "Reportes" },
-  { ruta: "configuracion", titulo: "Configuración" },
-];
+const PANTALLAS_PENDIENTES: { ruta: string; titulo: string }[] = [{ ruta: "reportes", titulo: "Reportes" }];
 
 // recepcion tiene bloqueado el Dashboard por completo (decision del usuario
 // 2026-07-21): su rol es "solo visualiza la lista de asistencia y nada
@@ -36,6 +34,7 @@ export default function App() {
 
   const esRecepcion = sesion?.usuario.rol === "recepcion";
   const esAdministrador = sesion?.usuario.rol === "administrador";
+  const esRh = sesion?.usuario.rol === "rh";
 
   return (
     <Routes>
@@ -70,6 +69,10 @@ export default function App() {
         <Route
           path="usuarios"
           element={esAdministrador ? <UsuariosPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
+        />
+        <Route
+          path="configuracion"
+          element={esRh ? <ConfiguracionPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
         />
         {PANTALLAS_PENDIENTES.map((p) => (
           <Route key={p.ruta} path={p.ruta} element={<ProximamentePage titulo={p.titulo} />} />

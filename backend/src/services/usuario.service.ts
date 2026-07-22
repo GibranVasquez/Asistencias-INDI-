@@ -40,6 +40,24 @@ export async function listarUsuarios(): Promise<UsuarioListado[]> {
   }));
 }
 
+export interface EncargadoBasico {
+  id: string;
+  username: string;
+}
+
+// Subconjunto mínimo (sin rol/estatus/trabajadorId de las demás cuentas) para
+// que rh pueda armar el multi-select de encargados al editar una Sección
+// (Configuración), sin abrirle todo GET /usuarios (rol=administrador) solo
+// para resolver esto — mismo patrón que /trabajadores/basico.
+export async function listarEncargados(): Promise<EncargadoBasico[]> {
+  const usuarios = await prisma.usuario.findMany({
+    where: { rol: RolUsuario.encargado_seccion },
+    orderBy: { username: "asc" },
+    select: { id: true, username: true },
+  });
+  return usuarios;
+}
+
 export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsuario): Promise<UsuarioPublico> {
   const existente = await prisma.usuario.findUnique({ where: { username: datos.username } });
   if (existente) {

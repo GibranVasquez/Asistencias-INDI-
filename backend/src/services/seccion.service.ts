@@ -7,12 +7,20 @@ export interface DatosAltaSeccion {
   obraId: string;
   nombre: string;
   horarioId?: string | null;
+  encargadoIds?: string[];
 }
 
 export interface DatosEdicionSeccion {
   nombre: string;
   // undefined = no tocar el horario actual; null = quitarlo; string = asignar ese.
   horarioId?: string | null;
+  // undefined = no tocar los encargados actuales; array (incluso vacío) =
+  // reemplaza la lista completa (set, no connect — así se puede quitar uno).
+  encargadoIds?: string[];
+}
+
+export interface SeccionConEncargados extends Seccion {
+  encargados: { id: string; username: string }[];
 }
 
 interface TrabajadorResumen {
@@ -52,6 +60,24 @@ async function verificarHorarioExiste(horarioId: string | null | undefined): Pro
   }
 }
 
+// Mismo invariante que ya exige validarAltaUsuario del lado de Usuario:
+// seccionesAsignadas (aquí, encargados) solo tiene sentido para cuentas
+// rol=encargado_seccion — sin esto, asignar un encargado desde el lado de
+// Sección podría dejar a un rh/administrador con la relación poblada.
+async function verificarEncargadosValidos(encargadoIds: string[] | undefined): Promise<void> {
+  if (!encargadoIds || encargadoIds.length === 0) return;
+
+  const usuarios = await prisma.usuario.findMany({ where: { id: { in: encargadoIds } } });
+  if (usuarios.length !== encargadoIds.length) {
+    throw new AppError(400, "Uno o más encargados indicados no existen.");
+  }
+
+  const conRolInvalido = usuarios.some((u) => u.rol !== RolUsuario.encargado_seccion);
+  if (conRolInvalido) {
+    throw new AppError(400, "Todos los encargados indicados deben ser cuentas con rol=encargado_seccion.");
+  }
+}
+
 export async function crearSeccion(datos: DatosAltaSeccion): Promise<Seccion> {
   const obra = await prisma.obra.findUnique({ where: { id: datos.obraId } });
   if (!obra) {
@@ -66,14 +92,23 @@ export async function crearSeccion(datos: DatosAltaSeccion): Promise<Seccion> {
   }
 
   await verificarHorarioExiste(datos.horarioId);
+  await verificarEncargadosValidos(datos.encargadoIds);
 
   return prisma.seccion.create({
-    data: { obraId: datos.obraId, nombre: datos.nombre, horarioId: datos.horarioId ?? null },
+    data: {
+      obraId: datos.obraId,
+      nombre: datos.nombre,
+      horarioId: datos.horarioId ?? null,
+      encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
+    },
   });
 }
 
-export async function listarSecciones(): Promise<Seccion[]> {
-  return prisma.seccion.findMany({ orderBy: { nombre: "asc" } });
+export async function listarSecciones(): Promise<SeccionConEncargados[]> {
+  return prisma.seccion.findMany({
+    orderBy: { nombre: "asc" },
+    include: { encargados: { select: { id: true, username: true } } },
+  });
 }
 
 export async function obtenerSeccion(id: string): Promise<Seccion> {
@@ -95,12 +130,14 @@ export async function editarSeccion(id: string, datos: DatosEdicionSeccion): Pro
   }
 
   await verificarHorarioExiste(datos.horarioId);
+  await verificarEncargadosValidos(datos.encargadoIds);
 
   return prisma.seccion.update({
     where: { id },
     data: {
       nombre: datos.nombre,
       horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
+      encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
     },
   });
 }
@@ -168,13 +205,17 @@ export async function obtenerResumenHoy(
 export async function borrarSeccion(id: string): Promise<void> {
   await obtenerSeccion(id);
 
-  const [enUsoAsistencias, encargadosAsignados] = await Promise.all([
+  const [enUsoAsistencias, enUsoAsignaciones, encargadosAsignados] = await Promise.all([
     prisma.asistenciaDiaria.count({ where: { seccionId: id } }),
+    prisma.asignacionDiaria.count({ where: { seccionId: id } }),
     prisma.usuario.count({ where: { seccionesAsignadas: { some: { id } } } }),
   ]);
 
-  if (enUsoAsistencias > 0 || encargadosAsignados > 0) {
-    throw new AppError(409, "No se puede borrar: la sección está en uso (tiene asistencias o encargados asignados).");
+  if (enUsoAsistencias > 0 || enUsoAsignaciones > 0 || encargadosAsignados > 0) {
+    throw new AppError(
+      409,
+      "No se puede borrar: la sección está en uso (tiene asistencias, asignaciones diarias o encargados asignados)."
+    );
   }
 
   await prisma.seccion.delete({ where: { id } });
