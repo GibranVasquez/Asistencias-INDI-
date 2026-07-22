@@ -1,5 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+// main/index.ts pasa la URL ya resuelta (env var o config.json en userData,
+// ver apiConfig.ts) como additionalArguments — el preload solo la parsea de
+// su propio process.argv, nunca vuelve a resolverla.
+const PREFIJO_API_BASE_URL = "--indi-api-base-url=";
+function leerApiBaseUrl(): string {
+  const arg = process.argv.find((a) => a.startsWith(PREFIJO_API_BASE_URL));
+  return arg ? arg.slice(PREFIJO_API_BASE_URL.length) : "http://localhost:4000";
+}
+
 // Bandera minima expuesta al renderer: si arrancamos en modo kiosco fisico
 // (pantalla completa bloqueada) para que la UI se comporte distinto (ej. sin
 // forma facil de volver a /login) — sin exponer el resto de la API de Electron.
@@ -9,6 +18,7 @@ import { contextBridge, ipcRenderer } from "electron";
 // el renderer solo ve estos tres metodos, nunca el archivo ni la clave.
 contextBridge.exposeInMainWorld("indiApp", {
   esKiosco: process.argv.includes("--kiosk") || process.env.INDI_KIOSK === "1",
+  apiBaseUrl: leerApiBaseUrl(),
   sesionSegura: {
     guardar: (valor: string, persistir: boolean): Promise<void> =>
       ipcRenderer.invoke("secure-store:guardar", valor, persistir),

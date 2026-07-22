@@ -1,4 +1,9 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+// window.indiApp.apiBaseUrl (Electron, resuelta en runtime por el proceso
+// principal — ver src/main/apiConfig.ts) manda siempre que exista; el env
+// var de Vite solo cubre un preview de navegador puro sin Electron (no pasa
+// en la app empaquetada ni en `electron-vite dev`, donde el preload siempre
+// corre y la expone).
+const API_BASE_URL = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 export class ApiError extends Error {
   status: number;

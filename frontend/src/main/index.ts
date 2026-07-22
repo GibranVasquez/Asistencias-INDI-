@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import { join } from "path";
+import { resolverApiBaseUrl } from "./apiConfig";
 import { registrarHandlersSecureStore } from "./secureStore";
 
 // El kiosco fisico se lanza con --kiosk (o INDI_KIOSK=1): pantalla completa,
@@ -24,6 +25,11 @@ if (process.platform === "linux") {
 }
 
 function crearVentanaPrincipal(): void {
+  // Resuelta en tiempo de ejecución (env var o config.json en userData, ver
+  // apiConfig.ts) — nunca horneada en el build, para que el paquete final
+  // pueda apuntar a donde termine viviendo el backend sin recompilar.
+  const apiBaseUrl = resolverApiBaseUrl();
+
   const ventana = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -38,6 +44,7 @@ function crearVentanaPrincipal(): void {
       preload: join(__dirname, "../preload/index.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      additionalArguments: [`--indi-api-base-url=${apiBaseUrl}`],
     },
   });
 

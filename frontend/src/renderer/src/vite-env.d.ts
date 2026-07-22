@@ -15,6 +15,11 @@ interface ImportMeta {
 interface Window {
   indiApp?: {
     esKiosco: boolean;
+    // Resuelta en tiempo de ejecución por el proceso principal (env var o
+    // config.json en userData, ver src/main/apiConfig.ts) — nunca horneada
+    // en el build, así el paquete instalado puede apuntar a donde sea que
+    // viva el backend sin recompilar.
+    apiBaseUrl: string;
     sesionSegura: {
       guardar: (valor: string, persistir: boolean) => Promise<void>;
       leer: () => Promise<{ valor: string; persistida: boolean } | null>;
