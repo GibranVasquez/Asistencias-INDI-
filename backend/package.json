@@ -19,10 +19,12 @@
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.2.0",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -30,6 +32,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.2",
+    "@types/pdfkit": "^0.17.6",
     "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",

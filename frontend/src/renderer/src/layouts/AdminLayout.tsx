@@ -119,15 +119,16 @@ export default function AdminLayout() {
   // del usuario 2026-07-21) — el sidebar no debe insinuar acceso a
   // pantallas que su rol no puede usar en absoluto, ni siquiera degradadas.
   // "usuarios" (gestión de cuentas) es exclusivo de administrador y
-  // "configuracion" (catálogos) es exclusivo de rh — para todos los demás
-  // roles ninguna de las dos aparece en el sidebar.
+  // "configuracion"/"reportes" (catálogos, financiero de nómina) son
+  // exclusivos de rh — para todos los demás roles ninguna aparece en el sidebar.
   const itemsNav =
     sesion.usuario.rol === "recepcion"
       ? ITEMS_NAV.filter((i) => i.ruta === "asistencias")
       : ITEMS_NAV.filter(
           (i) =>
             (i.ruta !== "usuarios" || sesion.usuario.rol === "administrador") &&
-            (i.ruta !== "configuracion" || sesion.usuario.rol === "rh")
+            (i.ruta !== "configuracion" || sesion.usuario.rol === "rh") &&
+            (i.ruta !== "reportes" || sesion.usuario.rol === "rh")
         );
 
   return (

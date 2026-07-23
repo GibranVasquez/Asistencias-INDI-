@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, session } from "electron";
 import { join } from "path";
 import { resolverApiBaseUrl } from "./apiConfig";
 import { registrarHandlersSecureStore } from "./secureStore";
@@ -57,8 +57,20 @@ function crearVentanaPrincipal(): void {
   }
 }
 
+// Sin este handler, guardar un blob (reportes en PDF/Excel, ver
+// api/reportes.ts) vía <a download> depende del comportamiento por-defecto
+// de Chromium ante una descarga — que en pruebas resultó intermitente bajo
+// Electron. Fijar explícitamente la carpeta de Descargas del sistema (sin
+// diálogo "Guardar como") lo vuelve determinista.
+function registrarDescargas(): void {
+  session.defaultSession.on("will-download", (_evento, item) => {
+    item.setSavePath(join(app.getPath("downloads"), item.getFilename()));
+  });
+}
+
 app.whenReady().then(() => {
   registrarHandlersSecureStore();
+  registrarDescargas();
   crearVentanaPrincipal();
 
   app.on("activate", () => {

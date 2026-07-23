@@ -263,7 +263,9 @@ export default function NominaPage() {
     a.href = url;
     a.download = `nomina_${periodoInicio}_${periodoFin}.csv`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Revocar en el mismo tick destruye el blob antes de que el navegador
+    // termine de procesar la descarga (asíncrono) — falla en silencio.
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
   const estilosCampo = { padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" };
