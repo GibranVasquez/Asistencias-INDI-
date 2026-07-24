@@ -4,3 +4,11 @@ dist
 *.log
 npm-debug.log*
 .git
+
+# Defensa adicional, independiente de que el Dockerfile ya solo copie
+# prisma/schema.prisma (no toda la carpeta prisma/): si en algun momento
+# alguien cambia el Dockerfile a `COPY prisma ./prisma` o `COPY . .`, esta
+# regla sigue evitando que el roster real (datos de 137 trabajadores, con
+# nombres) entre a la imagen sin querer.
+prisma/seed-data
+prisma/seed.ts
