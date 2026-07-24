@@ -358,4 +358,11 @@ decisión, ejecución o insumo externo del usuario/cliente:
   encargados de sección, y confirmación de si existen más obras además
   de Tren Golfo de México.
 - **Despliegue real del backend a producción** — sigue corriendo solo en
-  local; no hay ambiente de producción todavía.
+  local; no hay ambiente de producción todavía. Preparado pero no
+  conectado en dos rutas paralelas (ninguna aplicada/desplegada aún):
+  Railway (`PORT`/`/health` listos, `.env.example` documentado) y AWS App
+  Runner + RDS vía Terraform (`infra/terraform/`, ver
+  `infra/AWS_MIGRATION.md` para la checklist completa) — falta decidir
+  cuál de las dos se usa de verdad, crear la cuenta correspondiente, y
+  para AWS específicamente falta además probar en vivo el CA pinning de
+  RDS (código listo, no verificado contra una instancia real todavía).

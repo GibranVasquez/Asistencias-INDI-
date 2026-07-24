@@ -1,0 +1,14 @@
+# Copiar a terraform.tfvars (gitignoreado) y llenar con los valores reales
+# el dia que exista la cuenta de AWS. Sin valores reales todavia - ver
+# infra/AWS_MIGRATION.md para la lista completa explicada.
+
+aws_region          = "us-east-1"
+vpc_id              = "vpc-XXXXXXXXXXXXXXXXX"
+private_subnet_ids  = ["subnet-XXXXXXXXXXXXXXXXX", "subnet-YYYYYYYYYYYYYYYYY"]
+
+# Opcionales - estos ya tienen defaults razonables en variables.tf,
+# sobreescribir solo si aplica:
+# project_name       = "indi-asistencia"
+# environment        = "production"
+# db_instance_class  = "db.t4g.micro"
+# allowed_origin     = "https://no-aplica.grupoindi.local"
