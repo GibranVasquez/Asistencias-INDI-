@@ -1,0 +1,20 @@
+# .gitignore raíz — capa de respaldo, no reemplaza los de backend/,
+# frontend/, infra/terraform/ ni infra/terraform-bootstrap/. Sin path al
+# inicio del patrón, así que aplica a cualquier profundidad del árbol —
+# el objetivo es que una carpeta futura creada sin pensarlo (ej.
+# infra/terraform-produccion/) quede protegida por default, sin depender
+# de que alguien se acuerde de copiarle su propio .gitignore.
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# Entornos
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
