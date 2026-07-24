@@ -20,7 +20,10 @@ function aFechaUTC(fechaISO: string): Date {
   return new Date(`${fechaISO}T00:00:00Z`);
 }
 
-export async function crearMovimiento(datos: DatosAltaMovimiento): Promise<MovimientoTrabajador> {
+export async function crearMovimiento(
+  usuarioActorId: string,
+  datos: DatosAltaMovimiento
+): Promise<MovimientoTrabajador> {
   const [trabajador, tipoMovimiento] = await Promise.all([
     prisma.trabajador.findUnique({ where: { id: datos.trabajadorId } }),
     prisma.tipoMovimiento.findUnique({ where: { id: datos.tipoMovimientoId } }),
@@ -32,14 +35,28 @@ export async function crearMovimiento(datos: DatosAltaMovimiento): Promise<Movim
     throw new AppError(404, "El tipo de movimiento indicado no existe.");
   }
 
-  return prisma.movimientoTrabajador.create({
-    data: {
-      trabajadorId: datos.trabajadorId,
-      tipoMovimientoId: datos.tipoMovimientoId,
-      fechaInicio: aFechaUTC(datos.fechaInicio),
-      fechaFin: datos.fechaFin ? aFechaUTC(datos.fechaFin) : null,
-      nota: datos.nota ?? null,
-    },
+  return prisma.$transaction(async (tx) => {
+    const movimiento = await tx.movimientoTrabajador.create({
+      data: {
+        trabajadorId: datos.trabajadorId,
+        tipoMovimientoId: datos.tipoMovimientoId,
+        fechaInicio: aFechaUTC(datos.fechaInicio),
+        fechaFin: datos.fechaFin ? aFechaUTC(datos.fechaFin) : null,
+        nota: datos.nota ?? null,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "crear_movimiento_trabajador",
+        entidad: "MovimientoTrabajador",
+        entidadId: movimiento.id,
+        detalle: { trabajadorId: datos.trabajadorId, tipoMovimiento: tipoMovimiento.nombre },
+      },
+    });
+
+    return movimiento;
   });
 }
 
@@ -60,20 +77,51 @@ export async function obtenerMovimiento(id: string): Promise<MovimientoTrabajado
 
 // trabajadorId y tipoMovimientoId no se pueden editar: si el movimiento se
 // capturó mal, se borra y se crea uno nuevo, no se reasigna a otro trabajador/tipo.
-export async function editarMovimiento(id: string, datos: DatosEdicionMovimiento): Promise<MovimientoTrabajador> {
+export async function editarMovimiento(
+  usuarioActorId: string,
+  id: string,
+  datos: DatosEdicionMovimiento
+): Promise<MovimientoTrabajador> {
   await obtenerMovimiento(id);
 
-  return prisma.movimientoTrabajador.update({
-    where: { id },
-    data: {
-      fechaInicio: aFechaUTC(datos.fechaInicio),
-      fechaFin: datos.fechaFin ? aFechaUTC(datos.fechaFin) : null,
-      nota: datos.nota ?? null,
-    },
+  return prisma.$transaction(async (tx) => {
+    const movimiento = await tx.movimientoTrabajador.update({
+      where: { id },
+      data: {
+        fechaInicio: aFechaUTC(datos.fechaInicio),
+        fechaFin: datos.fechaFin ? aFechaUTC(datos.fechaFin) : null,
+        nota: datos.nota ?? null,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "editar_movimiento_trabajador",
+        entidad: "MovimientoTrabajador",
+        entidadId: id,
+        detalle: { fechaInicio: datos.fechaInicio, fechaFin: datos.fechaFin ?? null },
+      },
+    });
+
+    return movimiento;
   });
 }
 
-export async function borrarMovimiento(id: string): Promise<void> {
-  await obtenerMovimiento(id);
-  await prisma.movimientoTrabajador.delete({ where: { id } });
+export async function borrarMovimiento(usuarioActorId: string, id: string): Promise<void> {
+  const movimiento = await obtenerMovimiento(id);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.movimientoTrabajador.delete({ where: { id } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "borrar_movimiento_trabajador",
+        entidad: "MovimientoTrabajador",
+        entidadId: id,
+        detalle: { trabajadorId: movimiento.trabajadorId },
+      },
+    });
+  });
 }

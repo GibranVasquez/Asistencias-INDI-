@@ -76,8 +76,22 @@ function datosEdicionParaPrisma(datos: DatosEdicionTrabajador): Prisma.Trabajado
   return data;
 }
 
-export async function crearTrabajador(datos: DatosAltaTrabajador): Promise<Trabajador> {
-  return prisma.trabajador.create({ data: datosAltaParaPrisma(datos) });
+export async function crearTrabajador(usuarioActorId: string, datos: DatosAltaTrabajador): Promise<Trabajador> {
+  return prisma.$transaction(async (tx) => {
+    const trabajador = await tx.trabajador.create({ data: datosAltaParaPrisma(datos) });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "crear_trabajador",
+        entidad: "Trabajador",
+        entidadId: trabajador.id,
+        detalle: { nombreCompleto: trabajador.nombreCompleto, categoria: trabajador.categoria },
+      },
+    });
+
+    return trabajador;
+  });
 }
 
 export async function listarTrabajadores(): Promise<Trabajador[]> {
@@ -108,13 +122,39 @@ export async function obtenerTrabajador(id: string): Promise<Trabajador> {
   return trabajador;
 }
 
-export async function editarTrabajador(id: string, datos: DatosEdicionTrabajador): Promise<Trabajador> {
+// El detalle del audit log solo registra los NOMBRES de los campos que
+// cambiaron, nunca sus valores — administrador tiene acceso a /auditoria
+// pero no a /trabajadores (exclusivo de rh), así que el trail de auditoría
+// no debe filtrar sueldo/banco/clabe (mismo criterio ya usado en
+// resetear_password, que solo loguea {username}).
+export async function editarTrabajador(
+  usuarioActorId: string,
+  id: string,
+  datos: DatosEdicionTrabajador
+): Promise<Trabajador> {
   await obtenerTrabajador(id);
-  return prisma.trabajador.update({ where: { id }, data: datosEdicionParaPrisma(datos) });
+
+  const camposEditados = Object.keys(datos).filter((k) => (datos as Record<string, unknown>)[k] !== undefined);
+
+  return prisma.$transaction(async (tx) => {
+    const trabajador = await tx.trabajador.update({ where: { id }, data: datosEdicionParaPrisma(datos) });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "editar_trabajador",
+        entidad: "Trabajador",
+        entidadId: id,
+        detalle: { camposEditados },
+      },
+    });
+
+    return trabajador;
+  });
 }
 
-export async function borrarTrabajador(id: string): Promise<void> {
-  await obtenerTrabajador(id);
+export async function borrarTrabajador(usuarioActorId: string, id: string): Promise<void> {
+  const trabajador = await obtenerTrabajador(id);
 
   const [tieneUsuario, asistencias, movimientos, nominas] = await Promise.all([
     prisma.usuario.count({ where: { trabajadorId: id } }),
@@ -130,5 +170,17 @@ export async function borrarTrabajador(id: string): Promise<void> {
     );
   }
 
-  await prisma.trabajador.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.trabajador.delete({ where: { id } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "borrar_trabajador",
+        entidad: "Trabajador",
+        entidadId: id,
+        detalle: { nombreCompleto: trabajador.nombreCompleto },
+      },
+    });
+  });
 }

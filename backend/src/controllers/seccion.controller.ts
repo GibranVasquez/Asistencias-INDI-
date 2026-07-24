@@ -14,7 +14,7 @@ export async function hoy(req: Request, res: Response): Promise<void> {
 }
 
 export async function crear(req: Request, res: Response): Promise<void> {
-  const seccion = await crearSeccion(req.body);
+  const seccion = await crearSeccion(req.user!.usuarioId, req.body);
   res.status(201).json({ seccion });
 }
 
@@ -29,11 +29,11 @@ export async function obtener(req: Request, res: Response): Promise<void> {
 }
 
 export async function editar(req: Request, res: Response): Promise<void> {
-  const seccion = await editarSeccion(req.params.id as string, req.body);
+  const seccion = await editarSeccion(req.user!.usuarioId, req.params.id as string, req.body);
   res.json({ seccion });
 }
 
 export async function borrar(req: Request, res: Response): Promise<void> {
-  await borrarSeccion(req.params.id as string);
+  await borrarSeccion(req.user!.usuarioId, req.params.id as string);
   res.status(204).send();
 }

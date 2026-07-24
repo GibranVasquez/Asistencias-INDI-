@@ -9,13 +9,30 @@ export interface DatosTipoMovimiento {
   requiereAutorizacion: boolean;
 }
 
-export async function crearTipoMovimiento(datos: DatosTipoMovimiento): Promise<TipoMovimiento> {
+export async function crearTipoMovimiento(
+  usuarioActorId: string,
+  datos: DatosTipoMovimiento
+): Promise<TipoMovimiento> {
   const existente = await prisma.tipoMovimiento.findUnique({ where: { nombre: datos.nombre } });
   if (existente) {
     throw new AppError(409, "Ya existe un tipo de movimiento con ese nombre.");
   }
 
-  return prisma.tipoMovimiento.create({ data: datos });
+  return prisma.$transaction(async (tx) => {
+    const tipo = await tx.tipoMovimiento.create({ data: datos });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "crear_tipo_movimiento",
+        entidad: "TipoMovimiento",
+        entidadId: tipo.id,
+        detalle: { nombre: tipo.nombre },
+      },
+    });
+
+    return tipo;
+  });
 }
 
 export async function listarTiposMovimiento(): Promise<TipoMovimiento[]> {
@@ -30,7 +47,11 @@ export async function obtenerTipoMovimiento(id: string): Promise<TipoMovimiento>
   return tipo;
 }
 
-export async function editarTipoMovimiento(id: string, datos: DatosTipoMovimiento): Promise<TipoMovimiento> {
+export async function editarTipoMovimiento(
+  usuarioActorId: string,
+  id: string,
+  datos: DatosTipoMovimiento
+): Promise<TipoMovimiento> {
   await obtenerTipoMovimiento(id);
 
   const conflicto = await prisma.tipoMovimiento.findUnique({ where: { nombre: datos.nombre } });
@@ -38,16 +59,42 @@ export async function editarTipoMovimiento(id: string, datos: DatosTipoMovimient
     throw new AppError(409, "Ya existe un tipo de movimiento con ese nombre.");
   }
 
-  return prisma.tipoMovimiento.update({ where: { id }, data: datos });
+  return prisma.$transaction(async (tx) => {
+    const tipo = await tx.tipoMovimiento.update({ where: { id }, data: datos });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "editar_tipo_movimiento",
+        entidad: "TipoMovimiento",
+        entidadId: id,
+        detalle: { nombre: tipo.nombre },
+      },
+    });
+
+    return tipo;
+  });
 }
 
-export async function borrarTipoMovimiento(id: string): Promise<void> {
-  await obtenerTipoMovimiento(id);
+export async function borrarTipoMovimiento(usuarioActorId: string, id: string): Promise<void> {
+  const tipo = await obtenerTipoMovimiento(id);
 
   const enUso = await prisma.movimientoTrabajador.count({ where: { tipoMovimientoId: id } });
   if (enUso > 0) {
     throw new AppError(409, "No se puede borrar: hay movimientos de trabajador que usan este tipo.");
   }
 
-  await prisma.tipoMovimiento.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.tipoMovimiento.delete({ where: { id } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "borrar_tipo_movimiento",
+        entidad: "TipoMovimiento",
+        entidadId: id,
+        detalle: { nombre: tipo.nombre },
+      },
+    });
+  });
 }

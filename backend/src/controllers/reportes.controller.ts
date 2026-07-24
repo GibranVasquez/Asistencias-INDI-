@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { obtenerHistoricoTrabajador, obtenerReporteAsistencia } from "../services/reporteAsistencia.service";
-import { obtenerReporteNomina } from "../services/reporteNomina.service";
+import { obtenerReporteNomina, registrarExportacionNomina } from "../services/reporteNomina.service";
 import { generarExcelAsistencia, generarPdfAsistencia } from "../utils/exportadores/asistenciaExport";
 import { generarExcelNomina, generarPdfNomina } from "../utils/exportadores/nominaExport";
 
@@ -43,6 +43,7 @@ export async function nomina(req: Request, res: Response): Promise<void> {
 export async function exportarNomina(req: Request, res: Response): Promise<void> {
   const { desde, hasta, formato } = req.query;
   const reporte = await obtenerReporteNomina(desde as string, hasta as string);
+  await registrarExportacionNomina(req.user!.usuarioId, desde as string, hasta as string, formato as string);
   const nombreArchivo = `reporte-nomina_${desde}_${hasta}`;
 
   if (formato === "pdf") {

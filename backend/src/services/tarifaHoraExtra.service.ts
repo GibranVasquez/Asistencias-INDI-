@@ -38,7 +38,7 @@ async function tarifaEstaEnUso(tarifa: TarifaHoraExtra): Promise<boolean> {
   return enUso > 0;
 }
 
-export async function crearTarifaHoraExtra(datos: DatosTarifaHoraExtra): Promise<TarifaHoraExtra> {
+export async function crearTarifaHoraExtra(usuarioActorId: string, datos: DatosTarifaHoraExtra): Promise<TarifaHoraExtra> {
   const vigenteDesde = aFechaUTC(datos.vigenteDesde);
 
   const existente = await prisma.tarifaHoraExtra.findUnique({ where: { vigenteDesde } });
@@ -46,7 +46,21 @@ export async function crearTarifaHoraExtra(datos: DatosTarifaHoraExtra): Promise
     throw new AppError(409, "Ya existe una tarifa de hora extra vigente desde esa fecha.");
   }
 
-  return prisma.tarifaHoraExtra.create({ data: { valor: new Prisma.Decimal(datos.valor), vigenteDesde } });
+  return prisma.$transaction(async (tx) => {
+    const tarifa = await tx.tarifaHoraExtra.create({ data: { valor: new Prisma.Decimal(datos.valor), vigenteDesde } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "crear_tarifa_hora_extra",
+        entidad: "TarifaHoraExtra",
+        entidadId: tarifa.id,
+        detalle: { valor: tarifa.valor.toString(), vigenteDesde: datos.vigenteDesde },
+      },
+    });
+
+    return tarifa;
+  });
 }
 
 export async function listarTarifasHoraExtra(): Promise<TarifaHoraExtra[]> {
@@ -61,7 +75,11 @@ export async function obtenerTarifaHoraExtra(id: string): Promise<TarifaHoraExtr
   return tarifa;
 }
 
-export async function editarTarifaHoraExtra(id: string, datos: DatosTarifaHoraExtra): Promise<TarifaHoraExtra> {
+export async function editarTarifaHoraExtra(
+  usuarioActorId: string,
+  id: string,
+  datos: DatosTarifaHoraExtra
+): Promise<TarifaHoraExtra> {
   const tarifa = await obtenerTarifaHoraExtra(id);
 
   if (await tarifaEstaEnUso(tarifa)) {
@@ -74,18 +92,47 @@ export async function editarTarifaHoraExtra(id: string, datos: DatosTarifaHoraEx
     throw new AppError(409, "Ya existe una tarifa de hora extra vigente desde esa fecha.");
   }
 
-  return prisma.tarifaHoraExtra.update({
-    where: { id },
-    data: { valor: new Prisma.Decimal(datos.valor), vigenteDesde },
+  return prisma.$transaction(async (tx) => {
+    const actualizada = await tx.tarifaHoraExtra.update({
+      where: { id },
+      data: { valor: new Prisma.Decimal(datos.valor), vigenteDesde },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "editar_tarifa_hora_extra",
+        entidad: "TarifaHoraExtra",
+        entidadId: id,
+        detalle: {
+          anterior: { valor: tarifa.valor.toString(), vigenteDesde: tarifa.vigenteDesde.toISOString().slice(0, 10) },
+          nuevo: { valor: actualizada.valor.toString(), vigenteDesde: datos.vigenteDesde },
+        },
+      },
+    });
+
+    return actualizada;
   });
 }
 
-export async function borrarTarifaHoraExtra(id: string): Promise<void> {
+export async function borrarTarifaHoraExtra(usuarioActorId: string, id: string): Promise<void> {
   const tarifa = await obtenerTarifaHoraExtra(id);
 
   if (await tarifaEstaEnUso(tarifa)) {
     throw new AppError(409, "No se puede borrar: esta tarifa ya fue usada en al menos una nómina generada.");
   }
 
-  await prisma.tarifaHoraExtra.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.tarifaHoraExtra.delete({ where: { id } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "borrar_tarifa_hora_extra",
+        entidad: "TarifaHoraExtra",
+        entidadId: id,
+        detalle: { valor: tarifa.valor.toString(), vigenteDesde: tarifa.vigenteDesde.toISOString().slice(0, 10) },
+      },
+    });
+  });
 }

@@ -78,7 +78,7 @@ async function verificarEncargadosValidos(encargadoIds: string[] | undefined): P
   }
 }
 
-export async function crearSeccion(datos: DatosAltaSeccion): Promise<Seccion> {
+export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSeccion): Promise<Seccion> {
   const obra = await prisma.obra.findUnique({ where: { id: datos.obraId } });
   if (!obra) {
     throw new AppError(404, "La obra indicada no existe.");
@@ -94,13 +94,27 @@ export async function crearSeccion(datos: DatosAltaSeccion): Promise<Seccion> {
   await verificarHorarioExiste(datos.horarioId);
   await verificarEncargadosValidos(datos.encargadoIds);
 
-  return prisma.seccion.create({
-    data: {
-      obraId: datos.obraId,
-      nombre: datos.nombre,
-      horarioId: datos.horarioId ?? null,
-      encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
-    },
+  return prisma.$transaction(async (tx) => {
+    const seccion = await tx.seccion.create({
+      data: {
+        obraId: datos.obraId,
+        nombre: datos.nombre,
+        horarioId: datos.horarioId ?? null,
+        encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "crear_seccion",
+        entidad: "Seccion",
+        entidadId: seccion.id,
+        detalle: { nombre: seccion.nombre, obraId: seccion.obraId },
+      },
+    });
+
+    return seccion;
   });
 }
 
@@ -119,7 +133,11 @@ export async function obtenerSeccion(id: string): Promise<Seccion> {
   return seccion;
 }
 
-export async function editarSeccion(id: string, datos: DatosEdicionSeccion): Promise<Seccion> {
+export async function editarSeccion(
+  usuarioActorId: string,
+  id: string,
+  datos: DatosEdicionSeccion
+): Promise<Seccion> {
   const seccion = await obtenerSeccion(id);
 
   const conflicto = await prisma.seccion.findUnique({
@@ -132,13 +150,27 @@ export async function editarSeccion(id: string, datos: DatosEdicionSeccion): Pro
   await verificarHorarioExiste(datos.horarioId);
   await verificarEncargadosValidos(datos.encargadoIds);
 
-  return prisma.seccion.update({
-    where: { id },
-    data: {
-      nombre: datos.nombre,
-      horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
-      encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
-    },
+  return prisma.$transaction(async (tx) => {
+    const actualizada = await tx.seccion.update({
+      where: { id },
+      data: {
+        nombre: datos.nombre,
+        horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
+        encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "editar_seccion",
+        entidad: "Seccion",
+        entidadId: id,
+        detalle: { nombre: actualizada.nombre },
+      },
+    });
+
+    return actualizada;
   });
 }
 
@@ -202,8 +234,8 @@ export async function obtenerResumenHoy(
   };
 }
 
-export async function borrarSeccion(id: string): Promise<void> {
-  await obtenerSeccion(id);
+export async function borrarSeccion(usuarioActorId: string, id: string): Promise<void> {
+  const seccion = await obtenerSeccion(id);
 
   const [enUsoAsistencias, enUsoAsignaciones, encargadosAsignados] = await Promise.all([
     prisma.asistenciaDiaria.count({ where: { seccionId: id } }),
@@ -218,5 +250,17 @@ export async function borrarSeccion(id: string): Promise<void> {
     );
   }
 
-  await prisma.seccion.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.seccion.delete({ where: { id } });
+
+    await tx.auditLog.create({
+      data: {
+        usuarioId: usuarioActorId,
+        accion: "borrar_seccion",
+        entidad: "Seccion",
+        entidadId: id,
+        detalle: { nombre: seccion.nombre },
+      },
+    });
+  });
 }

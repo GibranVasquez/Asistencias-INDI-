@@ -8,7 +8,7 @@ import {
 } from "../services/movimientoTrabajador.service";
 
 export async function crear(req: Request, res: Response): Promise<void> {
-  const movimiento = await crearMovimiento(req.body);
+  const movimiento = await crearMovimiento(req.user!.usuarioId, req.body);
   res.status(201).json({ movimiento });
 }
 
@@ -24,11 +24,11 @@ export async function obtener(req: Request, res: Response): Promise<void> {
 }
 
 export async function editar(req: Request, res: Response): Promise<void> {
-  const movimiento = await editarMovimiento(req.params.id as string, req.body);
+  const movimiento = await editarMovimiento(req.user!.usuarioId, req.params.id as string, req.body);
   res.json({ movimiento });
 }
 
 export async function borrar(req: Request, res: Response): Promise<void> {
-  await borrarMovimiento(req.params.id as string);
+  await borrarMovimiento(req.user!.usuarioId, req.params.id as string);
   res.status(204).send();
 }

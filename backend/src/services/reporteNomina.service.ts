@@ -135,3 +135,24 @@ export async function obtenerReporteNomina(desdeISO: string, hastaISO: string): 
 
   return { desde: desdeISO, hasta: hastaISO, resumen, porCategoria, porPeriodo };
 }
+
+// El reporte en sí no persiste nada (se genera al vuelo desde NominaSemanal),
+// así que no hay una escritura de dominio con la que emparejar este log en
+// una $transaction — se registra solo, igual que el resto de acciones
+// sensibles auditadas en este sistema.
+export async function registrarExportacionNomina(
+  usuarioActorId: string,
+  desde: string,
+  hasta: string,
+  formato: string
+): Promise<void> {
+  await prisma.auditLog.create({
+    data: {
+      usuarioId: usuarioActorId,
+      accion: "exportar_reporte_nomina",
+      entidad: "NominaSemanal",
+      entidadId: usuarioActorId,
+      detalle: { desde, hasta, formato },
+    },
+  });
+}
