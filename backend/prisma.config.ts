@@ -11,5 +11,6 @@ export default defineConfig({
     // fallan de inmediato con un error claro de conexión. El servidor Express
     // valida esta misma variable por separado en config/env.ts.
     url: process.env.DATABASE_URL!,
+    directUrl: process.env.DIRECT_URL!,
   },
 });
