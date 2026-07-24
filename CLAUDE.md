@@ -19,8 +19,9 @@ Commands below are grouped per package; run them from that package's directory.
 
 ```bash
 npm run dev              # ts-node-dev, auto-restart on change
-npm run build             # tsc -> dist/
+npm run build             # tsc -> dist/ (solo src/, ver nota de rootDir abajo)
 npm start                 # run compiled dist/index.js
+npm run typecheck:prisma  # tsc --noEmit aparte para prisma.config.ts + prisma/seed.ts
 npm run prisma:generate   # regenerate Prisma client after schema changes
 npm run prisma:migrate    # prisma migrate dev (creates + applies a migration)
 npm run prisma:studio     # Prisma Studio GUI
@@ -28,7 +29,17 @@ npm run seed               # ts-node prisma/seed.ts
 ```
 
 There is no test suite or lint config yet. `tsc` (via `npm run build`) is the
-only current form of static verification.
+main form of static verification, pero solo cubre `src/**/*.ts`: `rootDir`
+en `tsconfig.json` es `"src"` (no `"."`) para que `dist/` espeje `src/` 1:1
+y `dist/index.js` exista donde `"start"` lo espera — antes, con
+`rootDir: "."`, `tsc` compilaba a `dist/src/index.js` y `npm start` fallaba
+con "Cannot find module" (mismo criterio de `rootDir` que
+`Control_Grupo_INDIv2/backend`, el proyecto de referencia). Consecuencia:
+`prisma.config.ts` y `prisma/seed.ts` quedan fuera de ese `include`, así
+que tienen su propio chequeo de tipos aparte, `tsconfig.prisma.json`
+(`npm run typecheck:prisma`) — no se integra al build principal a
+propósito, pero sí hay que correrlo manualmente si se tocan esos dos
+archivos.
 
 ### Environment
 
@@ -37,6 +48,104 @@ Copy `backend/.env.example` to `backend/.env`. Required at boot (validated in
 `DATABASE_URL`, `JWT_SECRET`, `ALLOWED_ORIGIN`. `ADMIN_SEED_USERNAME` /
 `ADMIN_SEED_PASSWORD` are required only by `prisma/seed.ts` (first-run admin
 account; the seed never overwrites an existing user's password).
+
+**Postgres vive en Supabase** (proyecto administrado), no en un Postgres
+local — desde 2026-07-24. Dos variables de conexión, no una:
+`DATABASE_URL` (pooled, pgbouncer, puerto 6543 — la usa la app en runtime
+vía `@prisma/adapter-pg`) y `DIRECT_URL` (conexión directa, puerto 5432 —
+la usa solo el motor de migraciones de Prisma; pgbouncer en modo
+transacción no soporta los prepared statements que `migrate deploy`
+necesita). Ambas están declaradas en el `datasource` de `schema.prisma` y
+en `prisma.config.ts`. Nada más cambió: sigue siendo el mismo Express +
+Prisma + JWT propio de siempre — Supabase aquí es únicamente el proveedor
+del Postgres, no su Auth, ni sus políticas RLS, ni su SDK.
+
+**Región del proyecto de Supabase: `us-east-1` (AWS, N. Virginia, EE.UU.)**
+— visible en el host de ambas connection strings
+(`aws-0-us-east-1.pooler.supabase.com`). Relevante para cuando se retome
+la conversación pendiente de cumplimiento legal sobre dónde vive el dato
+biométrico (ver "Bloqueado" más abajo): hoy ese dato vive físicamente en
+EE.UU., no en México.
+
+Cosas a tener en cuenta si vuelves a tocar la conexión:
+- Si la contraseña de la base tiene caracteres especiales (`#`, `@`, etc.),
+  debe ir URL-encoded dentro de la connection string o el parseo de la URL
+  se rompe silenciosamente (un `#` sin encodear, por ejemplo, trunca todo
+  lo que sigue como si fuera un fragment de URL).
+- `src/utils/prisma.ts` fuerza `ssl: { rejectUnauthorized: true, ca: ... }`
+  en el adaptador, pinneando `certs/supabase-root-2021-ca.pem` ("Supabase
+  Root 2021 CA") como ancla de confianza explícita — el pooler de Supabase
+  presenta una cadena firmada por esa CA privada, que no está en el
+  almacén de CAs por default de Node, así que sin pinnearla
+  `rejectUnauthorized: true` solo falla con "self-signed certificate in
+  certificate chain". Es información pública (una CA raíz, no una
+  credencial), extraída y verificada contra la cadena real del pooler
+  (`openssl s_client -showcerts` + `openssl verify`) — no es un archivo de
+  terceros sin auditar, y sigue siendo válida contra ambos endpoints
+  (pooled y directo) porque los dos cuelgan de la misma CA. Verificado con
+  una prueba negativa real: sustituir ese `.pem` por un CA real pero de
+  otra autoridad (Google Trust Services) hace que la conexión falle con el
+  mismo error de validación de cadena — confirma que sí se está validando
+  de verdad, no ignorando el chequeo.
+- La ruta al `.pem` se resuelve con `__dirname` (no `process.cwd()`, que
+  depende de desde dónde se lanza el proceso, no de dónde vive el
+  archivo — se rompería con un gestor de procesos o contenedor que use un
+  working directory distinto a `backend/`). Con `rootDir: "src"` en
+  `tsconfig.json` (ver más abajo), `dist/` espeja `src/` 1:1, así que este
+  archivo vive en `src/utils/` en dev y en `dist/utils/` en el build
+  compilado — misma profundidad relativa a `backend/` en los dos casos,
+  por eso `../../certs/...` desde `__dirname` llega a `backend/certs/` en
+  ambos entornos sin necesitar detectar en cuál se está corriendo.
+
+### Despliegue (Railway)
+
+Preparado pero **no conectado todavía** (ver "Bloqueado" más abajo — el
+despliegue real sigue pendiente). `PORT` ya se lee de `process.env.PORT`
+(con fallback a 4000 solo para dev local); `GET /health` existe y está
+excluido del rate limiter general para que un healthcheck de
+infraestructura no cuente contra el cupo de un usuario/IP real.
+
+**Migraciones: manuales, no automáticas en el build/release de Railway.**
+Se corre `npx prisma migrate deploy` desde una máquina de desarrollo
+apuntando a la base de producción (Supabase) — mismo patrón que se usó
+para la migración inicial a Supabase — y Railway solo arranca el server
+ya migrado. Decisión explícita, no la única opción: automatizarlo
+(`"start": "prisma migrate deploy && node dist/index.js"` en Railway) es
+más cómodo y evita el riesgo de "se me olvidó correrla", pero como este es
+el primer despliegue real del proyecto (sin ambiente de staging donde
+probar el pipeline primero), se prefirió mantener el control manual por
+ahora. Si el proyecto crece (más gente tocando el schema, deploys más
+frecuentes), vale la pena reconsiderar esto.
+
+**Checklist antes de cada deploy que incluya una migración nueva:**
+1. Correr `npx prisma migrate deploy` desde tu máquina (con `.env` apuntando
+   a `DATABASE_URL`/`DIRECT_URL` de producción) — **antes** de hacer push
+   del código que depende del schema nuevo.
+2. Confirmar que corrió limpio (`Database schema is up to date!`) antes de
+   dejar que Railway despliegue el código.
+
+**Variables de entorno a configurar en Railway** (`src/config/env.ts` +
+grep de `process.env` en `src/`): `DATABASE_URL`, `JWT_SECRET`,
+`ALLOWED_ORIGIN` (requeridas al boot); `NODE_ENV=production` (no la exige
+`env.ts`, pero gatea los rate limits estrictos en `middlewares/rateLimit.ts`
+— sin ponerla, el server corre con los límites pensados para desarrollo);
+`JWT_EXPIRES_IN` (opcional, default `"1d"`). **`DIRECT_URL` no hace falta
+en Railway** con el flujo manual de arriba — solo la usa la CLI de Prisma
+desde la máquina de desarrollo, nunca el proceso Express en runtime.
+
+**CORS y clientes Electron:** `ALLOWED_ORIGIN` no protege al cliente de
+escritorio real. Verificado empíricamente (build empaquetado real,
+`file://`, sin dev server): un fetch desde ahí no manda header `Origin` en
+absoluto, así que el navegador (Chromium embebido) no tiene nada contra
+qué comparar la respuesta — no aplica ninguna restricción sin importar el
+valor configurado. El middleware `cors` con un string fijo en `origin`
+tampoco valida nada del lado servidor: siempre responde con ese mismo
+valor en `Access-Control-Allow-Origin`, sea cual sea el `Origin` entrante
+(ver `node_modules/cors/lib/index.js`, función `configureOrigin`) — es el
+navegador quien hace el bloqueo real. Esta variable solo importa como
+defensa-en-profundidad contra un navegador de verdad accediendo a la API
+(no hay ningún cliente web legítimo en producción); un valor que nunca
+vaya a coincidir con un origen real basta.
 
 ## Architecture
 
@@ -207,12 +316,46 @@ movimiento/tarifas de hora extra — the last one append-only —
 movimientos/nóminas/usuarios/terminales), attendance kiosk endpoint
 (`POST /asistencias`), the daily seccion assignment module
 (`AsignacionDiaria` + `/asignaciones` + `GET /secciones/:id/hoy` real-time
-presente/ausente view), and read-only Terminal access to
-secciones/horarios. Payroll calculation logic works but `TarifaHoraExtra`
-is deliberately unseeded (no confirmed real value yet).
+presente/ausente view), read-only Terminal access to secciones/horarios,
+and audit logging (`AuditLog`) covering every sensitive write across
+usuarios/terminales/asignaciones/nóminas/trabajadores/horarios/secciones/tipos
+de movimiento/tarifas de hora extra, plus financial report exports
+(`GET /reportes/nomina/exportar`). Trabajador edits log only which field
+*names* changed, never sueldo/banco/clabe values, so an `administrador`
+(who can read `/auditoria` but not `/trabajadores`, rh-only) can't recover
+payroll data through the audit trail.
 
-Frontend has Login + Kiosco built and working end-to-end against the real
-API (see the Frontend section above). Not yet built: Dashboard,
-Asistencias/Residentes, Encargado de sección, Nómina RH, Usuarios y
-accesos, Configuración/Reportes screens — in that order — plus
-`electron-builder` packaging and ZKTeco Horus E1-FP hardware integration.
+Frontend has all 9 planned screens built and working end-to-end against
+the real API: Login, Kiosco, Dashboard, Trabajadores, Asistencias,
+Encargado de sección, Nómina RH, Usuarios y accesos, Configuración,
+Reportes — plus `electron-builder` Windows (NSIS) packaging. Not yet done:
+ZKTeco Horus E1-FP (or alternative) hardware integration — see
+"Bloqueado" below.
+
+As of 2026-07-23 a full closing-pass regression (all 9 screens, each
+relevant role) found 0 bugs, and a repo-wide TODO/FIXME/"temporal" sweep
+found nothing unresolved. `TarifaHoraExtra` has a loaded value ($90.00/hora
+desde 2026-01-01) but it's leftover test data from an earlier session —
+**not yet confirmed by the client as the real rate**; don't treat it as
+authoritative for actual payroll without that confirmation.
+
+## Bloqueado — fuera del alcance de este repositorio
+
+Estos puntos no se resuelven con código en este repo; requieren una
+decisión, ejecución o insumo externo del usuario/cliente:
+
+- **Integración de hardware biométrico real** — pendiente decisión final
+  entre S922+hotspot 4G vs. lector Horus E1-FP.
+- **Verificación de safeStorage en Windows real** — ver
+  `frontend/QA_SAFESTORAGE_WINDOWS.md`; requiere que el usuario lo corra
+  en una máquina Windows real (Wine no cuenta). No cerrar este punto
+  hasta que el usuario marque esa lista.
+- **SDK del lector de huella para el kiosco fijo de oficina** — nunca
+  confirmado.
+- **Cumplimiento legal / ubicación de almacenamiento de datos
+  biométricos** — pendiente de asesoría legal externa.
+- **Datos operativos reales de RH** — horario real de campo, nombres de
+  encargados de sección, y confirmación de si existen más obras además
+  de Tren Golfo de México.
+- **Despliegue real del backend a producción** — sigue corriendo solo en
+  local; no hay ambiente de producción todavía.

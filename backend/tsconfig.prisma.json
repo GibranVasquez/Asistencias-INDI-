@@ -1,0 +1,15 @@
+{
+  // Chequeo de tipos aparte para los dos .ts que tsconfig.json (rootDir:"src")
+  // dejó fuera de su include: prisma.config.ts y prisma/seed.ts. Ninguno pasa
+  // por el build de dist/ (Prisma CLI carga prisma.config.ts con su propio
+  // loader; `npm run seed` corre prisma/seed.ts vía ts-node directo), pero
+  // ambos siguen mereciendo verificación estática — prisma.config.ts define
+  // cómo se conecta la app a la base real, y seed.ts toca el roster real de
+  // 137 trabajadores. Correr con: npm run typecheck:prisma.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["prisma.config.ts", "prisma/seed.ts"]
+}

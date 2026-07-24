@@ -3,7 +3,7 @@
     "target": "es2022",
     "module": "commonjs",
     "lib": ["es2022"],
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
@@ -13,6 +13,17 @@
     "sourceMap": true,
     "declaration": false
   },
-  "include": ["src", "prisma", "prisma.config.ts"],
+  // rootDir:"src" (no "."): dist/ debe mirror solo src/, para que
+  // dist/index.js exista donde "start" en package.json lo espera. Antes,
+  // con rootDir:"." + include de "prisma"/"prisma.config.ts", tsc
+  // compilaba a dist/src/index.js (un nivel de más) y "npm start" fallaba
+  // con "Cannot find module". prisma.config.ts y prisma/seed.ts quedan
+  // fuera del build/typecheck de tsc — mismo criterio que
+  // Control_Grupo_INDIv2/backend (el proyecto de referencia): se verifican
+  // al ejecutarse de verdad vía `ts-node` (prisma migrate/seed usan su
+  // propio loader, no pasan por dist/), no por este tsc --noEmit. Su propio
+  // chequeo de tipos vive aparte en tsconfig.prisma.json
+  // (`npm run typecheck:prisma`), para no perder cobertura del todo.
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
