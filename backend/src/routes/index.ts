@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { admsRouter } from "./adms.routes";
 import { asignacionRouter } from "./asignacion.routes";
 import { asistenciaRouter } from "./asistencia.routes";
 import { auditoriaRouter } from "./auditoria.routes";
@@ -19,6 +20,10 @@ export const router = Router();
 router.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+// Sin prefijo: las rutas /iclock/* las fija el firmware del equipo ADMS,
+// no son elegibles de nuestro lado (ver adms.routes.ts).
+router.use(admsRouter);
 
 router.use("/auth", authRouter);
 router.use("/auditoria", auditoriaRouter);

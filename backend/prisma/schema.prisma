@@ -138,6 +138,13 @@ model Trabajador {
   infonavitMontoPorPeriodo Decimal?          @map("infonavit_monto_por_periodo") @db.Decimal(12, 2)
   huellaRegistrada         Boolean           @default(false) @map("huella_registrada")
   rostroRegistrado         Boolean           @default(false) @map("rostro_registrado")
+  // ID numérico con el que la persona se enroló en un lector biométrico
+  // ADMS (ZKTeco MB10-VL de oficina) — nullable porque no todos los
+  // trabajadores se enrolan ahí (el roster de campo original no traía
+  // este dato, y el enrolamiento en sí ocurre en el equipo, no aquí). RH
+  // lo captura a mano para que coincida con el PIN real usado al enrolar
+  // a esa persona en el equipo — ver adms.service.ts.
+  numeroChecador           Int?              @unique @map("numero_checador")
   estatus                  TrabajadorEstatus @default(activo)
   creadoEn                 DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
 
@@ -347,17 +354,54 @@ model Terminal {
   // dado de alta y autorizado a operar; estadoConexion es su conectividad
   // momentánea (heartbeat/sincronización).
   activo               Boolean                @default(true)
-  // Texto libre a proposito: el hardware de campo (ZKTeco Horus E1-FP) y el
-  // lector fijo de oficina aun no tienen un SDK/protocolo unico confirmado.
+  // Texto libre a proposito: el hardware de campo (ZKTeco Horus E1-FP) aun
+  // no tiene protocolo confirmado. El lector fijo de oficina (ZKTeco
+  // MB10-VL) sí quedó confirmado — protocolo ADMS — y usa tipo="adms" para
+  // que adms.service.ts sepa que este Terminal no tiene sesión JWT propia
+  // (nunca hace login-terminal; el equipo no habla nuestro protocolo de
+  // auth en absoluto), sino que se identifica por numeroSerie en cada
+  // petición ADMS.
   tipo                 String
   ubicacion            String
+  // Número de serie real del equipo — solo aplica a terminales tipo="adms"
+  // (el protocolo ADMS no tiene autenticación propia; validar el SN contra
+  // este campo es la única verificación de "es un equipo que nosotros
+  // dimos de alta", no una autenticación fuerte — ver adms.service.ts y
+  // CLAUDE.md para el resto de la mitigación real, que es de red).
+  numeroSerie          String?                @unique @map("numero_serie")
   estadoConexion       EstadoConexionTerminal @default(desconectado) @map("estado_conexion")
   ultimaSincronizacion DateTime?              @map("ultima_sincronizacion") @db.Timestamptz(6)
   creadoEn             DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
 
-  asistencias AsistenciaDiaria[]
+  asistencias           AsistenciaDiaria[]
+  eventosNoReconciliados EventoNoReconciliado[]
 
   @@map("terminales")
+}
+
+// Un push ADMS cuyo PIN no coincide con ningun Trabajador.numeroChecador —
+// no se descarta en silencio ni se inventa un Trabajador: queda aqui para
+// que RH lo revise y, si hace falta, complete el numeroChecador que falta
+// (typo al capturarlo, alguien se enroló en el equipo antes de que RH lo
+// diera de alta en el sistema, etc.).
+model EventoNoReconciliado {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  terminalId     String   @map("terminal_id") @db.Uuid
+  // Texto, no Int: el PIN tal cual lo mandó el equipo — no vale la pena
+  // que un PIN no-numerico (formato distinto en otro modelo/firmware)
+  // tumbe la reconciliacion en vez de solo quedar sin poder resolverse.
+  pinDispositivo String   @map("pin_dispositivo")
+  marcadoEn      DateTime @map("marcado_en") @db.Timestamptz(6)
+  // Codigo de metodo de verificacion tal cual vino (0/1/2/4/15/...), sin
+  // mapear — el mapeo a huella/rostro puede no cubrir todos los valores
+  // reales que el equipo mande.
+  metodoCrudo    String   @map("metodo_crudo")
+  creadoEn       DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  terminal Terminal @relation(fields: [terminalId], references: [id])
+
+  @@index([terminalId], map: "idx_eventos_no_reconciliados_terminal")
+  @@map("eventos_no_reconciliados")
 }
 
 // ---------------------------------------------------------------------

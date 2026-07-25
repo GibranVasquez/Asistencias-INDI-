@@ -29,6 +29,7 @@ function validarCamposOpcionales(body: Record<string, unknown>): string | null {
     infonavitMontoPorPeriodo,
     huellaRegistrada,
     rostroRegistrado,
+    numeroChecador,
     estatus,
   } = body;
 
@@ -68,6 +69,9 @@ function validarCamposOpcionales(body: Record<string, unknown>): string | null {
   }
   if (rostroRegistrado !== undefined && typeof rostroRegistrado !== "boolean") {
     return "rostroRegistrado debe ser true o false.";
+  }
+  if (numeroChecador !== undefined && numeroChecador !== null && !esEnteroNoNegativo(numeroChecador)) {
+    return "numeroChecador debe ser un entero mayor o igual a 0.";
   }
 
   return null;

@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { listarAsistencias, registrarAsistencia } from "../services/asistencia.service";
+import {
+  listarAsistencias,
+  obtenerAsistenciaMasRecienteDeTerminal,
+  registrarAsistencia,
+} from "../services/asistencia.service";
 
 export async function registrar(req: Request, res: Response): Promise<void> {
   const { trabajadorId, ...datos } = req.body;
@@ -7,6 +11,11 @@ export async function registrar(req: Request, res: Response): Promise<void> {
 
   const asistencia = await registrarAsistencia(trabajadorId, terminalOrigenId, datos);
   res.status(201).json({ asistencia });
+}
+
+export async function reciente(_req: Request, res: Response): Promise<void> {
+  const asistencia = await obtenerAsistenciaMasRecienteDeTerminal();
+  res.json({ asistencia });
 }
 
 export async function listar(req: Request, res: Response): Promise<void> {

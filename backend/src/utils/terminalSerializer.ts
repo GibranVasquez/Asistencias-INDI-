@@ -9,6 +9,7 @@ export interface TerminalPublico {
   username: string;
   tipo: string;
   ubicacion: string;
+  numeroSerie: string | null;
   activo: boolean;
   estadoConexion: string;
 }
@@ -19,6 +20,7 @@ export function serializarTerminal(terminal: Terminal): TerminalPublico {
     username: terminal.username,
     tipo: terminal.tipo,
     ubicacion: terminal.ubicacion,
+    numeroSerie: terminal.numeroSerie,
     activo: terminal.activo,
     estadoConexion: terminal.estadoConexion,
   };

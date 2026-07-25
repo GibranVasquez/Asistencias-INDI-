@@ -14,7 +14,11 @@ const PASSWORD_DEV_INSEGURA = "1234";
 const RONDAS_BCRYPT = 10;
 
 const OBRA_NOMBRE = "Tren Golfo de México";
-const SECCIONES = ["Topografía", "Terracerías", "Estructuras", "Pavimentos"];
+// "Oficina" (además de las 4 de campo): agrupa al personal que marca en el
+// lector ADMS de oficina (ZKTeco MB10-VL) — ninguna de las 4 secciones de
+// campo le corresponde a alguien que nunca pisa la obra. Usa el mismo
+// Horario "Oficina" ya sembrado abajo (vincularSeccionesAHorario).
+const SECCIONES = ["Topografía", "Terracerías", "Estructuras", "Pavimentos", "Oficina"];
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });

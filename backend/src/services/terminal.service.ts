@@ -10,6 +10,7 @@ export interface DatosAltaTerminal {
   password: string;
   tipo: string;
   ubicacion: string;
+  numeroSerie?: string | null;
 }
 
 export async function listarTerminales(): Promise<TerminalPublico[]> {
@@ -23,6 +24,13 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
     throw new AppError(409, "Ya existe un terminal con ese username.");
   }
 
+  if (datos.numeroSerie) {
+    const conNumeroSerie = await prisma.terminal.findUnique({ where: { numeroSerie: datos.numeroSerie } });
+    if (conNumeroSerie) {
+      throw new AppError(409, "Ya existe un terminal dado de alta con ese número de serie.");
+    }
+  }
+
   const passwordHash = await bcrypt.hash(datos.password, RONDAS_BCRYPT);
 
   const terminal = await prisma.$transaction(async (tx) => {
@@ -32,6 +40,7 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
         passwordHash,
         tipo: datos.tipo,
         ubicacion: datos.ubicacion,
+        numeroSerie: datos.numeroSerie ?? null,
       },
     });
 

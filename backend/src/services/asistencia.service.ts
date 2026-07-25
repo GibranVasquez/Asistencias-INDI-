@@ -77,6 +77,34 @@ export async function registrarAsistencia(
 }
 
 /**
+ * Para la pantalla de confirmación del Kiosco (modo ADMS, ver
+ * KioscoPage.tsx): hace polling de "¿hubo una marcación nueva del lector
+ * ADMS?". NO se filtra por el terminalId de quien pregunta (el Kiosco que
+ * hace polling) — la marcación real la registra el equipo ADMS físico
+ * (un Terminal tipo="adms" *distinto* al Kiosco que la muestra), así que
+ * filtrar por el terminalId del propio Kiosco nunca encontraría nada.
+ * Se filtra por tipo="adms" en su lugar: correcto mientras haya un solo
+ * lector ADMS de oficina (el caso real hoy) — si algún día hay más de
+ * uno, esto necesitaría un vínculo explícito Kiosco↔lector, no solo
+ * "cualquier ADMS".
+ */
+export async function obtenerAsistenciaMasRecienteDeTerminal(): Promise<AsistenciaListada | null> {
+  const registro = await prisma.asistenciaDiaria.findFirst({
+    where: { terminalOrigen: { tipo: "adms" } },
+    include: {
+      trabajador: { select: { nombreCompleto: true } },
+      seccion: { select: { nombre: true } },
+    },
+    orderBy: { creadoEn: "desc" },
+  });
+
+  if (!registro) return null;
+
+  const { trabajador, seccion, ...resto } = registro;
+  return { ...resto, trabajadorNombre: trabajador.nombreCompleto, seccionNombre: seccion.nombre };
+}
+
+/**
  * encargado_seccion no tiene un scoping implicito como rh (que ve todo) —
  * debe mandar un seccionId, y tiene que ser una de las suyas
  * (verificarAccesoSeccion), sin importar que mas venga en el filtro. Sin

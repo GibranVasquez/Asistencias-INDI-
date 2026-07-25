@@ -16,6 +16,10 @@ export interface DatosAltaTrabajador {
   infonavitMontoPorPeriodo?: number | null;
   huellaRegistrada?: boolean;
   rostroRegistrado?: boolean;
+  // PIN con el que esta persona se enroló en un lector ADMS (ZKTeco
+  // MB10-VL de oficina) — ver adms.service.ts. RH lo captura a mano para
+  // que coincida con lo que el equipo reporta.
+  numeroChecador?: number | null;
 }
 
 export interface DatosEdicionTrabajador extends Partial<DatosAltaTrabajador> {
@@ -42,6 +46,7 @@ function datosAltaParaPrisma(datos: DatosAltaTrabajador): Prisma.TrabajadorCreat
       datos.infonavitMontoPorPeriodo != null ? new Prisma.Decimal(datos.infonavitMontoPorPeriodo) : null,
     huellaRegistrada: datos.huellaRegistrada ?? false,
     rostroRegistrado: datos.rostroRegistrado ?? false,
+    numeroChecador: datos.numeroChecador ?? null,
   };
 }
 
@@ -72,11 +77,22 @@ function datosEdicionParaPrisma(datos: DatosEdicionTrabajador): Prisma.Trabajado
   }
   if (datos.huellaRegistrada !== undefined) data.huellaRegistrada = datos.huellaRegistrada;
   if (datos.rostroRegistrado !== undefined) data.rostroRegistrado = datos.rostroRegistrado;
+  if (datos.numeroChecador !== undefined) data.numeroChecador = datos.numeroChecador;
 
   return data;
 }
 
+async function verificarNumeroCheckadorDisponible(numeroChecador: number | null | undefined, idAExcluir?: string): Promise<void> {
+  if (numeroChecador == null) return;
+  const existente = await prisma.trabajador.findUnique({ where: { numeroChecador } });
+  if (existente && existente.id !== idAExcluir) {
+    throw new AppError(409, "Ya existe otro trabajador con ese número de checador.");
+  }
+}
+
 export async function crearTrabajador(usuarioActorId: string, datos: DatosAltaTrabajador): Promise<Trabajador> {
+  await verificarNumeroCheckadorDisponible(datos.numeroChecador);
+
   return prisma.$transaction(async (tx) => {
     const trabajador = await tx.trabajador.create({ data: datosAltaParaPrisma(datos) });
 
@@ -133,6 +149,7 @@ export async function editarTrabajador(
   datos: DatosEdicionTrabajador
 ): Promise<Trabajador> {
   await obtenerTrabajador(id);
+  await verificarNumeroCheckadorDisponible(datos.numeroChecador, id);
 
   const camposEditados = Object.keys(datos).filter((k) => (datos as Record<string, unknown>)[k] !== undefined);
 
