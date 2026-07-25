@@ -93,10 +93,12 @@ resource "aws_apprunner_service" "backend" {
         # process.env.PORT - se le pasa el mismo valor configurado como
         # puerto del contenedor para que ambos queden consistentes.
         runtime_environment_variables = {
-          NODE_ENV       = var.node_env
-          ALLOWED_ORIGIN = var.allowed_origin
-          JWT_EXPIRES_IN = var.jwt_expires_in
-          PORT           = tostring(var.container_port)
+          NODE_ENV                = var.node_env
+          ALLOWED_ORIGIN          = var.allowed_origin
+          JWT_EXPIRES_IN          = var.jwt_expires_in
+          JWT_EXPIRES_IN_TERMINAL = var.jwt_expires_in_terminal
+          ADMS_IPS_PERMITIDAS     = var.adms_ips_permitidas
+          PORT                    = tostring(var.container_port)
         }
 
         # DIRECT_URL apunta al mismo secret que DATABASE_URL a proposito -

@@ -74,6 +74,7 @@ Copiar `terraform/terraform.tfvars.example` → `terraform/terraform.tfvars`
 | `aws_region` | Decisión del usuario — candidata razonable: `us-east-1` (misma región que Supabase hoy, para minimizar latencia si hay una ventana de doble-escritura durante la migración de datos) |
 | `vpc_id` | De la VPC creada en el paso 1 |
 | `private_subnet_ids` | De las subnets privadas del paso 1 (mínimo 2) |
+| `adms_ips_permitidas` | IP pública real de la oficina de Grupo INDI (donde vive el MB10-VL) — sin default, ver sección ADMS en el CLAUDE.md principal para el porqué |
 
 El resto de variables (`db_instance_class`, `apprunner_cpu`,
 `allowed_origin`, etc.) ya tienen defaults razonables en `variables.tf` —
@@ -154,12 +155,14 @@ hay que configurarlas a mano en ninguna consola:
 | `JWT_SECRET` | Secrets Manager, generado por Terraform (`random_password`, nunca escrito a mano) |
 | `NODE_ENV` | `"production"` (variable `node_env`) |
 | `ALLOWED_ORIGIN` | Placeholder por default (ver `terraform/README.md` — no protege al cliente Electron real de todos modos) |
-| `JWT_EXPIRES_IN` | `"1d"` por default |
+| `JWT_EXPIRES_IN` | `"8h"` por default |
+| `JWT_EXPIRES_IN_TERMINAL` | `"30d"` por default |
+| `ADMS_IPS_PERMITIDAS` | Sale de `var.adms_ips_permitidas` — **este SÍ hay que llenarlo con la IP pública real de la oficina** (ver paso 3), no tiene un placeholder seguro como `allowed_origin`: sin él, `/iclock/*` rechaza todo en producción (fail-closed) |
 | `PORT` | Igual al puerto configurado del contenedor (`container_port`, default 4000) |
 
 Lo único que el usuario sigue teniendo que decidir/llenar a mano es lo del
-paso 3 (`aws_region`, `vpc_id`, `private_subnet_ids`) — el resto sale del
-`apply`.
+paso 3 (`aws_region`, `vpc_id`, `private_subnet_ids`, `adms_ips_permitidas`)
+— el resto sale del `apply`.
 
 ## 8. Migración de datos real (el último paso, no el primero)
 

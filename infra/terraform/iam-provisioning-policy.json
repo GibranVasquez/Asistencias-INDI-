@@ -105,7 +105,30 @@
         "apprunner:CreateAutoScalingConfiguration",
         "apprunner:DeleteAutoScalingConfiguration",
         "apprunner:DescribeAutoScalingConfiguration",
-        "apprunner:ListAutoScalingConfigurations"
+        "apprunner:ListAutoScalingConfigurations",
+        "apprunner:AssociateWebAcl",
+        "apprunner:DisassociateWebAcl",
+        "apprunner:DescribeWebAclForService"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "WAFParaEndpointADMS",
+      "Effect": "Allow",
+      "Action": [
+        "wafv2:CreateWebACL",
+        "wafv2:DeleteWebACL",
+        "wafv2:UpdateWebACL",
+        "wafv2:GetWebACL",
+        "wafv2:ListWebACLs",
+        "wafv2:CreateIPSet",
+        "wafv2:DeleteIPSet",
+        "wafv2:UpdateIPSet",
+        "wafv2:GetIPSet",
+        "wafv2:TagResource",
+        "wafv2:AssociateWebACL",
+        "wafv2:DisassociateWebACL",
+        "wafv2:GetWebACLForResource"
       ],
       "Resource": "*"
     },

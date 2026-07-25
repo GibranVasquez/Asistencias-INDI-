@@ -129,9 +129,14 @@ grep de `process.env` en `src/`): `DATABASE_URL`, `JWT_SECRET`,
 `ALLOWED_ORIGIN` (requeridas al boot); `NODE_ENV=production` (no la exige
 `env.ts`, pero gatea los rate limits estrictos en `middlewares/rateLimit.ts`
 — sin ponerla, el server corre con los límites pensados para desarrollo);
-`JWT_EXPIRES_IN` (opcional, default `"1d"`). **`DIRECT_URL` no hace falta
-en Railway** con el flujo manual de arriba — solo la usa la CLI de Prisma
-desde la máquina de desarrollo, nunca el proceso Express en runtime.
+`JWT_EXPIRES_IN` (opcional, default `"8h"`), `JWT_EXPIRES_IN_TERMINAL`
+(opcional, default `"30d"`). **`ADMS_IPS_PERMITIDAS` requerida en
+producción si el lector ADMS de oficina va a usarse** (ver sección ADMS
+arriba) — sin ella, `NODE_ENV=production` hace que `/iclock/*` rechace
+todo por diseño (fail-closed), no es opcional como las demás. **`DIRECT_URL`
+no hace falta en Railway** con el flujo manual de arriba — solo la usa la
+CLI de Prisma desde la máquina de desarrollo, nunca el proceso Express en
+runtime.
 
 **CORS y clientes Electron:** `ALLOWED_ORIGIN` no protege al cliente de
 escritorio real. Verificado empíricamente (build empaquetado real,
@@ -274,7 +279,10 @@ recorded per attendance entry, not fixed on the worker), `Horario`
 events — incapacidad, vacaciones, suspensión, etc. — this is the single
 source of truth for those states, not `Trabajador.estatus`, which only
 tracks `activo | baja | becario`), `NominaSemanal` + `TarifaHoraExtra`
-(weekly payroll), `Terminal` (biometric kiosks), `AuditLog`.
+(weekly payroll), `Terminal` (biometric kiosks — includes both JWT-based
+kiosks and ADMS-type readers, see the ADMS section below), `AuditLog`,
+`EventoNoReconciliado` (marcaciones ADMS cuyo PIN no coincide con ningún
+`Trabajador.numeroChecador` — ver sección ADMS).
 
 Conventions used throughout the schema — follow them for any new model:
 - `id String @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))` —
@@ -291,7 +299,8 @@ Conventions used throughout the schema — follow them for any new model:
   the same for the app at runtime via `@prisma/adapter-pg`.
 
 `prisma/seed.ts` is idempotent (`upsert` throughout) and safe to re-run: it
-seeds the Obra/Secciones, a placeholder office `Horario`, the
+seeds the Obra/Secciones (including "Oficina", added 2026-07-25 for the
+ADMS reader — see below), a placeholder office `Horario`, the
 `TipoMovimiento` catalog, the real worker roster
 (`prisma/seed-data/roster_enrolamiento_tren_golfo.json`), and one account per
 role for local testing. `TarifaHoraExtra` is deliberately left unseeded
@@ -390,6 +399,149 @@ sección/turno config from live data instead of a hardcoded value — every
 other verb on those routers (`POST`/`PATCH`/`DELETE`) is still strictly
 `rol=rh` only.
 
+### ADMS — lector biométrico ZKTeco MB10-VL (oficina)
+
+Segunda fuente de asistencia, distinta del Kiosco Electron: un equipo
+físico de fábrica (Linux + firmware propio de ZKTeco, el trabajador nunca
+ve nuestra app) que sincroniza vía el protocolo **ADMS** ("push protocol")
+sobre HTTP plano. Preparado y probado con peticiones ADMS simuladas
+(`curl`, imitando el formato real) — **no verificado todavía contra el
+equipo físico**, que no está conectado aún (ver "Bloqueado" más abajo).
+
+**El protocolo no tiene spec pública oficial** — lo que sigue está
+reconstruido de varias implementaciones de terceros (Go, PHP, colecciones
+de Postman), no de documentación de ZKTeco:
+
+- `GET /iclock/cdata?SN=<serie>&options=all` — handshake al conectar.
+  Responde texto plano (no JSON) con `ATTLOGStamp`/`OPERLOGStamp`/etc. —
+  `generarRespuestaHandshake` (`adms.service.ts`) siempre responde `None`
+  en esos Stamp ("no he recibido nada"), lo cual es correcto para un
+  equipo nuevo, pero si en producción el equipo reconecta seguido podría
+  reenviar todo su backlog cada vez. **Precisión sobre qué tan cubierto
+  está esto** (verificado en vivo, no solo en teoría): un reenvío del
+  mismo backlog **no genera duplicados ni pierde datos** —
+  `yaExisteAsistencia` y `yaExisteEventoNoReconciliado` (`adms.service.ts`)
+  detectan el mismo PIN+fecha+hora ya procesado sin importar cuántas veces
+  se repita, para los dos caminos (reconciliado y no reconciliado).
+  Confirmado reenviando el mismo lote ATTLOG 2 y 3 veces seguidas: la
+  segunda y tercera vez se cuentan como "duplicados", sin crear filas
+  nuevas. Lo único que esto NO evita es procesamiento redundante — si el
+  equipo reenvía un backlog grande en cada reconexión, cada línea se
+  vuelve a parsear y buscar en BD para confirmar que ya existe (costo de
+  eficiencia, no un hueco de integridad de datos). Persistir el último
+  Stamp real por terminal evitaría ese costo, pero es una optimización
+  pendiente, no una corrección de un bug.
+- `POST /iclock/cdata?SN=<serie>&table=ATTLOG&Stamp=<n>` — el equipo
+  empuja marcaciones nuevas. Cuerpo tab-separated, una línea por
+  marcación: `PIN\tYYYY-MM-DD HH:MM:SS\tstatus\tverify\t...`. `status`
+  (entrada/salida) no se usa — este sistema ya calcula eso vía
+  sección+horario. `verify` (método) se mapea con `1=huella, 15=rostro`
+  (`MAPA_METODO_VERIFY`, `adms.service.ts`) — la convención más citada
+  entre las fuentes revisadas, **no confirmada contra el MB10-VL real**;
+  un código no mapeado cae a "huella" por default (con `console.warn` del
+  código crudo) en vez de perder la marcación.
+- `GET /iclock/getrequest` / `POST /iclock/devicecmd` — el equipo
+  pregunta por comandos pendientes / confirma haberlos ejecutado. Siempre
+  respondemos "no hay nada" — nunca le mandamos comandos al equipo.
+- Todas las respuestas son texto plano (`res.type("text/plain")`), nunca
+  JSON — por eso este endpoint vive fuera del router JSON normal
+  (`src/routes/adms.routes.ts`, montado sin prefijo en
+  `src/routes/index.ts`: las rutas `/iclock/*` las fija el firmware, no
+  son elegibles de nuestro lado).
+
+**Autenticación: el protocolo no tiene ninguna.** Revisado en varias
+implementaciones de terceros — ni token, ni API key, ni header de auth.
+El `SN` (número de serie) viaja en texto plano y es trivialmente
+falsificable por cualquiera que lo conozca (visible en la etiqueta física
+del equipo). `resolverTerminalPorSN` (`adms.service.ts`) valida el SN
+contra `Terminal.numeroSerie` — **esto NO es autenticación real**, solo
+confirma "es un equipo que nosotros dimos de alta".
+
+**Mitigación real, explícita, en dos capas** (el backend va a vivir en AWS,
+público — "protección de red" no basta dejarlo implícito):
+
+1. **Aplicación** (`middlewares/restringirPorIP.ts`, capa principal):
+   `ADMS_IPS_PERMITIDAS` (env var, IPs separadas por coma) — `req.ip` debe
+   estar en la lista o se rechaza con 403 antes de llegar siquiera a
+   `resolverTerminalPorSN`. Funciona en cualquier plataforma de despliegue
+   (Railway o AWS — la decisión entre las dos sigue sin tomarse, ver
+   "Despliegue" arriba), a diferencia de una mitigación solo de
+   infraestructura, que quedaría atada a una sola. **Fail-closed en
+   producción**: si `NODE_ENV=production` y la variable no está
+   configurada, se rechaza TODO /iclock/* (no se asume "sin lista,
+   dejar pasar" como seguro). Fuera de producción, si se omite, no
+   bloquea (para no exigir configurarla en cada entorno de desarrollo) —
+   pero si sí está configurada, se respeta igual fuera de producción.
+   Requirió corregir algo que no existía: `app.set("trust proxy", 1)`
+   (`app.ts`) — sin esto, `req.ip` mostraría la IP del balanceador
+   administrado de Railway/App Runner, no la del cliente real, una vez
+   desplegado (afecta también al keying por IP del rate limiter general,
+   mismo bug latente, corregido de paso). Verificado en vivo con las 4
+   combinaciones: sin configurar en dev (deja pasar), configurada con IP
+   que no coincide (rechaza), configurada con la IP real del cliente
+   (deja pasar), sin configurar en producción simulada (rechaza todo).
+2. **Infraestructura** (`infra/terraform/waf.tf`, capa adicional,
+   específica de AWS): un Web ACL de WAF asociado directamente al
+   servicio de App Runner (confirmado que esto es posible sin CloudFront
+   ni cambiar de arquitectura — un servicio *público* de App Runner sí
+   soporta reglas de IP origen vía WAF; la limitación documentada de
+   "las reglas de IP no funcionan" aplica solo a servicios *privados* de
+   App Runner, no es nuestro caso), bloqueando cualquier request a rutas
+   `/iclock/*` que no venga de `var.adms_ips_permitidas`. Esta capa
+   protege *todo* el servicio (WAF no puede aplicarse a una sola ruta, la
+   regla en sí sí es específica de `/iclock/*` vía un `and_statement`),
+   pero solo aplica una vez que exista una cuenta de AWS real y se elija
+   esa plataforma sobre Railway — no aplicada todavía, igual que el resto
+   de `infra/terraform/`.
+
+**Reconciliación PIN → Trabajador:** `Trabajador.numeroChecador` (`Int?
+@unique`, migración `20260725145731_agregar_soporte_adms_zkteco`) — el ID
+numérico con el que la persona se enroló *en el equipo* (el enrolamiento
+de huella/rostro ocurre ahí, no en este sistema). Nullable y sin backfill
+del roster original a propósito (decisión confirmada con el usuario
+2026-07-25): RH lo captura a mano vía `PATCH /trabajadores/:id` conforme
+va enrolando gente en el MB10-VL, no se asume que el "no" del roster de
+campo (`prisma/seed-data/roster_enrolamiento_tren_golfo.json`) vaya a
+coincidir con el PIN real de este equipo nuevo. Si el PIN de una
+marcación no coincide con ningún `numeroChecador` (typo al capturarlo,
+alguien se enroló antes de que RH diera de alta el número, etc.), **no se
+descarta en silencio ni se inventa un Trabajador**: se guarda en
+`EventoNoReconciliado` (PIN crudo + fecha/hora + método crudo) para que
+RH lo revise.
+
+**Sección/turno fijos:** todo lo que venga de un `Terminal` tipo="adms" se
+guarda con sección **"Oficina"** (sembrada en `seed.ts`, usa el mismo
+`Horario` "Oficina" ya existente) y turno `"Oficina"` — mismo valor que el
+nombre del Horario, replicando la convención que ya usa el Kiosco manual
+(`turno` = nombre del Horario configurado). Confirmado con el usuario
+2026-07-25 (antes de esto no existía ninguna Sección de oficina — las 4
+originales son todas de campo). Asume un solo equipo ADMS de oficina; si
+algún día hay más de uno, esto necesitaría diferenciarse por terminal, no
+un valor fijo global.
+
+**Pantalla de confirmación (Kiosco, `frontend/.../pages/KioscoPage.tsx`):**
+tercer modo del Kiosco (además de login y config), seleccionable en
+`ConfigForm` (`ConfigKiosco.modo: "marcacion" | "confirmacion"`). En modo
+`"confirmacion"`, `PantallaConfirmacion` nunca marca nada — hace polling
+cada 2.5s a `GET /asistencias/reciente` (Terminal-autenticado, cualquier
+Terminal con JWT, no gateado por rol) y muestra la misma animación de
+éxito que el modo manual (con el NOMBRE del trabajador, no su UUID) en
+cuanto detecta un `id` de asistencia distinto al último visto, sin que
+nadie toque nada. **Bug real encontrado probando con Electron real y ya
+corregido:** el primer poll tras montar/reconfigurar no debe disparar la
+animación aunque encuentre una asistencia (si no, la última marcación real
+— aunque sea de ayer — se muestra como "recién ocurrida" apenas arranca la
+pantalla); el primer poll solo establece la base de comparación.
+
+`obtenerAsistenciaMasRecienteDeTerminal` (`asistencia.service.ts`) filtra
+por `terminalOrigen.tipo = "adms"`, **no** por el `terminalId` de quien
+pregunta — la pantalla de confirmación y el equipo ADMS físico son dos
+`Terminal` distintos (el primero nunca marca nada, el segundo nunca tiene
+sesión JWT), así que filtrar por el terminalId de quien hace polling
+nunca habría encontrado nada. Correcto mientras haya un solo lector ADMS
+de oficina (el caso real hoy); con más de uno necesitaría un vínculo
+explícito pantalla↔lector en vez de "cualquier ADMS".
+
 ## Reference project
 
 This backend intentionally mirrors the conventions of a sibling Grupo INDI
@@ -441,6 +593,16 @@ database (weak-password rejection, the actual 5-fail lockout, the
 inactivity timeout with a temporarily-shortened threshold, reset-on-activity)
 — see the Auth and Frontend sections above for the technical detail.
 
+Also as of 2026-07-25: ADMS support for the ZKTeco MB10-VL office reader
+(`src/services/adms.service.ts`, `src/routes/adms.routes.ts` — see the
+"ADMS" section above for the full technical detail), plus a third Kiosco
+mode (`PantallaConfirmacion`) that displays those marcaciones live. Tested
+end-to-end with simulated ADMS requests (`curl`, imitating the real
+protocol format) and with real Electron (confirmed the confirmation
+screen reacts automatically to an external push without anyone touching
+the app) — **not yet tested against the physical MB10-VL**, which isn't
+connected yet (see "Bloqueado").
+
 ## Bloqueado — fuera del alcance de este repositorio
 
 Estos puntos no se resuelven con código en este repo; requieren una
@@ -452,8 +614,17 @@ decisión, ejecución o insumo externo del usuario/cliente:
   `frontend/QA_SAFESTORAGE_WINDOWS.md`; requiere que el usuario lo corra
   en una máquina Windows real (Wine no cuenta). No cerrar este punto
   hasta que el usuario marque esa lista.
-- **SDK del lector de huella para el kiosco fijo de oficina** — nunca
-  confirmado.
+- **Lector ADMS de oficina (ZKTeco MB10-VL) — protocolo implementado y
+  probado con datos simulados, pendiente de verificación contra el equipo
+  físico real.** Ver sección "ADMS" arriba para el detalle técnico
+  completo. Pendientes concretos para cuando el equipo esté conectado:
+  confirmar el número de serie real (hoy solo hay uno de prueba,
+  `TEST-SN-MB10VL-001`, que no debe quedar en ninguna base real), validar
+  que el mapeo de método de verificación (`1=huella, 15=rostro`) coincide
+  con lo que este modelo/firmware realmente manda, y confirmar la IP
+  pública real de la oficina para `ADMS_IPS_PERMITIDAS` (hoy solo hay un
+  valor de ejemplo en `.env.example`/`terraform.tfvars.example`) — sin
+  eso, en producción el endpoint rechaza todo por diseño (fail-closed).
 - **Cumplimiento legal / ubicación de almacenamiento de datos
   biométricos** — pendiente de asesoría legal externa.
 - **Datos operativos reales de RH** — horario real de campo, nombres de

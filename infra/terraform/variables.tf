@@ -143,9 +143,20 @@ variable "node_env" {
 }
 
 variable "jwt_expires_in" {
-  description = "Duracion de los JWT emitidos (jsonwebtoken 'expiresIn')."
+  description = "Duracion de los JWT de sesion humana (auth.service.ts) - 8h por default, igual que el codigo (ver src/services/auth.service.ts)."
   type        = string
-  default     = "1d"
+  default     = "8h"
+}
+
+variable "jwt_expires_in_terminal" {
+  description = "Duracion de los JWT de Terminal/kiosco (terminalAuth.service.ts) - mucho mas larga a proposito: un kiosco fisico no tiene quien vuelva a teclear credenciales cuando expire."
+  type        = string
+  default     = "30d"
+}
+
+variable "adms_ips_permitidas" {
+  description = "IP(s) publica(s) de la oficina de Grupo INDI desde donde se acepta /iclock/* (protocolo ADMS del lector ZKTeco MB10-VL) - separadas por coma si hay mas de una. El protocolo no tiene autenticacion propia (ver CLAUDE.md, seccion ADMS) - esto es la mitigacion de aplicacion; el WAF de waf.tf es la segunda capa, especifica de AWS. Sin default: no se puede asumir la IP real todavia. En produccion (NODE_ENV=production, ver variables.tf/node_env), el backend rechaza TODO /iclock/* si esto llega vacio (fail-closed) - no dejar sin llenar en un apply real."
+  type        = string
 }
 
 variable "allowed_origin" {

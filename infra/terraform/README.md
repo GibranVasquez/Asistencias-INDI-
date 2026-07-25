@@ -67,6 +67,24 @@ la conexión debe fallar) que sí se hizo en vivo para el CA de Supabase.
   (`apprunner_instance`) solo tiene permiso de leer esos 2 secrets
   puntuales, no todo Secrets Manager.
 
+## WAF para `/iclock/*` (endpoint ADMS) — segunda capa, específica de AWS
+
+`waf.tf`: Web ACL de WAF asociado directamente al servicio de App Runner
+(`aws_wafv2_web_acl_association`, `resource_arn = aws_apprunner_service.backend.arn`)
+— confirmado que esto es posible sin CloudFront ni cambiar de arquitectura,
+para un servicio *público* de App Runner (la limitación de "las reglas de
+IP no funcionan" solo aplica a servicios *privados*). Bloquea peticiones a
+rutas que empiecen con `/iclock/` cuya IP de origen no esté en
+`var.adms_ips_permitidas` (`aws_wafv2_ip_set`).
+
+**Esta NO es la única mitigación** — la primera y principal es de
+aplicación (`backend/src/middlewares/restringirPorIP.ts`, misma variable
+`ADMS_IPS_PERMITIDAS`), funciona en cualquier plataforma (Railway o AWS,
+la decisión sigue sin tomarse) y ya está activa hoy. El WAF es una capa
+adicional que solo aplica una vez que exista una cuenta de AWS real y se
+elija esa plataforma — ver CLAUDE.md, sección ADMS, para el razonamiento
+completo de por qué dos capas.
+
 ## Permisos IAM de aprovisionamiento — no `IAMFullAccess`
 
 `iam-provisioning-policy.json` es la política que debe usar la

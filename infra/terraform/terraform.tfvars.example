@@ -6,6 +6,12 @@ aws_region          = "us-east-1"
 vpc_id              = "vpc-XXXXXXXXXXXXXXXXX"
 private_subnet_ids  = ["subnet-XXXXXXXXXXXXXXXXX", "subnet-YYYYYYYYYYYYYYYYY"]
 
+# IP publica real de la oficina de Grupo INDI (donde vive el lector ZKTeco
+# MB10-VL) - separadas por coma si hay mas de una. Sin default a proposito
+# (ver variables.tf) - el backend rechaza TODO /iclock/* en produccion si
+# esto no se llena.
+adms_ips_permitidas = "203.0.113.10"
+
 # Opcionales - estos ya tienen defaults razonables en variables.tf,
 # sobreescribir solo si aplica:
 # project_name       = "indi-asistencia"
