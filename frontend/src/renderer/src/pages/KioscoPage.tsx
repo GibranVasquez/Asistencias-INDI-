@@ -1,5 +1,5 @@
-import { SubmitEvent, useEffect, useState } from "react";
-import { registrarAsistencia } from "../api/asistencias";
+import { SubmitEvent, useEffect, useRef, useState } from "react";
+import { AsistenciaListada, obtenerAsistenciaReciente, registrarAsistencia } from "../api/asistencias";
 import { loginTerminal } from "../api/auth";
 import { asset } from "../assets";
 import { ApiError } from "../api/client";
@@ -56,11 +56,31 @@ export default function KioscoPage() {
     return <ConfigForm token={sesion.token} onGuardar={guardarConfig} />;
   }
 
+  if (config.modo === "confirmacion") {
+    return (
+      <PantallaConfirmacion
+        ahora={ahora}
+        token={sesion.token}
+        onCerrarSesion={cerrarSesion}
+        onReconfigurar={limpiarConfig}
+      />
+    );
+  }
+
+  // Instalaciones previas a que existiera "modo" en ConfigKiosco guardaron
+  // solo {seccionId, turno} — siguen cayendo aquí correctamente (modo
+  // undefined !== "confirmacion"). Si por alguna razón faltan (localStorage
+  // corrupto a mano, etc.), se fuerza a reconfigurar en vez de arriesgar un
+  // registro de asistencia con seccionId/turno vacíos.
+  if (!config.seccionId || !config.turno) {
+    return <ConfigForm token={sesion.token} onGuardar={guardarConfig} />;
+  }
+
   return (
     <PantallaKiosco
       ahora={ahora}
       token={sesion.token}
-      config={config}
+      config={{ seccionId: config.seccionId, turno: config.turno }}
       onCerrarSesion={cerrarSesion}
       onReconfigurar={limpiarConfig}
     />
@@ -155,6 +175,7 @@ function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal
 }
 
 function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: ConfigKiosco) => void }) {
+  const [modo, setModo] = useState<"marcacion" | "confirmacion">("marcacion");
   const [secciones, setSecciones] = useState<Seccion[] | null>(null);
   const [horarios, setHorarios] = useState<Horario[] | null>(null);
   const [seccionId, setSeccionId] = useState("");
@@ -185,8 +206,12 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
 
   function manejarEnvio(evento: SubmitEvent) {
     evento.preventDefault();
+    if (modo === "confirmacion") {
+      onGuardar({ modo: "confirmacion" });
+      return;
+    }
     if (!seccionId || !turno) return;
-    onGuardar({ seccionId, turno });
+    onGuardar({ modo: "marcacion", seccionId, turno });
   }
 
   return (
@@ -223,14 +248,60 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
           </button>
         </div>
         <p style={{ color: "var(--pastel)", fontSize: 13.5, marginTop: 6 }}>
-          Se guarda una sola vez en este dispositivo: a qué sección pertenece y en qué turno opera. La lista se
-          trae en vivo de la API, no queda un valor fijo desactualizado.
+          Se guarda una sola vez en este dispositivo. La lista de secciones/horarios se trae en vivo de la API, no
+          queda un valor fijo desactualizado.
         </p>
         <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 14 }}>
           {error && <div style={{ color: "#ffb4b6", fontSize: 13 }}>{error}</div>}
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "#fff", fontSize: 13 }}>
-            Sección
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ color: "#fff", fontSize: 13 }}>Tipo de pantalla</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => setModo("marcacion")}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: modo === "marcacion" ? "2px solid #fff" : "1px solid rgba(255,255,255,.3)",
+                  background: modo === "marcacion" ? "rgba(255,255,255,.15)" : "transparent",
+                  color: "#fff",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                }}
+              >
+                Marcación manual
+              </button>
+              <button
+                type="button"
+                onClick={() => setModo("confirmacion")}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: modo === "confirmacion" ? "2px solid #fff" : "1px solid rgba(255,255,255,.3)",
+                  background: modo === "confirmacion" ? "rgba(255,255,255,.15)" : "transparent",
+                  color: "#fff",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                }}
+              >
+                Confirmación (lector ADMS)
+              </button>
+            </div>
+            {modo === "confirmacion" && (
+              <p style={{ color: "var(--pastel)", fontSize: 12.5, marginTop: 2, lineHeight: 1.5 }}>
+                Esta pantalla no marca nada — solo muestra en vivo lo que el lector ADMS de oficina (ZKTeco MB10-VL)
+                ya registró. No necesita sección ni turno (el backend los fija automáticamente para ese equipo).
+              </p>
+            )}
+          </div>
+
+          {modo === "marcacion" && (
+            <>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "#fff", fontSize: 13 }}>
+                Sección
             <select
               value={seccionId}
               onChange={(e) => setSeccionId(e.target.value)}
@@ -266,10 +337,12 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
               ))}
             </select>
           </label>
+            </>
+          )}
 
           <button
             type="submit"
-            disabled={!seccionId || !turno}
+            disabled={modo === "marcacion" && (!seccionId || !turno)}
             style={{
               padding: 13,
               background: "var(--indi2)",
@@ -278,7 +351,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
               borderRadius: 9,
               fontSize: 15,
               fontWeight: 700,
-              opacity: !seccionId || !turno ? 0.6 : 1,
+              opacity: modo === "marcacion" && (!seccionId || !turno) ? 0.6 : 1,
             }}
           >
             Guardar configuración
@@ -287,6 +360,16 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
       </form>
     </div>
   );
+}
+
+// Distinto de ConfigKiosco (que tiene seccionId/turno opcionales, porque el
+// modo "confirmacion" no los necesita): esta pantalla solo se monta en modo
+// "marcacion" (ver KioscoPage()), donde ConfigForm sí exige ambos campos
+// antes de guardar — para el resto de este componente son valores reales,
+// no opcionales.
+interface ConfigMarcacion {
+  seccionId: string;
+  turno: string;
 }
 
 function PantallaKiosco({
@@ -298,7 +381,7 @@ function PantallaKiosco({
 }: {
   ahora: Date;
   token: string;
-  config: ConfigKiosco;
+  config: ConfigMarcacion;
   onCerrarSesion: () => void;
   onReconfigurar: () => void;
 }) {
@@ -630,6 +713,273 @@ function PantallaKiosco({
       >
         <button onClick={onReconfigurar} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
           Reconfigurar sección
+        </button>
+        <button onClick={onCerrarSesion} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
+          Cerrar sesión del terminal
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const INTERVALO_POLL_CONFIRMACION_MS = 2500;
+const DURACION_ANIMACION_EXITO_MS = 4000;
+
+function aHoraLegible(isoDateTime: string): string {
+  return new Date(isoDateTime).toLocaleTimeString("es-MX", { hour12: false, timeZone: "UTC" });
+}
+
+/**
+ * Pantalla de confirmación del lector ADMS de oficina (ZKTeco MB10-VL):
+ * nunca marca nada (a diferencia de PantallaKiosco) — solo hace polling de
+ * GET /asistencias/reciente cada ~2.5s y muestra la misma animación de
+ * éxito ya existente cuando detecta una marcación nueva (id distinto al
+ * último visto), con el NOMBRE del trabajador en vez de su UUID (ver
+ * PantallaKiosco, que sí muestra el ID — ahí tiene sentido porque viene de
+ * un input manual de prueba; aquí siempre hay un Trabajador real resuelto
+ * por el backend).
+ */
+function PantallaConfirmacion({
+  ahora,
+  token,
+  onCerrarSesion,
+  onReconfigurar,
+}: {
+  ahora: Date;
+  token: string;
+  onCerrarSesion: () => void;
+  onReconfigurar: () => void;
+}) {
+  const [ultimaAsistencia, setUltimaAsistencia] = useState<AsistenciaListada | null>(null);
+  const [mostrarExito, setMostrarExito] = useState(false);
+  // undefined = todavía no se hizo el primer poll; null = se hizo, pero el
+  // lector ADMS nunca ha registrado nada; string = el id de la última
+  // marcación ya vista/mostrada.
+  const ultimoIdVistoRef = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelado = false;
+
+    async function verificar() {
+      try {
+        const { asistencia } = await obtenerAsistenciaReciente(token);
+        if (cancelado) return;
+
+        // Primer poll tras montar (recién logueado/reconfigurado, o tras un
+        // reinicio del equipo): solo establece la base de comparación, sin
+        // disparar la animación — de lo contrario, la última marcación real
+        // (aunque sea de ayer) se mostraría como "recién ocurrida" apenas
+        // arranca la pantalla, que es justo lo que NO debe pasar.
+        if (ultimoIdVistoRef.current === undefined) {
+          ultimoIdVistoRef.current = asistencia?.id ?? null;
+          return;
+        }
+
+        if (asistencia && asistencia.id !== ultimoIdVistoRef.current) {
+          ultimoIdVistoRef.current = asistencia.id;
+          setUltimaAsistencia(asistencia);
+          setMostrarExito(true);
+        }
+      } catch {
+        // Polling silencioso: una falla de red puntual no debe interrumpir la
+        // pantalla con un mensaje de error — se reintenta sola en el
+        // siguiente ciclo, sin que nadie tenga que tocar nada.
+      }
+    }
+
+    verificar();
+    const id = setInterval(verificar, INTERVALO_POLL_CONFIRMACION_MS);
+    return () => {
+      cancelado = true;
+      clearInterval(id);
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!mostrarExito) return;
+    const id = setTimeout(() => setMostrarExito(false), DURACION_ANIMACION_EXITO_MS);
+    return () => clearTimeout(id);
+  }, [mostrarExito]);
+
+  return (
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--indi)",
+        backgroundImage: "var(--dots)",
+        backgroundSize: "16px 16px",
+        color: "#fff",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(180deg, rgba(11,46,107,.35), rgba(11,46,107,.85))",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "30px 44px 0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <img src={asset("assets/indi-logo.png")} alt="INDI" style={{ height: 34, borderRadius: 5, boxShadow: "0 6px 18px rgba(0,0,0,.25)" }} />
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 52, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {ahora.toLocaleTimeString("es-MX", { hour12: false })}
+          </div>
+          <div style={{ fontSize: 15, color: "var(--pastel)", marginTop: 6, textTransform: "capitalize" }}>
+            {ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 26,
+          textAlign: "center",
+          padding: "10px 20px",
+        }}
+      >
+        {!mostrarExito && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
+            <div
+              style={{
+                position: "relative",
+                width: 210,
+                height: 210,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  border: "2px solid var(--pastel)",
+                  animation: "ringpulse 2.4s ease-out infinite",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  border: "2px solid var(--pastel)",
+                  animation: "ringpulse 2.4s ease-out infinite 1.2s",
+                }}
+              />
+              <div
+                style={{
+                  width: 170,
+                  height: 170,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,.10)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid rgba(255,255,255,.35)",
+                }}
+              >
+                <div style={{ animation: "fppulse 2.4s ease-in-out infinite" }}>{iconoHuella}</div>
+              </div>
+            </div>
+            <div>
+              <h1 style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-.01em" }}>Esperando marcación…</h1>
+              <p style={{ fontSize: 19, color: "var(--pastel)", marginTop: 10 }}>
+                El lector biométrico de oficina está conectado — no toques nada aquí
+              </p>
+            </div>
+          </div>
+        )}
+
+        {mostrarExito && ultimaAsistencia && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+            <div
+              style={{
+                width: 150,
+                height: 150,
+                borderRadius: "50%",
+                background: "var(--ok)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 0 12px rgba(47,174,102,.22)",
+                animation: "pop .45s ease-out",
+              }}
+            >
+              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 12.5l5 5L20 6.5" style={{ strokeDasharray: 180, animation: "dash .55s ease-out .1s both" }} />
+              </svg>
+            </div>
+            <div>
+              <h1 style={{ fontSize: 38, fontWeight: 800, color: "#fff" }}>¡Bienvenido!</h1>
+              <p style={{ fontSize: 20, color: "var(--pastel)", marginTop: 6 }}>Asistencia registrada</p>
+            </div>
+            <div
+              style={{
+                background: "rgba(255,255,255,.10)",
+                border: "1px solid rgba(255,255,255,.22)",
+                borderRadius: 16,
+                padding: "22px 40px",
+                display: "flex",
+                gap: 44,
+                alignItems: "center",
+              }}
+            >
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: 12, letterSpacing: ".14em", color: "var(--pastel)", textTransform: "uppercase" }}>
+                  Nombre
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4 }}>{ultimaAsistencia.trabajadorNombre}</div>
+              </div>
+              <div style={{ width: 1, height: 46, background: "rgba(255,255,255,.25)" }} />
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: 12, letterSpacing: ".14em", color: "var(--pastel)", textTransform: "uppercase" }}>
+                  Hora
+                </div>
+                <div style={{ fontFamily: "Montserrat", fontWeight: 700, fontSize: 26, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+                  {aHoraLegible(ultimaAsistencia.hora)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "0 20px 16px",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 11.5,
+          color: "rgba(255,255,255,.45)",
+        }}
+      >
+        <button onClick={onReconfigurar} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
+          Reconfigurar pantalla
         </button>
         <button onClick={onCerrarSesion} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
           Cerrar sesión del terminal

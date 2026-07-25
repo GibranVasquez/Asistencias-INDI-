@@ -58,3 +58,12 @@ function aQueryString(filtros: FiltrosListarAsistencias): string {
 export function listarAsistencias(token: string, filtros: FiltrosListarAsistencias = {}) {
   return apiClient.get<{ asistencias: AsistenciaListada[] }>(`/asistencias${aQueryString(filtros)}`, token);
 }
+
+// Para la pantalla de confirmación del Kiosco (modo ADMS) — la marcación
+// más reciente registrada por el lector ADMS de oficina, sin importar qué
+// terminal hace la pregunta (ver asistencia.service.ts,
+// obtenerAsistenciaMasRecienteDeTerminal). null si el lector ADMS nunca ha
+// registrado nada todavía.
+export function obtenerAsistenciaReciente(token: string) {
+  return apiClient.get<{ asistencia: AsistenciaListada | null }>("/asistencias/reciente", token);
+}

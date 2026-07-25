@@ -9,13 +9,20 @@ interface SesionTerminal {
   terminal: TerminalPublico;
 }
 
-// Config fisica del kiosco: a que seccion pertenece el dispositivo y en que
-// turno opera. En un kiosco real esto se configura una sola vez al instalar
-// el equipo (no depende de la API — el terminal solo puede llamar POST
-// /asistencias, no hay endpoint de lectura de secciones para terminales).
+// Config fisica del kiosco. Dos modos:
+// - "marcacion" (default, comportamiento historico): a que seccion
+//   pertenece el dispositivo y en que turno opera, para marcar
+//   manualmente via POST /asistencias.
+// - "confirmacion": pantalla secundaria del lector ADMS de oficina (ZKTeco
+//   MB10-VL) — nunca marca nada, solo hace polling de GET
+//   /asistencias/reciente y muestra la animacion de exito ya existente
+//   cuando el equipo ADMS reporta una marcacion nueva. seccionId/turno no
+//   aplican (el backend ya fija "Oficina"/"Oficina" para todo lo que venga
+//   de un terminal tipo="adms" — ver adms.service.ts).
 export interface ConfigKiosco {
-  seccionId: string;
-  turno: string;
+  modo?: "marcacion" | "confirmacion";
+  seccionId?: string;
+  turno?: string;
 }
 
 interface TerminalContextValor {
