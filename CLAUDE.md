@@ -188,8 +188,77 @@ Layered Express app, one direction of dependency only:
   against a fixed dummy hash (`HASH_SENUELO`) so response time doesn't
   differ. Same generic message/status for "no such user" and "wrong
   password".
-- `express-rate-limit`: a global limiter (100 req/15min, `app.ts`) plus a
-  stricter one (5 req/15min) applied only to `/auth/login`.
+- `express-rate-limit` (`middlewares/rateLimit.ts`): `limitadorGlobal` keys
+  by authenticated usuario/terminal (falls back to IP only when
+  unauthenticated) — otherwise RH+recepción+encargado+kiosco sharing one
+  office IP would share a single quota. 300/15min in production, 2000 in
+  dev (StrictMode/E2E traffic). `limitadorLogin` is IP-keyed (no identity
+  yet at that point): 5/15min in production, 50 outside it.
+- **Password policy** (`utils/validacion.ts`,
+  `validarFortalezaPassword`): min 8 characters, at least one letter, one
+  number. Enforced in the 3 places a password gets set — account creation
+  (`validarAltaUsuario`), self change (`validarCambioPropiaPassword`),
+  admin reset (`validarReseteoPassword`) — never re-checked in the service
+  layer (same convention as `esUUID`/`esFechaISO`: format checks live in
+  middlewares, not services). Write-time only, not retroactive: login just
+  does `bcrypt.compare` against whatever hash already exists, so the 4
+  seeded accounts (`admin`/`rh1`/`recepcion1`/`encargado_topografia`, the
+  last 3 on `"1234"`, which fails this policy) still log in fine after
+  adding it — confirmed live, all 4 — and will keep working until/unless
+  someone actually changes/resets that password, at which point the new
+  value has to comply.
+- **Account lockout** (`Usuario.intentosFallidos`/`bloqueadoHasta`,
+  `auth.service.ts`): 5 consecutive failed logins lock that specific
+  account for 15 minutes, regardless of source IP — independent of (and a
+  narrower defense than) the IP/identity-based rate limiter above, since it
+  blocks the *account* even if an attacker spreads attempts across many
+  IPs. A locked account gets a distinct 423 with the message and minutes
+  remaining, not the generic 401 — deliberately reveals the account exists
+  (unlike the 401 case), a explicit trade-off for clearer UX during
+  lockout. Resets to 0 on successful login. If the previous lockout window
+  already expired, the very next failed attempt starts a fresh count of 1
+  instead of instantly re-triggering the lock (otherwise a single typo
+  right after unlock would immediately re-lock the account, since the
+  counter was still sitting at the threshold). The lockout itself is
+  logged to `AuditLog` (`bloquear_cuenta_por_intentos_fallidos`).
+- **Known gap: the 423 is a username-enumeration oracle, not closed,
+  just accepted for now.** Confirmed empirically: a nonexistent username
+  always gets the generic 401 (never 423, `bloqueadoHasta` only exists on
+  real rows), so an attacker who fires ≥5 wrong-password attempts against
+  a candidate username and sees 423 on the next one has confirmed that
+  account exists — 6 requests to de-anonymize one username, distinct from
+  (and not mitigated by) the timing-safe `HASH_SENUELO` comparison above,
+  which only protects the single-request 401-vs-401 case. Accepted
+  deliberately for now: this is a small system with a handful of known
+  internal accounts, not a public signup surface — revisit (e.g. collapse
+  423 back to a generic 401, or add a random jittered delay) if the
+  backend ever becomes more exposed (public internet, larger/unknown user
+  base).
+- **Logging out does not invalidate the JWT server-side.** Confirmed by
+  reading the code (no `/auth/logout` route, no revocation/blacklist table
+  in `schema.prisma`, `authMiddleware` only checks signature + expiry) and
+  empirically (grabbed a token, simulated logout — nothing server-side
+  changes — then reused that exact token against `GET
+  /auth/usuario-actual`: still `200 OK`). This applies the same way
+  whether "logging out" was the manual sidebar button or the 30-minute
+  inactivity timeout below — both are purely client-side (delete the
+  locally stored token; see `AuthContext.cerrarSesion`). Conscious
+  trade-off of stateless JWT, not an oversight: a copied/stolen token
+  stays valid until its own natural expiry (`JWT_EXPIRES_IN`, 8h for
+  humans) regardless of what the visual session state does. No revocation
+  list is planned for now — would need a stateful store (Redis, or a DB
+  table checked on every request) that this system doesn't have yet;
+  revisit if a real "someone's token got compromised, kill it now" need
+  ever comes up.
+- **JWT expiry, split by token type**: `JWT_EXPIRES_IN` (default `"8h"`,
+  `auth.service.ts`) for human Usuario sessions vs. `JWT_EXPIRES_IN_TERMINAL`
+  (default `"30d"`, `terminalAuth.service.ts`) for Terminal/kiosk sessions
+  — a kiosk is an unattended physical device with no one around to
+  re-type credentials when it expires, so it shouldn't churn at the same
+  rate as a human's session. The frontend separately auto-logs out a human
+  session after 30 minutes of *inactivity* (see Frontend section) — a
+  distinct, shorter, client-side mechanism layered on top of the token's
+  own absolute expiry, not a replacement for it.
 
 ### Data model (`prisma/schema.prisma`)
 
@@ -275,6 +344,27 @@ window for developing the admin panel.
   resolves a leading `/` against the filesystem root, not `out/renderer/`);
   `asset()` uses `import.meta.env.BASE_URL` instead, which works in both dev
   and the packaged build.
+- `hooks/useTimeoutInactividad.ts`: mounted in `layouts/AdminLayout.tsx`
+  (30 min), listens for mouse/keyboard/scroll/touch on `window` and calls
+  `cerrarSesion()` after that long with none — resetting on every event.
+  Purely client-side and independent of the JWT's own absolute expiry (see
+  backend Auth section); doesn't run for Kiosco (separate `TerminalContext`
+  session, not wrapped by `AdminLayout`), since an unattended kiosk
+  shouldn't log itself out for lack of a human standing in front of it.
+- `components/PasswordInput.tsx`: shared show/hide-password toggle (eye
+  icon) + optional real-time requirements checklist
+  (`mostrarRequisitos` prop) mirroring the backend's
+  `validarFortalezaPassword` rules — used in `LoginPage`,
+  `CambiarPasswordObligatorioPage`, and `UsuariosPage` (create account +
+  admin reset). The checklist is advisory only; the actual rejection of a
+  weak password always comes from the backend's real validation, never
+  blocked client-side before submit.
+- `components/AyudaSoporteModal.tsx`: contact info is **placeholder data**
+  (`CONTACTO_SOPORTE` constant at the top of that file) — replace with
+  Grupo INDI's real support phone/email/hours before real use. Opened from
+  a sidebar button in `AdminLayout.tsx` (`Ayuda y soporte`, visible to
+  every role, unlike `usuarios`/`configuracion`/`reportes` which are
+  role-filtered).
 
 ### Kiosco "modo de prueba" — compile-time flag, not a UI toggle
 
@@ -338,6 +428,18 @@ found nothing unresolved. `TarifaHoraExtra` has a loaded value ($90.00/hora
 desde 2026-01-01) but it's leftover test data from an earlier session —
 **not yet confirmed by the client as the real rate**; don't treat it as
 authoritative for actual payroll without that confirmation.
+
+As of 2026-07-25 the authentication screens got a security/UX pass:
+password policy (min 8 chars + letter + number) enforced on the 3 places a
+password gets set, per-account lockout after 5 failed logins (independent
+of the IP/identity rate limiter), split JWT expiry for human vs. Terminal
+sessions, a 30-minute client-side inactivity timeout, show/hide-password +
+real-time requirements checklist on every password field, and an
+Ayuda/Soporte modal (placeholder contact info) reachable from every role's
+sidebar. All of it tested against real Electron + the real Supabase
+database (weak-password rejection, the actual 5-fail lockout, the
+inactivity timeout with a temporarily-shortened threshold, reset-on-activity)
+— see the Auth and Frontend sections above for the technical detail.
 
 ## Bloqueado — fuera del alcance de este repositorio
 

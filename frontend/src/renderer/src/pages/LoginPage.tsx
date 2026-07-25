@@ -4,6 +4,7 @@ import { login } from "../api/auth";
 import { asset } from "../assets";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 export default function LoginPage() {
   const { iniciarSesion } = useAuth();
@@ -106,10 +107,9 @@ export default function LoginPage() {
               style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}
             >
               Contraseña
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={setPassword}
                 required
                 style={{
                   padding: "12px 14px",

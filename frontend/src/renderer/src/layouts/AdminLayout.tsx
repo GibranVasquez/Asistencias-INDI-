@@ -1,7 +1,11 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { asset } from "../assets";
 import { useAuth } from "../context/AuthContext";
+import { useTimeoutInactividad } from "../hooks/useTimeoutInactividad";
+import AyudaSoporteModal from "../components/AyudaSoporteModal";
+
+const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
 const ETIQUETA_ROL: Record<string, string> = {
   administrador: "Administrador",
@@ -109,6 +113,17 @@ const ITEMS_NAV: ItemNav[] = [
 
 export default function AdminLayout() {
   const { sesion, sesionPersistida, cerrarSesion } = useAuth();
+  const [mostrarAyuda, setMostrarAyuda] = useState(false);
+
+  // Antes del "if (!sesion) return null" de abajo: los hooks siempre deben
+  // correr, sin importar el valor de sesion (reglas de hooks de React) - el
+  // propio hook no hace nada dañino si se llega a montar sin sesión, solo
+  // que ese caso no ocurre en la práctica (App.tsx nunca monta AdminLayout
+  // sin sesión, ver la ruta "/panel" en App.tsx).
+  useTimeoutInactividad(MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION, () => {
+    cerrarSesion();
+  });
+
   if (!sesion) return null;
 
   const sesionDegradada = sesionPersistida === false;
@@ -189,6 +204,33 @@ export default function AdminLayout() {
             {item.etiqueta}
           </NavLink>
         ))}
+
+        <button
+          type="button"
+          onClick={() => setMostrarAyuda(true)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 13,
+            padding: "13px 22px",
+            background: "transparent",
+            border: "none",
+            borderLeft: "3px solid transparent",
+            textAlign: "left",
+            fontSize: 14,
+            fontWeight: 600,
+            width: "100%",
+            color: "var(--pastel)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          Ayuda y soporte
+        </button>
 
         <div
           style={{
@@ -293,6 +335,8 @@ export default function AdminLayout() {
           <Outlet />
         </div>
       </main>
+
+      {mostrarAyuda && <AyudaSoporteModal onCerrar={() => setMostrarAyuda(false)} />}
     </div>
   );
 }

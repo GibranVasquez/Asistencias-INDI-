@@ -13,6 +13,7 @@ import {
   UsuarioListado,
 } from "../api/usuarios";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
@@ -345,12 +346,12 @@ export default function UsuariosPage() {
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
               Contraseña
-              <input
-                type="password"
+              <PasswordInput
                 required
                 value={formulario.password}
-                onChange={(e) => setFormulario((f) => ({ ...f, password: e.target.value }))}
+                onChange={(v) => setFormulario((f) => ({ ...f, password: v }))}
                 style={estilosCampo}
+                mostrarRequisitos
               />
             </label>
 
@@ -434,13 +435,13 @@ export default function UsuariosPage() {
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
               Contraseña temporal
-              <input
-                type="password"
+              <PasswordInput
                 required
                 autoFocus
                 value={passwordTemporal}
-                onChange={(e) => setPasswordTemporal(e.target.value)}
+                onChange={setPasswordTemporal}
                 style={estilosCampo}
+                mostrarRequisitos
               />
             </label>
 

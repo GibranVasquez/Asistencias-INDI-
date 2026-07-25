@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { cambiarPassword } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 const estilosCampo = {
   padding: "12px 14px",
@@ -58,17 +59,17 @@ export default function CambiarPasswordObligatorioPage() {
         <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 16 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
             Contraseña temporal actual
-            <input type="password" required autoFocus value={passwordActual} onChange={(e) => setPasswordActual(e.target.value)} style={estilosCampo} />
+            <PasswordInput required autoFocus value={passwordActual} onChange={setPasswordActual} style={estilosCampo} />
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
             Contraseña nueva
-            <input type="password" required value={passwordNueva} onChange={(e) => setPasswordNueva(e.target.value)} style={estilosCampo} />
+            <PasswordInput required value={passwordNueva} onChange={setPasswordNueva} style={estilosCampo} mostrarRequisitos />
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
             Confirmar contraseña nueva
-            <input type="password" required value={confirmar} onChange={(e) => setConfirmar(e.target.value)} style={estilosCampo} />
+            <PasswordInput required value={confirmar} onChange={setConfirmar} style={estilosCampo} />
           </label>
 
           {error && (
