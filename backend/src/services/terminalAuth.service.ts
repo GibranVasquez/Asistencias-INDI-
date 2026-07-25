@@ -24,7 +24,12 @@ function firmarTokenTerminal(terminal: Terminal): string {
     throw new Error("JWT_SECRET no está configurado");
   }
 
-  const expiresIn = (process.env.JWT_EXPIRES_IN || "1d") as SignOptions["expiresIn"];
+  // Variable separada de JWT_EXPIRES_IN (auth.service.ts, sesión humana del
+  // panel): un Terminal es un kiosco físico sin quien vuelva a teclear
+  // credenciales cuando expire, así que su sesión dura mucho más ("30d" por
+  // default) — expirarlo con la misma frecuencia que una sesión humana
+  // dejaría el kiosco pidiendo login sin que nadie esté ahí para hacerlo.
+  const expiresIn = (process.env.JWT_EXPIRES_IN_TERMINAL || "30d") as SignOptions["expiresIn"];
 
   return jwt.sign({ terminalId: terminal.id }, secret, { expiresIn, subject: terminal.id });
 }

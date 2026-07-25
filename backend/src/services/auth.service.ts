@@ -12,6 +12,14 @@ const INCLUIR_SECCIONES_ASIGNADAS = {
 const MENSAJE_CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos.";
 const MENSAJE_CUENTA_DESACTIVADA = "Esta cuenta está desactivada. Contacta a un administrador.";
 
+// Bloqueo por intentos fallidos — independiente del rate limit por
+// IP/usuario de middlewares/rateLimit.ts: aquella limita peticiones por
+// origen; esto bloquea la CUENTA específica sin importar desde qué IP
+// vengan los intentos (ej. un atacante repartiendo intentos entre varias
+// IPs para evadir el rate limit no evade esto).
+const MAX_INTENTOS_FALLIDOS = 5;
+const DURACION_BLOQUEO_MINUTOS = 15;
+
 /**
  * Hash bcrypt "señuelo": no corresponde a ninguna cuenta real. Se usa para
  * comparar cuando el username no existe, de modo que bcrypt.compare siempre
@@ -32,7 +40,14 @@ function firmarToken(usuario: Usuario): string {
     throw new Error("JWT_SECRET no está configurado");
   }
 
-  const expiresIn = (process.env.JWT_EXPIRES_IN || "1d") as SignOptions["expiresIn"];
+  // "8h" (una jornada laboral), no "1d": esta es la sesión de un humano en
+  // el panel administrativo — el frontend además cierra sesión sola tras 30
+  // minutos de inactividad (ver AdminLayout), pero el JWT necesita su propio
+  // tope absoluto independiente de esa detección de actividad. Distinto de
+  // JWT_EXPIRES_IN_TERMINAL (terminalAuth.service.ts): un kiosco es un
+  // dispositivo físico sin quien vuelva a teclear credenciales, no la
+  // sesión de un humano — no debería expirar con la misma frecuencia.
+  const expiresIn = (process.env.JWT_EXPIRES_IN || "8h") as SignOptions["expiresIn"];
 
   return jwt.sign(
     {
@@ -51,15 +66,38 @@ export async function iniciarSesion(username: string, password: string): Promise
     include: INCLUIR_SECCIONES_ASIGNADAS,
   });
 
+  // Se revisa ANTES de comparar la contraseña — mientras la cuenta esté
+  // bloqueada, se rechaza sin importar si la contraseña enviada es
+  // correcta o no (el bloqueo es por tiempo, no "hasta el próximo acierto").
+  // Solo aplica si el usuario existe: un username inexistente sigue dando
+  // el mismo mensaje genérico de siempre, sin revelar que no existe.
+  if (usuario?.bloqueadoHasta && usuario.bloqueadoHasta.getTime() > Date.now()) {
+    const minutosRestantes = Math.ceil((usuario.bloqueadoHasta.getTime() - Date.now()) / 60_000);
+    throw new AppError(
+      423,
+      `Cuenta bloqueada temporalmente por demasiados intentos fallidos. Intenta de nuevo en ${minutosRestantes} minuto(s).`
+    );
+  }
+
   // bcrypt.compare corre siempre, exista o no el usuario, contra un hash real
   // en ambos casos (el del usuario o el señuelo) para no filtrar por timing
   // si el username existe.
   const passwordValida = await bcrypt.compare(password, usuario?.passwordHash ?? HASH_SENUELO);
 
   if (!usuario || !passwordValida) {
+    if (usuario) {
+      await registrarIntentoFallido(usuario);
+    }
     // Mismo mensaje y mismo status para "no existe" y "contraseña incorrecta":
     // nunca revelar cuál de los dos fue.
     throw new AppError(401, MENSAJE_CREDENCIALES_INVALIDAS);
+  }
+
+  if (usuario.intentosFallidos > 0 || usuario.bloqueadoHasta) {
+    await prisma.usuario.update({
+      where: { id: usuario.id },
+      data: { intentosFallidos: 0, bloqueadoHasta: null },
+    });
   }
 
   if (!usuario.activo) {
@@ -69,6 +107,47 @@ export async function iniciarSesion(username: string, password: string): Promise
 
   const token = firmarToken(usuario);
   return { token, usuario: serializarUsuarioConSecciones(usuario) };
+}
+
+async function registrarIntentoFallido(usuario: Usuario): Promise<void> {
+  // Si el bloqueo anterior ya expiró, este intento empieza un conteo nuevo
+  // (1) en vez de seguir acumulando desde el conteo previo al bloqueo — de
+  // lo contrario, justo después de cumplirse el tiempo de bloqueo, un solo
+  // intento fallido más (ej. un simple error de tipeo del usuario legítimo)
+  // volvería a bloquear la cuenta de inmediato, porque el conteo ya estaba
+  // en el máximo.
+  const bloqueoAnteriorYaExpiro = usuario.bloqueadoHasta !== null && usuario.bloqueadoHasta.getTime() <= Date.now();
+  const intentosPrevios = bloqueoAnteriorYaExpiro ? 0 : usuario.intentosFallidos;
+  const nuevosIntentos = intentosPrevios + 1;
+  const seBloquea = nuevosIntentos >= MAX_INTENTOS_FALLIDOS;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({
+      where: { id: usuario.id },
+      data: {
+        intentosFallidos: nuevosIntentos,
+        bloqueadoHasta: seBloquea
+          ? new Date(Date.now() + DURACION_BLOQUEO_MINUTOS * 60_000)
+          : bloqueoAnteriorYaExpiro
+            ? null
+            : undefined,
+      },
+    });
+
+    if (seBloquea) {
+      await tx.auditLog.create({
+        data: {
+          // No hay otro actor humano involucrado en un login fallido — la
+          // cuenta bloqueada es tanto el "actor" como el objetivo del log.
+          usuarioId: usuario.id,
+          accion: "bloquear_cuenta_por_intentos_fallidos",
+          entidad: "Usuario",
+          entidadId: usuario.id,
+          detalle: { username: usuario.username, intentosFallidos: nuevosIntentos, duracionMinutos: DURACION_BLOQUEO_MINUTOS },
+        },
+      });
+    }
+  });
 }
 
 export async function obtenerUsuarioPublicoPorId(usuarioId: string): Promise<UsuarioPublicoConSecciones | null> {

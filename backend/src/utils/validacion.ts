@@ -26,6 +26,34 @@ export function esEnteroNoNegativo(valor: unknown): valor is number {
   return typeof valor === "number" && Number.isInteger(valor) && valor >= 0;
 }
 
+const LONGITUD_MINIMA_PASSWORD_SEGURA = 8;
+const REGEX_PASSWORD_TIENE_LETRA = /[a-zA-Z]/;
+const REGEX_PASSWORD_TIENE_NUMERO = /[0-9]/;
+
+/**
+ * Política mínima de contraseña, compartida entre alta de cuenta, cambio
+ * propio y reseteo por administrador. Devuelve el mensaje de error (con el
+ * detalle de qué falta) o null si cumple. No valida que `password` sea un
+ * string no vacío — eso ya lo hace esStringNoVacia antes, en cada
+ * middleware llamador.
+ */
+export function validarFortalezaPassword(password: string): string | null {
+  const faltantes: string[] = [];
+
+  if (password.length < LONGITUD_MINIMA_PASSWORD_SEGURA) {
+    faltantes.push(`al menos ${LONGITUD_MINIMA_PASSWORD_SEGURA} caracteres`);
+  }
+  if (!REGEX_PASSWORD_TIENE_LETRA.test(password)) {
+    faltantes.push("al menos una letra");
+  }
+  if (!REGEX_PASSWORD_TIENE_NUMERO.test(password)) {
+    faltantes.push("al menos un número");
+  }
+
+  if (faltantes.length === 0) return null;
+  return `La contraseña debe tener ${faltantes.join(", ")}.`;
+}
+
 /**
  * Valida los campos monetarios manuales compartidos entre crear y corregir
  * una NominaSemanal. Devuelve el mensaje de error o null si todo es válido.

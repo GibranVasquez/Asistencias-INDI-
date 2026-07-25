@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { RolUsuario } from "@prisma/client";
-import { esStringNoVacia, esUUID } from "../utils/validacion";
+import { esStringNoVacia, esUUID, validarFortalezaPassword } from "../utils/validacion";
 
 const LONGITUD_MAXIMA_USUARIO = 100;
 const LONGITUD_MAXIMA_PASSWORD = 200;
@@ -24,6 +24,12 @@ export function validarAltaUsuario(req: Request, res: Response, next: NextFuncti
 
   if (!esStringNoVacia(password, LONGITUD_MAXIMA_PASSWORD)) {
     res.status(400).json({ error: "password es requerido y debe ser un texto válido." });
+    return;
+  }
+
+  const errorFortaleza = validarFortalezaPassword(password);
+  if (errorFortaleza) {
+    res.status(400).json({ error: errorFortaleza });
     return;
   }
 

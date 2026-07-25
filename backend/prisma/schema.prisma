@@ -86,6 +86,14 @@ model Usuario {
   // frontend bloquea el resto de la app hasta que el usuario la cambie por
   // una propia via PATCH /auth/cambiar-password.
   requiereCambioPassword Boolean    @default(false) @map("requiere_cambio_password")
+  // Bloqueo por intentos fallidos (auth.service.ts) — independiente del
+  // rate limit por IP/usuario de middlewares/rateLimit.ts: ese limita
+  // cuántas peticiones puede hacer un origen en una ventana de tiempo;
+  // esto bloquea la CUENTA específica sin importar desde qué IP vengan los
+  // intentos. intentosFallidos se resetea a 0 tras un login exitoso;
+  // bloqueadoHasta queda null mientras la cuenta no esté bloqueada.
+  intentosFallidos       Int        @default(0) @map("intentos_fallidos")
+  bloqueadoHasta         DateTime?  @map("bloqueado_hasta") @db.Timestamptz(6)
   // Solo se llena para cuentas rol=trabajador (el kiosco autentica al
   // trabajador contra su propio registro). Único: un trabajador tiene a lo
   // más una cuenta.
