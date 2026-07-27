@@ -264,6 +264,48 @@ Layered Express app, one direction of dependency only:
   session after 30 minutes of *inactivity* (see Frontend section) — a
   distinct, shorter, client-side mechanism layered on top of the token's
   own absolute expiry, not a replacement for it.
+- **`Terminal` tipo="adms" cannot log in via `/auth/login-terminal` —
+  fixed 2026-07-27, was a real IP-allowlist bypass, not just a latent
+  gap.** `iniciarSesionTerminal` used to authenticate ANY `Terminal` row
+  purely by username+password, regardless of `tipo` — it never checked
+  whether that terminal was actually meant to hold a JWT session. The
+  ADMS reader (`tipo="adms"`) is protected by `restringirPorIP.ts` on its
+  own protocol (`/iclock/*`), but that protection is entirely bypassed if
+  the same credentials can instead go through `/auth/login-terminal` and
+  get a normal 30-day Terminal JWT — from there, `POST /asistencias` (the
+  Kiosco endpoint) would accept fabricated marcaciones as if a real Kiosco
+  had sent them, with no IP restriction at all (that endpoint was never
+  meant to need one — a Kiosco is JWT-authenticated by design). Closed by
+  rejecting login explicitly when `terminal.tipo === "adms"`, checked
+  *after* password/`activo` validation (same principle as the rest of
+  this file: don't reveal a terminal's type to someone who hasn't proven
+  they know its password) — a wrong password still gets the generic 401,
+  only a *correct* password against an `adms` terminal gets the specific
+  403. Verified live: correct password against the real
+  `terminal_mb10vl_oficina` → 403 with the specific message; wrong
+  password against it → generic 401 (not the ADMS message); correct
+  password against a `tipo="huella"` terminal → 200 with a token,
+  unaffected.
+- **`Terminal` alta for `tipo="adms"` no longer accepts a caller-supplied
+  password — the server generates one.** Since that login path is now
+  rejected unconditionally (previous bullet), asking an administrator to
+  type a password for it served no real purpose. `crearTerminal`
+  (`terminal.service.ts`) generates a random one (`crypto.randomBytes(32)`,
+  base64) server-side when `tipo === "adms"`, hashes it the same way as
+  any other terminal, and never exposes the plaintext anywhere — not in
+  the endpoint's response (`TerminalPublico` never included
+  password/hash to begin with) and not in any log.
+  `validarAltaTerminal.ts` no longer requires `password` in the request
+  body when `tipo === "adms"` (still required for every other type).
+  Verified live: `POST /terminales` with `tipo="adms"` and no `password`
+  field at all → `201`; the resulting terminal still gets rejected by
+  `/auth/login-terminal` regardless of what password is guessed → `401`
+  (wrong) or would be `403` (right, but there's no way to know it — it's
+  never exposed); a non-`adms` terminal alta without `password` still
+  gets the original `400`. No frontend form for creating `Terminal` rows
+  exists yet anywhere in the app (checked `UsuariosPage.tsx`, all other
+  pages) — every terminal alta so far has gone through the API directly,
+  so there was no UI password field to remove.
 
 ### Data model (`prisma/schema.prisma`)
 
@@ -485,6 +527,14 @@ Address`, aprovechando que el modo "Enable Domain Name" acepta algo con
 forma de URL) quedó identificada pero **sin verificar** — depende de
 cómo el firmware real concatene ese campo, y no se puede probar sin el
 equipo físico conectado (ver "Bloqueado" más abajo).
+
+**Bypass real cerrado 2026-07-27: un `Terminal` tipo="adms" ya no puede
+autenticarse por `/auth/login-terminal`.** La lista blanca de IP de abajo
+solo protege `/iclock/*` — hasta este fix, las mismas credenciales del
+terminal ADMS también servían para entrar por la ruta JWT normal de
+Kiosco, saltándose esa protección por completo. Ver la sección "Auth"
+arriba (`iniciarSesionTerminal`) para el detalle técnico y la
+verificación en vivo.
 
 **Mitigación real, explícita, en tres capas** (dado que el equipo no tiene
 forma propia de autenticarse — ver el descarte del Comm Key arriba —, IP

@@ -14,13 +14,17 @@ export function validarAltaTerminal(req: Request, res: Response, next: NextFunct
     return;
   }
 
-  if (!esStringNoVacia(password, LONGITUD_MAXIMA_PASSWORD)) {
-    res.status(400).json({ error: "password es requerido y debe ser un texto válido." });
+  if (!esStringNoVacia(tipo, LONGITUD_MAXIMA_TEXTO)) {
+    res.status(400).json({ error: "tipo es requerido y debe ser un texto válido." });
     return;
   }
 
-  if (!esStringNoVacia(tipo, LONGITUD_MAXIMA_TEXTO)) {
-    res.status(400).json({ error: "tipo es requerido y debe ser un texto válido." });
+  // tipo="adms" nunca puede iniciar sesión (terminalAuth.service.ts lo
+  // rechaza explícitamente) - su password se genera en el servidor
+  // (terminal.service.ts), nunca la escribe un administrador ni viaja en
+  // la petición.
+  if (tipo !== "adms" && !esStringNoVacia(password, LONGITUD_MAXIMA_PASSWORD)) {
+    res.status(400).json({ error: "password es requerido y debe ser un texto válido." });
     return;
   }
 

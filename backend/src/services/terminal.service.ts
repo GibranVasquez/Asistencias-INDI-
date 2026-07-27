@@ -1,13 +1,20 @@
 import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { serializarTerminal, TerminalPublico } from "../utils/terminalSerializer";
 
 const RONDAS_BCRYPT = 10;
+// Bytes de entropía (antes de base64) para la password autogenerada de un
+// terminal tipo="adms" — ver crearTerminal.
+const BYTES_PASSWORD_GENERADA_ADMS = 32;
 
 export interface DatosAltaTerminal {
   username: string;
-  password: string;
+  // No requerida para tipo="adms": terminalAuth.service.ts rechaza login
+  // para ese tipo sin importar la password, así que no tiene sentido
+  // pedirle a un administrador que escriba una a mano - se genera aquí.
+  password?: string;
   tipo: string;
   ubicacion: string;
   numeroSerie?: string | null;
@@ -31,7 +38,18 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
     }
   }
 
-  const passwordHash = await bcrypt.hash(datos.password, RONDAS_BCRYPT);
+  // tipo="adms" nunca puede iniciar sesión (ver terminalAuth.service.ts,
+  // rechaza ese tipo explícitamente) - su password nunca se usa para nada
+  // real, así que se genera aleatoria aquí mismo en vez de aceptar una que
+  // un administrador escriba a mano. No se expone en ningún lado: no viaja
+  // de vuelta en la respuesta (TerminalPublico no incluye password/hash) ni
+  // se loguea.
+  const password = datos.tipo === "adms" ? randomBytes(BYTES_PASSWORD_GENERADA_ADMS).toString("base64") : datos.password;
+  if (!password) {
+    throw new AppError(400, "password es requerido.");
+  }
+
+  const passwordHash = await bcrypt.hash(password, RONDAS_BCRYPT);
 
   const terminal = await prisma.$transaction(async (tx) => {
     const nuevo = await tx.terminal.create({
