@@ -449,38 +449,99 @@ de Postman), no de documentación de ZKTeco:
   `src/routes/index.ts`: las rutas `/iclock/*` las fija el firmware, no
   son elegibles de nuestro lado).
 
-**Autenticación: el protocolo no tiene ninguna.** Revisado en varias
-implementaciones de terceros — ni token, ni API key, ni header de auth.
-El `SN` (número de serie) viaja en texto plano y es trivialmente
-falsificable por cualquiera que lo conozca (visible en la etiqueta física
-del equipo). `resolverTerminalPorSN` (`adms.service.ts`) valida el SN
-contra `Terminal.numeroSerie` — **esto NO es autenticación real**, solo
-confirma "es un equipo que nosotros dimos de alta".
+**Autenticación: el protocolo no tiene ninguna que este equipo pueda
+usar.** Revisado en varias implementaciones de terceros — ni token, ni
+API key, ni header de auth. El `SN` (número de serie) viaja en texto
+plano y es trivialmente falsificable por cualquiera que lo conozca
+(visible en la etiqueta física del equipo). `resolverTerminalPorSN`
+(`adms.service.ts`) valida el SN contra `Terminal.numeroSerie` — **esto
+NO es autenticación real**, solo confirma "es un equipo que nosotros
+dimos de alta".
 
-**Mitigación real, explícita, en dos capas** (el backend va a vivir en AWS,
-público — "protección de red" no basta dejarlo implícito):
+**Investigado y descartado (2026-07-27): "Comm Key" / `pushcommkey`.**
+La especificación del protocolo PUSH de ZKTeco sí documenta un parámetro
+`pushcommkey` (32 caracteres hex, en el query string del handshake GET
+`/iclock/cdata`) descrito como "ciphertext para vincular cliente y
+servidor" — pero el propio documento lo marca opcional ("solo aplica
+cuando el cliente lo soporta Y el servidor lo soporta"), y ninguna de
+las 3 librerías/SDKs de terceros revisadas lo implementa. Más importante:
+**revisado el manual de usuario real del MB10-VL** (y, para descartar que
+fuera una omisión de esa página en particular, cruzado contra 2 manuales
+más de equipos ZKTeco standalone de la misma familia de firmware) — su
+menú `COMM. > Cloud Server Setting` (el que sí configura la conexión
+ADMS) únicamente expone `Server Address`, `Server Port`, `Enable Domain
+Name`, `Enable Proxy Server` y un toggle `HTTPS` — **ningún campo de
+clave/token**. El "Comm Key" que sí existe en ese mismo manual vive bajo
+`COMM. > PC Connection`, un ajuste completamente distinto (password de
+1-6 dígitos para el protocolo SDK clásico de ZKTeco, típicamente TCP
+binario puerto 4370, usado por software tipo ZKAttendance/pyzk) — no
+tiene relación con el protocolo ADMS/HTTP que usa `/iclock/*`. Conclusión:
+sin acceso al software comercial de ZKTeco (ZKBioAccess/ZKBioTime, que
+probablemente sea quien de verdad provisiona `pushcommkey` al emparejar
+equipo+servidor), el MB10-VL operado de forma standalone contra un
+backend propio **no tiene forma de enviar ningún secreto por request**.
+Una idea de respaldo (un valor fijo embebido en el campo `Server
+Address`, aprovechando que el modo "Enable Domain Name" acepta algo con
+forma de URL) quedó identificada pero **sin verificar** — depende de
+cómo el firmware real concatene ese campo, y no se puede probar sin el
+equipo físico conectado (ver "Bloqueado" más abajo).
+
+**Mitigación real, explícita, en tres capas** (dado que el equipo no tiene
+forma propia de autenticarse — ver el descarte del Comm Key arriba —, IP
+es la única mitigación real de bloqueo que existe hoy; se complementa con
+detección rápida de fallos, no la reemplaza):
 
 1. **Aplicación** (`middlewares/restringirPorIP.ts`, capa principal):
    `ADMS_IPS_PERMITIDAS` (env var, IPs separadas por coma) — `req.ip` debe
    estar en la lista o se rechaza con 403 antes de llegar siquiera a
    `resolverTerminalPorSN`. Funciona en cualquier plataforma de despliegue
-   (Railway o AWS — la decisión entre las dos sigue sin tomarse, ver
-   "Despliegue" arriba), a diferencia de una mitigación solo de
-   infraestructura, que quedaría atada a una sola. **Fail-closed en
-   producción**: si `NODE_ENV=production` y la variable no está
-   configurada, se rechaza TODO /iclock/* (no se asume "sin lista,
-   dejar pasar" como seguro). Fuera de producción, si se omite, no
-   bloquea (para no exigir configurarla en cada entorno de desarrollo) —
-   pero si sí está configurada, se respeta igual fuera de producción.
-   Requirió corregir algo que no existía: `app.set("trust proxy", 1)`
-   (`app.ts`) — sin esto, `req.ip` mostraría la IP del balanceador
-   administrado de Railway/App Runner, no la del cliente real, una vez
-   desplegado (afecta también al keying por IP del rate limiter general,
-   mismo bug latente, corregido de paso). Verificado en vivo con las 4
-   combinaciones: sin configurar en dev (deja pasar), configurada con IP
-   que no coincide (rechaza), configurada con la IP real del cliente
-   (deja pasar), sin configurar en producción simulada (rechaza todo).
-2. **Infraestructura** (`infra/terraform/waf.tf`, capa adicional,
+   (Railway o AWS — la decisión entre las dos sigue sin tomarse). **Fail-
+   closed en producción**: si `NODE_ENV=production` y la variable no está
+   configurada, se rechaza TODO /iclock/* (no se asume "sin lista, dejar
+   pasar" como seguro — sin esta capa el endpoint quedaría sin ninguna
+   protección real, dado que no hay alternativa de auth para este equipo).
+   Fuera de producción, si se omite, no bloquea (para no exigir
+   configurarla en cada entorno de desarrollo) — pero si sí está
+   configurada, se respeta igual fuera de producción. Requirió
+   `app.set("trust proxy", 1)` (`app.ts`) para que `req.ip` refleje al
+   cliente real detrás de un proxy administrado (Railway/App Runner), no
+   al balanceador — corregido de paso el mismo bug latente en el keying
+   por IP del rate limiter general. Verificado en vivo con las 4
+   combinaciones (sin configurar en dev, IP configurada que no coincide,
+   IP configurada que sí coincide, producción simulada sin configurar) y,
+   por separado, con `X-Forwarded-For` spoofeado vía curl para el fix de
+   `trust proxy` (prueba positiva: con `trust proxy` activo, `req.ip`
+   refleja el header; prueba negativa: desactivándolo temporalmente, el
+   header se ignora y `req.ip` vuelve a ser el peer real — confirma que el
+   ajuste sí es el que determina el comportamiento).
+
+   *Nota histórica:* el 2026-07-27 esta capa se cambió brevemente a
+   "opcional/fail-open en todo ambiente" (razonamiento: evitar que un
+   cambio futuro de IP de la oficina bloqueara marcaciones reales sin que
+   nadie lo notara) y se revirtió el mismo día — con el Comm Key
+   descartado, quitar el único bloqueo real dejaría el endpoint
+   completamente abierto. El riesgo original ("la IP cambia y nadie se
+   entera") quedó cubierto por la capa 2 de abajo, no por volver esto
+   opcional.
+2. **Detección: alerta de inactividad en el Dashboard**
+   (`frontend/.../pages/DashboardPage.tsx`). Complementa la capa de
+   bloqueo, no la reemplaza: si la IP configurada deja de ser correcta
+   (cambio de proveedor, etc.) el endpoint volverá a rechazar todo por
+   diseño (fail-closed) — lo que esta alerta resuelve es que alguien se
+   entere RÁPIDO de que eso pasó, en vez de días después al ver nómina
+   rara. `GET /terminales` (rh/administrador) expone
+   `Terminal.ultimaSincronizacion` (ya se actualizaba en
+   `adms.controller.ts` en cada handshake/subida de datos, pero no se
+   exponía); el Dashboard marca como inactivo cualquier `Terminal`
+   `tipo="adms"` cuya `ultimaSincronizacion` sea `null` o tenga más de 24h
+   (`UMBRAL_HORAS_INACTIVIDAD_ADMS`), y muestra un banner rojo visible
+   arriba de las tarjetas KPI. Umbral fijo (no ligado a horario real de
+   oficina, que no está modelado de forma reutilizable para este
+   propósito). Verificado en vivo con Electron real: terminal ADMS de
+   prueba con `ultima_sincronizacion` forzada a 48h atrás → banner visible
+   con el nombre del terminal y la fecha exacta; terminal eliminado →
+   banner desaparece.
+3. **Infraestructura** (`infra/terraform/waf.tf`, capa adicional,
    específica de AWS): un Web ACL de WAF asociado directamente al
    servicio de App Runner (confirmado que esto es posible sin CloudFront
    ni cambiar de arquitectura — un servicio *público* de App Runner sí
@@ -621,10 +682,15 @@ decisión, ejecución o insumo externo del usuario/cliente:
   confirmar el número de serie real (hoy solo hay uno de prueba,
   `TEST-SN-MB10VL-001`, que no debe quedar en ninguna base real), validar
   que el mapeo de método de verificación (`1=huella, 15=rostro`) coincide
-  con lo que este modelo/firmware realmente manda, y confirmar la IP
+  con lo que este modelo/firmware realmente manda, confirmar la IP
   pública real de la oficina para `ADMS_IPS_PERMITIDAS` (hoy solo hay un
-  valor de ejemplo en `.env.example`/`terraform.tfvars.example`) — sin
-  eso, en producción el endpoint rechaza todo por diseño (fail-closed).
+  valor de ejemplo en `.env.example`/`terraform.tfvars.example` — sin
+  eso, en producción el endpoint rechaza todo por diseño, fail-closed), y
+  **probar contra el menú real del equipo si el campo `Server Address`
+  (en `Cloud Server Setting`) acepta un valor con forma de path** (ej.
+  `midominio.com/token-secreto`) — idea de respaldo identificada al
+  descartar el Comm Key (ver sección ADMS) pero sin forma de verificar sin
+  el equipo físico en mano.
 - **Cumplimiento legal / ubicación de almacenamiento de datos
   biométricos** — pendiente de asesoría legal externa.
 - **Datos operativos reales de RH** — horario real de campo, nombres de

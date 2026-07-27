@@ -12,6 +12,12 @@ export interface TerminalPublico {
   numeroSerie: string | null;
   activo: boolean;
   estadoConexion: string;
+  // Solo se actualiza para terminales tipo="adms" (ver adms.controller.ts,
+  // handshake/subirDatos) — el equipo no tiene sesión JWT que "mantenga vivo"
+  // un terminal Kiosco, así que este campo queda null para esos. Expuesto
+  // para que el Dashboard pueda advertir si el lector de oficina dejó de
+  // sincronizar (ver DashboardPage.tsx).
+  ultimaSincronizacion: string | null;
 }
 
 export function serializarTerminal(terminal: Terminal): TerminalPublico {
@@ -23,5 +29,6 @@ export function serializarTerminal(terminal: Terminal): TerminalPublico {
     numeroSerie: terminal.numeroSerie,
     activo: terminal.activo,
     estadoConexion: terminal.estadoConexion,
+    ultimaSincronizacion: terminal.ultimaSincronizacion ? terminal.ultimaSincronizacion.toISOString() : null,
   };
 }

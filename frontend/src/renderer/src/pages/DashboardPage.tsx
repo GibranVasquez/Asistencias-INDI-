@@ -3,10 +3,29 @@ import { AsistenciaListada, listarAsistencias } from "../api/asistencias";
 import { ApiError } from "../api/client";
 import { Horario, listarHorarios } from "../api/horarios";
 import { listarSecciones, Seccion } from "../api/secciones";
+import { listarTerminales, Terminal } from "../api/terminales";
 import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 
 type Rango = "dia" | "semana" | "mes";
+
+// Umbral fijo, no ligado a horario de oficina real (no hay uno modelado de
+// forma reutilizable para este propósito) — 24h cubre "no sincronizó desde
+// ayer" sin necesitar saber turnos exactos. Solo aplica a terminales
+// tipo="adms": son los únicos donde ultimaSincronizacion se actualiza (el
+// Kiosco Electron no tiene ese campo poblado — no hace falta, tiene su
+// propia sesión JWT). Con IP dejando de ser la mitigación real del endpoint
+// ADMS (ver restringirPorIP.ts), esta alerta es la forma de enterarse rápido
+// si algo se rompió (IP, proveedor, o el equipo mismo) en vez de descubrirlo
+// días después al ver nómina rara.
+const UMBRAL_HORAS_INACTIVIDAD_ADMS = 24;
+
+function terminalAdmsInactivo(terminal: Terminal, ahora: Date): boolean {
+  if (terminal.tipo !== "adms") return false;
+  if (!terminal.ultimaSincronizacion) return true;
+  const horasDesdeUltimaSync = (ahora.getTime() - new Date(terminal.ultimaSincronizacion).getTime()) / 3_600_000;
+  return horasDesdeUltimaSync > UMBRAL_HORAS_INACTIVIDAD_ADMS;
+}
 
 const NOMBRES_DIA_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
@@ -109,6 +128,12 @@ export default function DashboardPage() {
   const trabajadores = useCargaProtegida(() => listarTrabajadores(token).then((r) => r.trabajadores), [token]);
   const secciones = useCargaProtegida(() => listarSecciones(token).then((r) => r.secciones), [token]);
   const horarios = useCargaProtegida(() => listarHorarios(token).then((r) => r.horarios), [token]);
+  const terminales = useCargaProtegida(() => listarTerminales(token).then((r) => r.terminales), [token]);
+
+  const terminalesAdmsInactivos = useMemo(
+    () => (terminales.datos ?? []).filter((t) => terminalAdmsInactivo(t, hoy)),
+    [terminales.datos, hoy]
+  );
 
   // Puntualidad depende de las dos listas: cuál horario le toca a una
   // seccion (secciones) y los datos de ese horario (horarios). Si CUALQUIERA
@@ -218,6 +243,35 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {terminalesAdmsInactivos.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            background: "rgba(229,72,77,.1)",
+            border: "1px solid var(--err)",
+            borderRadius: 12,
+            padding: "14px 18px",
+            marginTop: 22,
+          }}
+        >
+          {terminalesAdmsInactivos.map((t) => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5, color: "var(--ink)" }}>
+              <span style={{ fontWeight: 700, color: "var(--err)" }}>⚠</span>
+              <span>
+                El terminal de oficina <strong>"{t.ubicacion}"</strong> no ha sincronizado
+                {t.ultimaSincronizacion
+                  ? ` desde hace más de ${UMBRAL_HORAS_INACTIVIDAD_ADMS} horas (última vez: ${new Date(
+                      t.ultimaSincronizacion
+                    ).toLocaleString("es-MX")}).`
+                  : " nunca."}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginTop: 22 }}>
         <TarjetaKPI
