@@ -112,6 +112,27 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   todavía documenta `?sslmode=require` para Supabase, mismo riesgo latente
   ahí, no corregido todavía por estar fuera del alcance urgente de este
   hallazgo.
+- **El CLI de Prisma (`prisma migrate deploy`) NUNCA validó el CA de RDS
+  — confirmado en vivo 2026-07-30, y es un problema distinto del anterior.**
+  El motor de migraciones es Rust, no pasa por el `ssl: { ca: ... }`
+  explícito de `src/utils/prisma.ts` (eso es código JS de la app en
+  runtime) — el CLI solo lee lo que traiga la propia connection string. Un
+  `DATABASE_URL`/`DIRECT_URL` con solo `?sslmode=require` (el patrón
+  usado hasta ahora para correr migraciones/`psql` manual contra RDS vía
+  el túnel del bastión) cifra la conexión pero no autentica al servidor en
+  absoluto. Confirmado con la misma prueba positiva/negativa que ya se
+  hizo para Supabase: `sslrootcert` equivocado contra RDS → falla
+  explícito ("certificate verify failed"); el correcto
+  (`rds-global-bundle.pem`) → conecta bien. Corrección documentada en
+  `infra/AWS_MIGRATION.md` (sección 6): usar
+  `sslmode=verify-full&sslrootcert=<ruta>/rds-global-bundle.pem` al
+  conectar directo al endpoint real de RDS (`verify-ca` en vez de
+  `verify-full` si se conecta vía `localhost` del túnel SSM, ya que el
+  hostname del túnel no coincide con el del certificado real). No hay
+  ningún secret/recurso de Terraform que corregir aquí — `DIRECT_URL`
+  para uso de CLI siempre se teclea manualmente en la máquina de
+  desarrollo, nunca queda guardado; el fix es puramente de documentación
+  para que la próxima vez se use el parámetro correcto desde el inicio.
 
 ### Despliegue (Railway)
 
