@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { ReporteNomina } from "../../services/reporteNomina.service";
 import { dibujarTabla } from "../pdfTabla";
+import { sanitizarCeldaExcel } from "./sanitizarCeldaExcel";
 
 function moneda(valor: string): string {
   return `$${Number(valor).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
@@ -79,7 +80,7 @@ export async function generarExcelNomina(reporte: ReporteNomina): Promise<ExcelJ
   const hojaCategoria = libro.addWorksheet("Por categoría");
   hojaCategoria.addRow(["Categoría", "Total pagado", "Trabajadores"]).font = { bold: true };
   for (const c of reporte.porCategoria) {
-    hojaCategoria.addRow([c.categoria, Number(c.totalPagado), c.cantidadTrabajadores]);
+    hojaCategoria.addRow([sanitizarCeldaExcel(c.categoria), Number(c.totalPagado), c.cantidadTrabajadores]);
   }
 
   const hojaPeriodo = libro.addWorksheet("Por periodo");

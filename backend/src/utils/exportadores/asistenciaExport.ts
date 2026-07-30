@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { ReporteAsistencia } from "../../services/reporteAsistencia.service";
 import { dibujarTabla } from "../pdfTabla";
+import { sanitizarCeldaExcel } from "./sanitizarCeldaExcel";
 
 function pct(valor: number | null): string {
   return valor === null ? "—" : `${valor}%`;
@@ -80,7 +81,13 @@ export async function generarExcelAsistencia(reporte: ReporteAsistencia): Promis
   const hojaSeccion = libro.addWorksheet("Por sección");
   hojaSeccion.addRow(["Sección", "Presentes", "A tiempo", "Tardanzas", "Puntualidad"]).font = { bold: true };
   for (const s of reporte.porSeccion) {
-    hojaSeccion.addRow([s.seccionNombre, s.presentes, s.aTiempo, s.tardanzas, pct(s.porcentajePuntualidad)]);
+    hojaSeccion.addRow([
+      sanitizarCeldaExcel(s.seccionNombre),
+      s.presentes,
+      s.aTiempo,
+      s.tardanzas,
+      pct(s.porcentajePuntualidad),
+    ]);
   }
 
   const hojaTendencia = libro.addWorksheet("Tendencia");
