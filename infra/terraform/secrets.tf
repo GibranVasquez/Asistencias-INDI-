@@ -42,13 +42,27 @@ resource "aws_secretsmanager_secret_version" "db_password" {
 # en README.md de esta carpeta), las dos apuntan al mismo endpoint de RDS
 # - a diferencia del pooler de Supabase, aqui no hay una distincion real
 # pooled-vs-directa que preservar.
+#
+# SIN "?sslmode=require" a proposito - bug real encontrado en vivo
+# 2026-07-30: la version instalada de pg-connection-string trata
+# "sslmode=require" como alias de "verify-full" (cambio de comportamiento
+# documentado en su propio warning en runtime), y ese modo, combinado con
+# el objeto ssl explicito que ya arma src/utils/prisma.ts (rejectUnauthorized
+# + ca pinneado), termina validando la cadena contra el almacen de CAs por
+# default de Node en vez de contra el CA explicito - "self-signed
+# certificate in certificate chain" pese a que el CA correcto SI se estaba
+# leyendo y pasando bien. Aislado con una prueba minima usando pg puro (sin
+# Prisma): la misma connectionString+ssl explicito conecta bien sin este
+# parametro, y falla con el. El objeto ssl explicito en prisma.ts ya es
+# suficiente para forzar TLS+verificacion real - este parametro de URL es
+# redundante y, con esta version de la libreria, activamente dañino.
 locals {
-  database_url = "postgresql://${var.db_master_username}:${random_password.db_master_password.result}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}?sslmode=require"
+  database_url = "postgresql://${var.db_master_username}:${random_password.db_master_password.result}@${aws_db_instance.postgres.address}:${aws_db_instance.postgres.port}/${var.db_name}"
 }
 
 resource "aws_secretsmanager_secret" "database_url" {
   name        = "${var.project_name}/${var.environment}/database-url"
-  description = "Connection string completa - referenciada como DATABASE_URL y DIRECT_URL en App Runner"
+  description = "Connection string completa - referenciada como DATABASE_URL y DIRECT_URL en la task de ECS"
 }
 
 resource "aws_secretsmanager_secret_version" "database_url" {

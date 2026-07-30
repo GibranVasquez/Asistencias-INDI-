@@ -96,6 +96,22 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   compilado — misma profundidad relativa a `backend/` en los dos casos,
   por eso `../../certs/...` desde `__dirname` llega a `backend/certs/` en
   ambos entornos sin necesitar detectar en cuál se está corriendo.
+- **`DATABASE_URL` NUNCA debe llevar `?sslmode=require` cuando el código ya
+  pasa un `ssl: { ca: ... }` explícito — bug real encontrado en producción
+  2026-07-30, distinto del CA fijo.** La versión instalada de
+  `pg-connection-string` trata `sslmode=require` como alias de
+  `verify-full` (cambio de comportamiento que la propia librería avisa por
+  warning en runtime) — combinado con un `ssl` explícito en código, termina
+  validando la cadena contra el almacén de CAs por default de Node en vez
+  de contra el CA pinneado, fallando con el mismo "self-signed certificate
+  in certificate chain" aunque el CA correcto sí se esté leyendo y pasando
+  bien. Aislado con una prueba mínima usando `pg` puro (sin Prisma): la
+  misma `connectionString` + `ssl` explícito conecta bien sin ese
+  parámetro, y falla con él. `infra/terraform/secrets.tf` ya no lo incluye
+  en la `DATABASE_URL` que arma para RDS — pendiente real: `backend/.env.example`
+  todavía documenta `?sslmode=require` para Supabase, mismo riesgo latente
+  ahí, no corregido todavía por estar fuera del alcance urgente de este
+  hallazgo.
 
 ### Despliegue (Railway)
 
@@ -755,3 +771,19 @@ decisión, ejecución o insumo externo del usuario/cliente:
   cuál de las dos se usa de verdad, crear la cuenta correspondiente, y
   para AWS específicamente falta además probar en vivo el CA pinning de
   RDS (código listo, no verificado contra una instancia real todavía).
+- **`db_backup_retention_days` de RDS debe subirse antes de que la
+  instancia tenga datos reales de producción — hoy vale `1` día, no por
+  elección, sino porque `7` (el valor original) falló en vivo contra la
+  cuenta real con `FreeTierRestrictionError` (ver comentario en
+  `infra/terraform/variables.tf`, la cuenta de AWS es nueva y está bajo
+  restricciones de Free Tier en varios recursos a la vez — mismo patrón
+  que el tipo de instancia EC2 del bastión).** 1 día de retención es
+  insuficiente para nómina/datos biométricos reales — no hay margen para
+  recuperar un backup si el problema se detecta unos días después. AWS no
+  documenta el límite exacto permitido bajo Free Tier; pendiente probar
+  en vivo (`terraform apply -target=aws_db_instance.postgres` tras subir
+  el valor en `terraform.tfvars`) si un valor mayor (7+) ya funciona, ya
+  sea porque la cuenta salió de esas restricciones o porque el límite
+  real es más alto de lo que pareció en el primer intento. Hacerlo antes
+  de migrar los datos reales desde Supabase (ver siguiente paso pendiente
+  más abajo), no después.
