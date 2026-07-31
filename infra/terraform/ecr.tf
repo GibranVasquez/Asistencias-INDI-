@@ -1,8 +1,8 @@
 # Repositorio de imagenes. La imagen misma se construye a partir de
 # backend/Dockerfile y se sube con `docker build` + `docker push` (o un
 # pipeline de CI) por fuera de Terraform - este recurso solo crea el
-# repositorio donde vive esa imagen; aws_apprunner_service.backend (ver
-# apprunner.tf) referencia la imagen ya subida ahi.
+# repositorio donde vive esa imagen; aws_ecs_task_definition.backend (ver
+# ecs.tf) referencia la imagen ya subida ahi.
 resource "aws_ecr_repository" "backend" {
   name                 = "${var.project_name}-backend"
   image_tag_mutability = "MUTABLE"

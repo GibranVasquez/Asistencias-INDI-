@@ -3,8 +3,21 @@
 # infra/AWS_MIGRATION.md para la lista completa explicada.
 
 aws_region          = "us-east-1"
-vpc_id              = "vpc-XXXXXXXXXXXXXXXXX"
-private_subnet_ids  = ["subnet-XXXXXXXXXXXXXXXXX", "subnet-YYYYYYYYYYYYYYYYY"]
+# vpc_id, private_subnet_ids, public_subnet_ids, bastion_security_group_id,
+# private_route_table_id salen de infra/terraform-network/ (terraform
+# output, despues de aplicar ese stack primero - ver
+# infra/terraform-network/README.md).
+vpc_id                    = "vpc-XXXXXXXXXXXXXXXXX"
+private_subnet_ids        = ["subnet-XXXXXXXXXXXXXXXXX", "subnet-YYYYYYYYYYYYYYYYY"]
+public_subnet_ids         = ["subnet-AAAAAAAAAAAAAAAAA", "subnet-BBBBBBBBBBBBBBBBB"]
+bastion_security_group_id = "sg-XXXXXXXXXXXXXXXXX"
+private_route_table_id    = "rtb-XXXXXXXXXXXXXXXXX"
+
+# Dominio raiz real (comprado fuera de Terraform, ej. Namecheap) - el
+# backend queda expuesto en "api.${root_domain_name}". Ver
+# infra/AWS_MIGRATION.md para el orden OBLIGATORIO de pasos (zona ->
+# copiar NS -> esperar propagacion -> recien entonces el resto del apply).
+root_domain_name = "sistemasindi.com"
 
 # IP publica real de la oficina de Grupo INDI (donde vive el lector ZKTeco
 # MB10-VL) - separadas por coma si hay mas de una. Sin default a proposito

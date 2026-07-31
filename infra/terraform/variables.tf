@@ -8,18 +8,43 @@ variable "aws_region" {
 }
 
 variable "vpc_id" {
-  description = "VPC donde vive la subred privada de RDS y el VPC Connector de App Runner. No existe todavia."
+  description = "VPC donde vive la subred privada de RDS y de las tasks de ECS. No existe todavia."
   type        = string
 }
 
 variable "private_subnet_ids" {
-  description = "Subnets privadas (al menos 2, en AZs distintas) para el DB subnet group de RDS y el VPC Connector de App Runner. No existen todavia."
+  description = "Subnets privadas (al menos 2, en AZs distintas) para el DB subnet group de RDS y las tasks de ECS (Fargate). No existen todavia."
   type        = list(string)
 
   validation {
     condition     = length(var.private_subnet_ids) >= 2
     error_message = "RDS necesita al menos 2 subnets en AZs distintas para su subnet group."
   }
+}
+
+variable "public_subnet_ids" {
+  description = "Subnets publicas (al menos 2, en AZs distintas) para el Application Load Balancer de ECS - infra/terraform-network/, output public_subnet_ids (incluye la subnet del bastion + la agregada especificamente para el ALB, ver terraform-network/README.md). Un ALB exige minimo 2 subnets en 2 AZs distintas."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.public_subnet_ids) >= 2
+    error_message = "El ALB necesita al menos 2 subnets publicas en AZs distintas."
+  }
+}
+
+variable "bastion_security_group_id" {
+  description = "Security Group del bastion SSM (infra/terraform-network/, output bastion_security_group_id) - el SG de RDS acepta conexiones desde este SG ademas del de ECS, para poder correr `prisma migrate deploy` desde una maquina de desarrollo a traves de un tunel de SSM Session Manager (ver infra/terraform-network/README.md)."
+  type        = string
+}
+
+variable "private_route_table_id" {
+  description = "Tabla de rutas privada (infra/terraform-network/, output private_route_table_id) - usada por el VPC Gateway Endpoint de S3 (vpc_endpoints.tf). Necesaria porque las tasks de ECS en subredes privadas (sin NAT Gateway, decision deliberada) no tienen ninguna ruta a internet, y varias APIs de AWS que la task necesita en tiempo de arranque (Secrets Manager, ECR, CloudWatch Logs) son endpoints publicos - confirmado en vivo 2026-07-30: la primera task real fallo con 'unable to retrieve secret from asm: connection issue' exactamente por esto. Los VPC Interface Endpoints (secretsmanager/ecr.api/ecr.dkr/logs) resuelven el resto sin necesitar esta tabla de rutas - solo el Gateway Endpoint de S3 (requerido por ECR para las capas de imagen) se asocia a nivel de tabla de rutas en vez de via ENI."
+  type        = string
+}
+
+variable "root_domain_name" {
+  description = "Dominio raiz real (ej. \"sistemasindi.com\") - se crea una zona de Route 53 para el (aws_route53_zone, recurso, no data source, porque el dominio NO se registro directamente en Route 53 - ver dns.tf). El backend queda expuesto en el subdominio api de ese dominio (construido dentro de Terraform, no una variable separada). Sin default: no se puede asumir todavia - ver infra/AWS_MIGRATION.md para el orden obligatorio de pasos (comprar dominio -> crear zona -> copiar NS a Namecheap -> esperar propagacion -> recien entonces aplicar el certificado)."
+  type        = string
 }
 
 variable "project_name" {
@@ -37,9 +62,9 @@ variable "environment" {
 # --- RDS ---
 
 variable "db_engine_version" {
-  description = "Version de motor de Postgres. 17.4 como default porque Supabase (la base actual) corre Postgres 17.6 hoy (confirmado con SELECT version()) - CONFIRMAR la minor version real disponible en la region elegida con `aws rds describe-db-engine-versions --engine postgres` antes del primer apply, puede no coincidir exactamente."
+  description = "Version de motor de Postgres. 17.6 porque Supabase (la base actual) corre esa version hoy (confirmado con SELECT version()) y esta disponible en us-east-1 - confirmado en vivo el 2026-07-30 con `aws rds describe-db-engine-versions --engine postgres` tras un primer intento real con 17.4 fallar con InvalidParameterCombination ('Cannot find version 17.4 for postgres', esa version no existe para este motor en ninguna region). Versiones 17.x reales disponibles en us-east-1 al momento de escribir esto: 17.5 a 17.10."
   type        = string
-  default     = "17.4"
+  default     = "17.6"
 }
 
 variable "db_instance_class" {
@@ -67,9 +92,9 @@ variable "db_master_username" {
 }
 
 variable "db_backup_retention_days" {
-  description = "Dias de retencion de backups automaticos de RDS."
+  description = "Dias de retencion de backups automaticos de RDS. Bajado de 7 a 1 el 2026-07-28: el default de 7 fallo en vivo contra esta cuenta real con FreeTierRestrictionError ('The specified backup retention period exceeds the maximum available to free tier customers') - la cuenta es nueva y esta bajo restricciones de Free Tier en varios recursos a la vez (mismo patron que el tipo de instancia EC2 del bastion). AWS no documenta el numero exacto permitido; 1 es el valor seguro minimo que preserva backups automaticos (0 los desactiva por completo) - pendiente de confirmar en vivo si un valor mayor tambien funciona una vez que la cuenta salga de estas restricciones."
   type        = number
-  default     = 7
+  default     = 1
 }
 
 variable "db_multi_az" {
@@ -78,58 +103,56 @@ variable "db_multi_az" {
   default     = false
 }
 
-# --- App Runner ---
+# --- ECS (Fargate + ALB) ---
+# Reemplaza App Runner (2026-07-28): App Runner dejo de aceptar clientes
+# nuevos desde el 30 de abril de 2026 (confirmado con la documentacion
+# oficial de AWS), y esta cuenta nunca lo habia usado - ver ecs.tf/dns.tf
+# y CLAUDE.md para el detalle completo de la decision.
 
 variable "container_port" {
-  description = "Puerto en el que escucha el contenedor (src/index.ts ya lee process.env.PORT, con fallback a 4000 solo para dev local - aqui se le pasa explicito via runtime_environment_variables)."
+  description = "Puerto en el que escucha el contenedor (src/index.ts ya lee process.env.PORT, con fallback a 4000 solo para dev local - aqui se le pasa explicito via las variables de entorno de la task definition)."
   type        = number
   default     = 4000
 }
 
-variable "apprunner_cpu" {
-  description = "vCPU del servicio de App Runner. Combinaciones validas de AWS: 0.25/0.5/1/2/4 vCPU con memoria especifica por cada una - ver apprunner_memory."
+variable "backend_cpu" {
+  description = "vCPU de la task de Fargate, en unidades de CPU (1024 = 1 vCPU). Combinaciones validas de AWS Fargate: 256/512/1024/2048/4096 con memoria especifica por cada una - ver backend_memory."
   type        = string
-  default     = "0.25 vCPU"
+  default     = "256"
 }
 
-variable "apprunner_memory" {
-  description = "Memoria del servicio de App Runner (debe ser una combinacion valida junto con apprunner_cpu, ver docs de AWS App Runner)."
+variable "backend_memory" {
+  description = "Memoria de la task de Fargate en MiB (debe ser una combinacion valida junto con backend_cpu, ver docs de AWS Fargate)."
   type        = string
-  default     = "0.5 GB"
+  default     = "512"
 }
 
-variable "apprunner_min_instances" {
-  description = "Instancias minimas siempre activas (auto scaling de App Runner, no confundir con capacidad de conexiones a RDS - ver decision de RDS Proxy en el README de esta carpeta)."
+variable "ecs_min_tasks" {
+  description = "Tasks minimas siempre activas (auto scaling de ECS, no confundir con capacidad de conexiones a RDS - ver decision de RDS Proxy en el README de esta carpeta)."
   type        = number
   default     = 1
 }
 
-variable "apprunner_max_instances" {
-  description = "Tope de instancias concurrentes bajo carga."
+variable "ecs_max_tasks" {
+  description = "Tope de tasks concurrentes bajo carga."
   type        = number
   default     = 3
 }
 
-variable "apprunner_max_concurrency" {
-  description = "Peticiones concurrentes por instancia antes de escalar a una instancia nueva."
+variable "ecs_scaling_requests_per_task" {
+  description = "Peticiones promedio por task (metrica ALBRequestCountPerTarget) antes de escalar a una task nueva - equivalente al concepto de concurrencia por instancia que tenia App Runner."
   type        = number
   default     = 100
 }
 
-variable "auto_deployments_enabled" {
-  description = "Si App Runner redespliega solo al detectar un push nuevo a la imagen de ECR. false por default a proposito: mientras no haya CI, un redeploy deberia ser una accion deliberada (docker push + trigger manual), no automatica."
-  type        = bool
-  default     = false
-}
-
 variable "image_tag" {
-  description = "Tag de la imagen en ECR que va a correr App Runner (construida desde backend/Dockerfile y subida fuera de Terraform)."
+  description = "Tag de la imagen en ECR que va a correr la task de ECS (construida desde backend/Dockerfile y subida fuera de Terraform). Redeploys son manuales (`aws ecs update-service --force-new-deployment` tras un nuevo push) - ECS no tiene un toggle de auto-deploy como App Runner; requeriria EventBridge/CodePipeline aparte, no justificado todavia sin CI."
   type        = string
   default     = "latest"
 }
 
 variable "health_check_path" {
-  description = "Path del healthcheck de App Runner - GET /health ya existe en el backend."
+  description = "Path del healthcheck del target group del ALB - GET /health ya existe en el backend."
   type        = string
   default     = "/health"
 }

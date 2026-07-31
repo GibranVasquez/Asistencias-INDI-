@@ -7,15 +7,31 @@ resource "aws_db_subnet_group" "postgres" {
   }
 }
 
-# El SG del VPC Connector de App Runner - RDS confia en el trafico que sale
-# de este SG (ver aws_security_group.rds abajo), no en un rango de IPs. Las
-# ENIs del connector se crean con este SG independientemente de a cuantas
-# instancias escale el servicio, asi que "solo desde App Runner" no depende
-# de mantener actualizada una lista de IPs.
-resource "aws_security_group" "apprunner" {
-  name        = "${var.project_name}-${var.environment}-apprunner"
-  description = "SG del VPC Connector de App Runner (egress hacia la VPC, entre otras cosas hacia RDS)"
+# El SG de las tasks de ECS (Fargate) - RDS confia en el trafico que sale
+# de este SG (ver aws_security_group.rds abajo), no en un rango de IPs.
+# Las ENIs de las tasks se crean con este SG independientemente de a
+# cuantas tasks escale el servicio, asi que "solo desde el backend" no
+# depende de mantener actualizada una lista de IPs. Renombrado de
+# "apprunner" a "ecs_tasks" el 2026-07-28 al migrar de App Runner a ECS.
+resource "aws_security_group" "ecs_tasks" {
+  name        = "${var.project_name}-${var.environment}-ecs-tasks"
+  description = "SG de las tasks de ECS/Fargate del backend (egress hacia la VPC, entre otras cosas hacia RDS)"
   vpc_id      = var.vpc_id
+
+  # Sin esto el ALB no tiene ninguna forma de llegar al contenedor - el
+  # healthcheck falla por timeout (no por el codigo de la app, que ya
+  # escucha en 0.0.0.0 por default de Node cuando app.listen(port) no
+  # especifica host) porque sin regla de ingress TODO el trafico entrante
+  # se bloquea. Confirmado en vivo 2026-07-30: tasks reales terminaban en
+  # SIGKILL (137) tras fallar el healthcheck repetidamente, exactamente
+  # el sintoma esperado de este hueco.
+  ingress {
+    description     = "Healthcheck y trafico real del ALB hacia el backend"
+    from_port       = var.container_port
+    to_port         = var.container_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
 
   egress {
     description = "Salida abierta - el filtrado real de acceso a RDS lo hace el SG de RDS, no este egress"
@@ -26,21 +42,43 @@ resource "aws_security_group" "apprunner" {
   }
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-apprunner-sg"
+    Name = "${var.project_name}-${var.environment}-ecs-tasks-sg"
   }
 }
 
 resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-${var.environment}-rds"
+  name = "${var.project_name}-${var.environment}-rds"
+  # El campo description de un security_group es inmutable en AWS -
+  # cualquier cambio aqui, sin importar cual, fuerza un destroy+recreate
+  # del SG completo (confirmado en vivo dos veces: primero intentando
+  # reescribirlo de "App Runner" a "ECS", luego con un texto generico
+  # nuevo - ambos mostraron "forces replacement" en el plan). Se deja
+  # exactamente igual al valor ya existente en AWS a proposito, aunque ya
+  # mencione App Runner y el compute layer real ahora sea ECS - el detalle
+  # correcto y actualizado vive en la description de cada regla de ingress
+  # de abajo, que si se puede modificar sin reemplazar el SG.
   description = "Postgres RDS - unico ingreso permitido: el SG del VPC Connector de App Runner"
   vpc_id      = var.vpc_id
 
   ingress {
-    description     = "Postgres (5432) unicamente desde el SG de App Runner"
+    description     = "Postgres (5432) unicamente desde el SG de las tasks de ECS"
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.apprunner.id]
+    security_groups = [aws_security_group.ecs_tasks.id]
+  }
+
+  # Bastion SSM (infra/terraform-network/) - unico proposito: permitir
+  # `prisma migrate deploy` desde una maquina de desarrollo via tunel de
+  # SSM Session Manager (ver infra/terraform-network/README.md). El
+  # bastion en si no tiene ningun puerto abierto a internet - el acceso a
+  # el mismo es por IAM (Session Manager), no por red.
+  ingress {
+    description     = "Postgres (5432) unicamente desde el SG del bastion SSM"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [var.bastion_security_group_id]
   }
 
   egress {
