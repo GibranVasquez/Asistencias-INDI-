@@ -309,12 +309,12 @@ export default function NominaPage() {
       <div className="no-imprimir" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginTop: 22 }}>
         <TarjetaKPI color="var(--indi2)" fondo="rgba(46,99,199,.12)" etiqueta="Total nómina semanal" valor={`$${kpis.totalNomina.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} nota={`${generadas} de ${vistaPrevia?.length ?? 0} generadas`} />
         <TarjetaKPI color="var(--indi)" fondo="rgba(122,92,224,.12)" etiqueta="Horas extra pagadas" valor={`$${kpis.horasExtraPagadas.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
-        <TarjetaKPI color="var(--warn)" fondo="rgba(242,169,59,.14)" etiqueta="Retención INFONAVIT" valor={`$${kpis.infonavitTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
-        <TarjetaKPI color="var(--err)" fondo="rgba(229,72,77,.12)" etiqueta="Descuentos varios" valor={`$${kpis.descuentosTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
+        <TarjetaKPI color="var(--warn)" fondo="color-mix(in srgb, var(--warn) 14%, transparent)" etiqueta="Retención INFONAVIT" valor={`$${kpis.infonavitTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
+        <TarjetaKPI color="var(--err)" fondo="color-mix(in srgb, var(--err) 12%, transparent)" etiqueta="Descuentos varios" valor={`$${kpis.descuentosTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
       </div>
 
       {incompletos > 0 && (
-        <div className="no-imprimir" style={{ marginTop: 14, padding: "10px 16px", borderRadius: 10, background: "rgba(242,169,59,.14)", color: "var(--warn)", fontSize: 13, fontWeight: 600 }}>
+        <div className="no-imprimir" style={{ marginTop: 14, padding: "10px 16px", borderRadius: 10, background: "color-mix(in srgb, var(--warn) 14%, transparent)", color: "var(--warn)", fontSize: 13, fontWeight: 600 }}>
           {incompletos} trabajador{incompletos === 1 ? "" : "es"} no se puede{incompletos === 1 ? "" : "n"} procesar por datos incompletos (excluido{incompletos === 1 ? "" : "s"} de la generación masiva).
         </div>
       )}
@@ -353,7 +353,7 @@ export default function NominaPage() {
           <button
             onClick={calcularNominaDeLaSemana}
             disabled={generando || !vistaPrevia || procesables === 0}
-            style={{ padding: "10px 18px", borderRadius: 9, border: "none", background: "var(--indi)", color: "#fff", fontSize: 13.5, fontWeight: 700 }}
+            style={{ padding: "10px 18px", borderRadius: 9, border: "none", background: "var(--indi)", color: "var(--white)", fontSize: 13.5, fontWeight: 700 }}
           >
             {generando ? `Calculando… ${progreso}/${procesables}` : `Calcular nómina de la semana (${procesables})`}
           </button>
@@ -416,7 +416,7 @@ export default function NominaPage() {
                       </td>
                       <td style={{ padding: "9px 10px", color: "var(--ink)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                         {bloqueada ? (
-                          <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--warn)", background: "rgba(242,169,59,.14)", padding: "3px 10px", borderRadius: 999 }}>Incompleta</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--warn)", background: "color-mix(in srgb, var(--warn) 14%, transparent)", padding: "3px 10px", borderRadius: 999 }}>Incompleta</span>
                         ) : t.nominaExistente ? (
                           `$${Number(t.nominaExistente.totalAPagar).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
                         ) : (
@@ -430,7 +430,13 @@ export default function NominaPage() {
                               fontSize: 11.5,
                               fontWeight: 600,
                               color: !t.nominaExistente ? "var(--muted)" : t.nominaExistente.estatus === "pagado" ? "var(--ok)" : t.nominaExistente.estatus === "con_incidencia" ? "var(--err)" : "var(--warn)",
-                              background: !t.nominaExistente ? "var(--pastel)" : t.nominaExistente.estatus === "pagado" ? "rgba(47,174,102,.12)" : t.nominaExistente.estatus === "con_incidencia" ? "rgba(229,72,77,.12)" : "rgba(242,169,59,.14)",
+                              background: !t.nominaExistente
+                                ? "var(--pastel)"
+                                : t.nominaExistente.estatus === "pagado"
+                                ? "color-mix(in srgb, var(--ok) 12%, transparent)"
+                                : t.nominaExistente.estatus === "con_incidencia"
+                                ? "color-mix(in srgb, var(--err) 12%, transparent)"
+                                : "color-mix(in srgb, var(--warn) 14%, transparent)",
                               padding: "3px 10px",
                               borderRadius: 999,
                             }}

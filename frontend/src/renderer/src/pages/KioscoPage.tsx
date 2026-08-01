@@ -28,7 +28,7 @@ function aHoraHHMM(fecha: Date): string {
 }
 
 const iconoHuella = (
-  <svg width="92" height="92" viewBox="0 0 100 100" fill="none" stroke="#fff" strokeWidth={3.2} strokeLinecap="round">
+  <svg width="92" height="92" viewBox="0 0 100 100" fill="none" stroke="var(--white)" strokeWidth={3.2} strokeLinecap="round">
     <path d="M22 62 a30 32 0 0 1 56 0" />
     <path d="M30 64 a22 24 0 0 1 40 0" />
     <path d="M38 66 a14 16 0 0 1 24 0" />
@@ -123,13 +123,13 @@ function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal
         onSubmit={manejarEnvio}
         style={{
           width: 360,
-          background: "rgba(255,255,255,.08)",
-          border: "1px solid rgba(255,255,255,.18)",
+          background: "color-mix(in srgb, var(--white) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--white) 18%, transparent)",
           borderRadius: 16,
           padding: 32,
         }}
       >
-        <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 800 }}>Activar terminal</h1>
+        <h1 style={{ color: "var(--white)", fontSize: 22, fontWeight: 800 }}>Activar terminal</h1>
         <p style={{ color: "var(--pastel)", fontSize: 13.5, marginTop: 6 }}>
           Credenciales del dispositivo (no las de un trabajador).
         </p>
@@ -158,7 +158,7 @@ function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal
             style={{
               padding: 13,
               background: "var(--indi2)",
-              color: "#fff",
+              color: "var(--white)",
               border: "none",
               borderRadius: 9,
               fontSize: 15,
@@ -230,14 +230,14 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
         onSubmit={manejarEnvio}
         style={{
           width: 400,
-          background: "rgba(255,255,255,.08)",
-          border: "1px solid rgba(255,255,255,.18)",
+          background: "color-mix(in srgb, var(--white) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--white) 18%, transparent)",
           borderRadius: 16,
           padding: 32,
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 800 }}>Configurar este kiosco</h1>
+          <h1 style={{ color: "var(--white)", fontSize: 22, fontWeight: 800 }}>Configurar este kiosco</h1>
           <button
             type="button"
             onClick={cargarCatalogos}
@@ -255,7 +255,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
           {error && <div style={{ color: "#ffb4b6", fontSize: 13 }}>{error}</div>}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ color: "#fff", fontSize: 13 }}>Tipo de pantalla</span>
+            <span style={{ color: "var(--white)", fontSize: 13 }}>Tipo de pantalla</span>
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
@@ -264,9 +264,9 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
                   flex: 1,
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: modo === "marcacion" ? "2px solid #fff" : "1px solid rgba(255,255,255,.3)",
-                  background: modo === "marcacion" ? "rgba(255,255,255,.15)" : "transparent",
-                  color: "#fff",
+                  border: modo === "marcacion" ? "2px solid var(--white)" : "1px solid color-mix(in srgb, var(--white) 30%, transparent)",
+                  background: modo === "marcacion" ? "color-mix(in srgb, var(--white) 15%, transparent)" : "transparent",
+                  color: "var(--white)",
                   fontSize: 12.5,
                   fontWeight: 600,
                 }}
@@ -280,9 +280,9 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
                   flex: 1,
                   padding: "10px 12px",
                   borderRadius: 8,
-                  border: modo === "confirmacion" ? "2px solid #fff" : "1px solid rgba(255,255,255,.3)",
-                  background: modo === "confirmacion" ? "rgba(255,255,255,.15)" : "transparent",
-                  color: "#fff",
+                  border: modo === "confirmacion" ? "2px solid var(--white)" : "1px solid color-mix(in srgb, var(--white) 30%, transparent)",
+                  background: modo === "confirmacion" ? "color-mix(in srgb, var(--white) 15%, transparent)" : "transparent",
+                  color: "var(--white)",
                   fontSize: 12.5,
                   fontWeight: 600,
                 }}
@@ -300,7 +300,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
 
           {modo === "marcacion" && (
             <>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "#fff", fontSize: 13 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "var(--white)", fontSize: 13 }}>
                 Sección
             <select
               value={seccionId}
@@ -319,7 +319,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
             </select>
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "#fff", fontSize: 13 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "var(--white)", fontSize: 13 }}>
             Turno (según horario)
             <select
               value={turno}
@@ -346,7 +346,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
             style={{
               padding: 13,
               background: "var(--indi2)",
-              color: "#fff",
+              color: "var(--white)",
               border: "none",
               borderRadius: 9,
               fontSize: 15,
@@ -435,7 +435,7 @@ function PantallaKiosco({
         background: "var(--indi)",
         backgroundImage: "var(--dots)",
         backgroundSize: "16px 16px",
-        color: "#fff",
+        color: "var(--white)",
         position: "relative",
         overflow: "hidden",
       }}
@@ -526,11 +526,11 @@ function PantallaKiosco({
                   width: 170,
                   height: 170,
                   borderRadius: "50%",
-                  background: "rgba(255,255,255,.10)",
+                  background: "color-mix(in srgb, var(--white) 10%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  border: "2px solid rgba(255,255,255,.35)",
+                  border: "2px solid color-mix(in srgb, var(--white) 35%, transparent)",
                 }}
               >
                 <div style={{ animation: "fppulse 2.4s ease-in-out infinite" }}>{iconoHuella}</div>
@@ -555,7 +555,7 @@ function PantallaKiosco({
                   flexDirection: "column",
                   gap: 10,
                   background: "rgba(0,0,0,.28)",
-                  border: "1px solid rgba(255,255,255,.2)",
+                  border: "1px solid color-mix(in srgb, var(--white) 20%, transparent)",
                   borderRadius: 14,
                   padding: 18,
                   width: 340,
@@ -574,7 +574,7 @@ function PantallaKiosco({
                 />
                 <button
                   type="submit"
-                  style={{ padding: 11, background: "var(--ok)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700 }}
+                  style={{ padding: 11, background: "var(--ok)", color: "var(--white)", border: "none", borderRadius: 8, fontWeight: 700 }}
                 >
                   Simular marcación
                 </button>
@@ -591,7 +591,7 @@ function PantallaKiosco({
                 width: 170,
                 height: 170,
                 borderRadius: "50%",
-                background: "rgba(255,255,255,.12)",
+                background: "color-mix(in srgb, var(--white) 12%, transparent)",
                 border: "2px solid var(--pastel)",
                 display: "flex",
                 alignItems: "center",
@@ -606,7 +606,7 @@ function PantallaKiosco({
                   left: 0,
                   right: 0,
                   height: 32,
-                  background: "linear-gradient(180deg, transparent, rgba(169,198,240,.85), transparent)",
+                  background: "linear-gradient(180deg, transparent, color-mix(in srgb, var(--pastel) 85%, transparent), transparent)",
                   animation: "scanmove 1.6s ease-in-out infinite",
                 }}
               />
@@ -629,22 +629,22 @@ function PantallaKiosco({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 0 0 12px rgba(47,174,102,.22)",
+                boxShadow: "0 0 0 12px color-mix(in srgb, var(--ok) 22%, transparent)",
                 animation: "pop .45s ease-out",
               }}
             >
-              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 12.5l5 5L20 6.5" style={{ strokeDasharray: 180, animation: "dash .55s ease-out .1s both" }} />
               </svg>
             </div>
             <div>
-              <h1 style={{ fontSize: 38, fontWeight: 800, color: "#fff" }}>{mensaje.titulo}</h1>
+              <h1 style={{ fontSize: 38, fontWeight: 800, color: "var(--white)" }}>{mensaje.titulo}</h1>
               <p style={{ fontSize: 20, color: "var(--pastel)", marginTop: 6 }}>{mensaje.detalle}</p>
             </div>
             <div
               style={{
-                background: "rgba(255,255,255,.10)",
-                border: "1px solid rgba(255,255,255,.22)",
+                background: "color-mix(in srgb, var(--white) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--white) 22%, transparent)",
                 borderRadius: 16,
                 padding: "22px 40px",
                 display: "flex",
@@ -660,7 +660,7 @@ function PantallaKiosco({
                   {mensaje.trabajadorId}
                 </div>
               </div>
-              <div style={{ width: 1, height: 46, background: "rgba(255,255,255,.25)" }} />
+              <div style={{ width: 1, height: 46, background: "color-mix(in srgb, var(--white) 25%, transparent)" }} />
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 12, letterSpacing: ".14em", color: "var(--pastel)", textTransform: "uppercase" }}>
                   Hora de entrada
@@ -684,11 +684,11 @@ function PantallaKiosco({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 0 0 12px rgba(229,72,77,.22)",
+                boxShadow: "0 0 0 12px color-mix(in srgb, var(--err) 22%, transparent)",
                 animation: "pop .4s ease-out",
               }}
             >
-              <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round">
+              <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth={3} strokeLinecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
             </div>
@@ -708,7 +708,7 @@ function PantallaKiosco({
           display: "flex",
           justifyContent: "space-between",
           fontSize: 11.5,
-          color: "rgba(255,255,255,.45)",
+          color: "color-mix(in srgb, var(--white) 45%, transparent)",
         }}
       >
         <button onClick={onReconfigurar} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
@@ -810,7 +810,7 @@ function PantallaConfirmacion({
         background: "var(--indi)",
         backgroundImage: "var(--dots)",
         backgroundSize: "16px 16px",
-        color: "#fff",
+        color: "var(--white)",
         position: "relative",
         overflow: "hidden",
       }}
@@ -894,11 +894,11 @@ function PantallaConfirmacion({
                   width: 170,
                   height: 170,
                   borderRadius: "50%",
-                  background: "rgba(255,255,255,.10)",
+                  background: "color-mix(in srgb, var(--white) 10%, transparent)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  border: "2px solid rgba(255,255,255,.35)",
+                  border: "2px solid color-mix(in srgb, var(--white) 35%, transparent)",
                 }}
               >
                 <div style={{ animation: "fppulse 2.4s ease-in-out infinite" }}>{iconoHuella}</div>
@@ -924,22 +924,22 @@ function PantallaConfirmacion({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 0 0 12px rgba(47,174,102,.22)",
+                boxShadow: "0 0 0 12px color-mix(in srgb, var(--ok) 22%, transparent)",
                 animation: "pop .45s ease-out",
               }}
             >
-              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+              <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="var(--white)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 12.5l5 5L20 6.5" style={{ strokeDasharray: 180, animation: "dash .55s ease-out .1s both" }} />
               </svg>
             </div>
             <div>
-              <h1 style={{ fontSize: 38, fontWeight: 800, color: "#fff" }}>¡Bienvenido!</h1>
+              <h1 style={{ fontSize: 38, fontWeight: 800, color: "var(--white)" }}>¡Bienvenido!</h1>
               <p style={{ fontSize: 20, color: "var(--pastel)", marginTop: 6 }}>Asistencia registrada</p>
             </div>
             <div
               style={{
-                background: "rgba(255,255,255,.10)",
-                border: "1px solid rgba(255,255,255,.22)",
+                background: "color-mix(in srgb, var(--white) 10%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--white) 22%, transparent)",
                 borderRadius: 16,
                 padding: "22px 40px",
                 display: "flex",
@@ -953,7 +953,7 @@ function PantallaConfirmacion({
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 20, marginTop: 4 }}>{ultimaAsistencia.trabajadorNombre}</div>
               </div>
-              <div style={{ width: 1, height: 46, background: "rgba(255,255,255,.25)" }} />
+              <div style={{ width: 1, height: 46, background: "color-mix(in srgb, var(--white) 25%, transparent)" }} />
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 12, letterSpacing: ".14em", color: "var(--pastel)", textTransform: "uppercase" }}>
                   Hora
@@ -975,7 +975,7 @@ function PantallaConfirmacion({
           display: "flex",
           justifyContent: "space-between",
           fontSize: 11.5,
-          color: "rgba(255,255,255,.45)",
+          color: "color-mix(in srgb, var(--white) 45%, transparent)",
         }}
       >
         <button onClick={onReconfigurar} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>

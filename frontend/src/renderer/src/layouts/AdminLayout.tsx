@@ -4,6 +4,7 @@ import { asset } from "../assets";
 import { useAuth } from "../context/AuthContext";
 import { useTimeoutInactividad } from "../hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "../components/AyudaSoporteModal";
+import ThemeToggle from "../components/ThemeToggle";
 
 const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
@@ -301,6 +302,7 @@ export default function AdminLayout() {
               {ETIQUETA_ROL[sesion.usuario.rol] ?? sesion.usuario.rol}
             </div>
           </div>
+          <ThemeToggle oscuroPorDefecto />
           <button
             onClick={cerrarSesion}
             title="Cerrar sesión"

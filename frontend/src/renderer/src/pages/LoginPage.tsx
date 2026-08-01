@@ -5,6 +5,7 @@ import { asset } from "../assets";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
+import ThemeToggle from "../components/ThemeToggle";
 
 export default function LoginPage() {
   const { iniciarSesion } = useAuth();
@@ -34,7 +35,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ height: "100vh", display: "flex" }}>
+    <div style={{ height: "100vh", display: "flex", position: "relative" }}>
+      <div style={{ position: "absolute", top: 20, right: 20, zIndex: 2 }}>
+        <ThemeToggle />
+      </div>
       <div
         style={{
           width: "46%",

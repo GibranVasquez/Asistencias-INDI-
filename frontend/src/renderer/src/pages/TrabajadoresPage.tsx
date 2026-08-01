@@ -59,7 +59,7 @@ export default function TrabajadoresPage() {
         </div>
         <button
           onClick={() => navegar("/panel/trabajadores/nuevo")}
-          style={{ padding: "11px 20px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
+          style={{ padding: "11px 20px", background: "var(--indi)", color: "var(--white)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
         >
           + Nuevo trabajador
         </button>
@@ -139,7 +139,10 @@ export default function TrabajadoresPage() {
                           fontSize: 11.5,
                           fontWeight: 600,
                           color: t.estatus === "activo" ? "var(--ok)" : "var(--err)",
-                          background: t.estatus === "activo" ? "rgba(47,174,102,.12)" : "rgba(229,72,77,.12)",
+                          background:
+                            t.estatus === "activo"
+                              ? "color-mix(in srgb, var(--ok) 12%, transparent)"
+                              : "color-mix(in srgb, var(--err) 12%, transparent)",
                           padding: "3px 10px",
                           borderRadius: 999,
                         }}
@@ -162,7 +165,7 @@ export default function TrabajadoresPage() {
                             fontSize: 11.5,
                             fontWeight: 600,
                             color: "var(--warn)",
-                            background: "rgba(242,169,59,.14)",
+                            background: "color-mix(in srgb, var(--warn) 14%, transparent)",
                             padding: "3px 10px",
                             borderRadius: 999,
                           }}
@@ -175,7 +178,7 @@ export default function TrabajadoresPage() {
                             fontSize: 11.5,
                             fontWeight: 600,
                             color: "var(--ok)",
-                            background: "rgba(47,174,102,.12)",
+                            background: "color-mix(in srgb, var(--ok) 12%, transparent)",
                             padding: "3px 10px",
                             borderRadius: 999,
                           }}

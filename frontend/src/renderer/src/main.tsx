@@ -4,16 +4,19 @@ import { HashRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { TerminalProvider } from "./context/TerminalContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import "./styles/theme.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <HashRouter>
-      <AuthProvider>
-        <TerminalProvider>
-          <App />
-        </TerminalProvider>
-      </AuthProvider>
-    </HashRouter>
+    <ThemeProvider>
+      <HashRouter>
+        <AuthProvider>
+          <TerminalProvider>
+            <App />
+          </TerminalProvider>
+        </AuthProvider>
+      </HashRouter>
+    </ThemeProvider>
   </StrictMode>
 );
