@@ -71,7 +71,13 @@ export default function App() {
         />
         <Route
           path="nomina"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <NominaPage />}
+          element={
+            esRecepcion || esAdministrador ? (
+              <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />
+            ) : (
+              <NominaPage />
+            )
+          }
         />
         <Route
           path="usuarios"

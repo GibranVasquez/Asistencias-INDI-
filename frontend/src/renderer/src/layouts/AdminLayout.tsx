@@ -136,6 +136,8 @@ export default function AdminLayout() {
   // "usuarios" (gestión de cuentas) es exclusivo de administrador y
   // "configuracion"/"reportes" (catálogos, financiero de nómina) son
   // exclusivos de rh — para todos los demás roles ninguna aparece en el sidebar.
+  // "nomina" tampoco le corresponde a administrador: su rol es gestión de
+  // cuentas de usuario, no nómina (backend ya lo rechaza, ver nomina.routes.ts).
   const itemsNav =
     sesion.usuario.rol === "recepcion"
       ? ITEMS_NAV.filter((i) => i.ruta === "asistencias")
@@ -143,7 +145,8 @@ export default function AdminLayout() {
           (i) =>
             (i.ruta !== "usuarios" || sesion.usuario.rol === "administrador") &&
             (i.ruta !== "configuracion" || sesion.usuario.rol === "rh") &&
-            (i.ruta !== "reportes" || sesion.usuario.rol === "rh")
+            (i.ruta !== "reportes" || sesion.usuario.rol === "rh") &&
+            (i.ruta !== "nomina" || sesion.usuario.rol !== "administrador")
         );
 
   return (
