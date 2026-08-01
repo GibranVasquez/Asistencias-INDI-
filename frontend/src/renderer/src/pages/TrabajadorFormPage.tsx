@@ -27,6 +27,7 @@ interface FormularioEstado {
   infonavitMontoPorPeriodo: string;
   huellaRegistrada: boolean;
   rostroRegistrado: boolean;
+  numeroChecador: string;
 }
 
 const FORMULARIO_VACIO: FormularioEstado = {
@@ -44,6 +45,7 @@ const FORMULARIO_VACIO: FormularioEstado = {
   infonavitMontoPorPeriodo: "",
   huellaRegistrada: false,
   rostroRegistrado: false,
+  numeroChecador: "",
 };
 
 function trabajadorAFormulario(t: Trabajador): FormularioEstado {
@@ -62,6 +64,7 @@ function trabajadorAFormulario(t: Trabajador): FormularioEstado {
     infonavitMontoPorPeriodo: t.infonavitMontoPorPeriodo ?? "",
     huellaRegistrada: t.huellaRegistrada,
     rostroRegistrado: t.rostroRegistrado,
+    numeroChecador: t.numeroChecador?.toString() ?? "",
   };
 }
 
@@ -81,6 +84,7 @@ function formularioADatos(f: FormularioEstado): DatosTrabajador {
     infonavitMontoPorPeriodo: f.infonavitMontoPorPeriodo !== "" ? Number(f.infonavitMontoPorPeriodo) : null,
     huellaRegistrada: f.huellaRegistrada,
     rostroRegistrado: f.rostroRegistrado,
+    numeroChecador: f.numeroChecador !== "" ? Number(f.numeroChecador) : null,
   };
 }
 
@@ -238,6 +242,20 @@ export default function TrabajadorFormPage() {
         </Seccion>
 
         <Seccion titulo="Biometría">
+          <label style={estiloEtiqueta}>
+            Número de checador (PIN ADMS)
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={form.numeroChecador}
+              onChange={(e) => actualizar("numeroChecador", e.target.value)}
+              style={estiloInput}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>
+              PIN con el que se enroló en el lector ADMS de oficina (ZKTeco MB10-VL).
+            </span>
+          </label>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: "var(--ink)" }}>
             <input type="checkbox" checked={form.huellaRegistrada} onChange={(e) => actualizar("huellaRegistrada", e.target.checked)} style={{ width: 16, height: 16 }} />
             Huella registrada

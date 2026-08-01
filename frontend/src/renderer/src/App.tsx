@@ -9,6 +9,7 @@ import TrabajadorFormPage from "./pages/TrabajadorFormPage";
 import EncargadoPage from "./pages/EncargadoPage";
 import NominaPage from "./pages/NominaPage";
 import UsuariosPage from "./pages/UsuariosPage";
+import TerminalesPage from "./pages/TerminalesPage";
 import ConfiguracionPage from "./pages/ConfiguracionPage";
 import ReportesPage from "./pages/ReportesPage";
 import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
@@ -82,6 +83,10 @@ export default function App() {
         <Route
           path="usuarios"
           element={esAdministrador ? <UsuariosPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
+        />
+        <Route
+          path="terminales"
+          element={esAdministrador ? <TerminalesPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
         />
         <Route
           path="configuracion"

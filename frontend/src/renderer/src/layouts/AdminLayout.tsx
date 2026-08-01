@@ -90,6 +90,16 @@ const ITEMS_NAV: ItemNav[] = [
     ),
   },
   {
+    ruta: "terminales",
+    etiqueta: "Terminales",
+    icono: (
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <line x1="12" y1="18" x2="12.01" y2="18" />
+      </svg>
+    ),
+  },
+  {
     ruta: "reportes",
     etiqueta: "Reportes",
     icono: (
@@ -145,6 +155,7 @@ export default function AdminLayout() {
       : ITEMS_NAV.filter(
           (i) =>
             (i.ruta !== "usuarios" || sesion.usuario.rol === "administrador") &&
+            (i.ruta !== "terminales" || sesion.usuario.rol === "administrador") &&
             (i.ruta !== "configuracion" || sesion.usuario.rol === "rh") &&
             (i.ruta !== "reportes" || sesion.usuario.rol === "rh") &&
             (i.ruta !== "nomina" || sesion.usuario.rol !== "administrador")

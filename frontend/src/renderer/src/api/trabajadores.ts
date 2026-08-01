@@ -19,6 +19,10 @@ export interface Trabajador {
   infonavitMontoPorPeriodo: string | null;
   huellaRegistrada: boolean;
   rostroRegistrado: boolean;
+  // PIN con el que esta persona se enroló en el lector ADMS de oficina
+  // (ZKTeco MB10-VL) — ver adms.service.ts en el backend. RH lo captura a
+  // mano conforme va enrolando gente en el equipo.
+  numeroChecador: number | null;
   creadoEn: string;
 }
 
@@ -52,6 +56,7 @@ export interface DatosTrabajador {
   infonavitMontoPorPeriodo?: number | null;
   huellaRegistrada?: boolean;
   rostroRegistrado?: boolean;
+  numeroChecador?: number | null;
 }
 
 export function listarTrabajadores(token: string) {
