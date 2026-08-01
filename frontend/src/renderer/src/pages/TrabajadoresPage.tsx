@@ -15,6 +15,7 @@ export default function TrabajadoresPage() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("");
 
   function cargar() {
     setCargando(true);
@@ -27,12 +28,20 @@ export default function TrabajadoresPage() {
 
   useEffect(cargar, [token]);
 
+  const categorias = useMemo(() => {
+    if (!trabajadores) return [];
+    return Array.from(new Set(trabajadores.map((t) => t.categoria))).sort((a, b) => a.localeCompare(b));
+  }, [trabajadores]);
+
   const filtrados = useMemo(() => {
     if (!trabajadores) return [];
     const q = busqueda.trim().toLowerCase();
-    if (!q) return trabajadores;
-    return trabajadores.filter((t) => t.nombreCompleto.toLowerCase().includes(q) || t.categoria.toLowerCase().includes(q));
-  }, [trabajadores, busqueda]);
+    return trabajadores.filter(
+      (t) =>
+        (!categoriaFiltro || t.categoria === categoriaFiltro) &&
+        (!q || t.nombreCompleto.toLowerCase().includes(q) || t.categoria.toLowerCase().includes(q))
+    );
+  }, [trabajadores, busqueda, categoriaFiltro]);
 
   const incompletos = trabajadores?.filter(tieneDatosNominaIncompletos).length ?? 0;
 
@@ -56,7 +65,7 @@ export default function TrabajadoresPage() {
         </button>
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
         <input
           type="text"
           placeholder="Buscar por nombre o categoría…"
@@ -73,6 +82,25 @@ export default function TrabajadoresPage() {
             color: "var(--ink)",
           }}
         />
+        <select
+          value={categoriaFiltro}
+          onChange={(e) => setCategoriaFiltro(e.target.value)}
+          style={{
+            padding: "10px 14px",
+            borderRadius: 9,
+            border: "1.5px solid var(--line)",
+            fontSize: 13.5,
+            background: "var(--surface)",
+            color: "var(--ink)",
+          }}
+        >
+          <option value="">Todas las categorías</option>
+          {categorias.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
