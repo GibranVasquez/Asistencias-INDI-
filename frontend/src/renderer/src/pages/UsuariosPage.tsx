@@ -190,7 +190,7 @@ export default function UsuariosPage() {
       </div>
 
       {mostrarAuditoria && (
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
           <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
             Historial de auditoría · cuentas de usuario
           </div>
@@ -227,7 +227,7 @@ export default function UsuariosPage() {
         </div>
       )}
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+      <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (

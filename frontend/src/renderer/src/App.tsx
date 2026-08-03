@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import IntroSplash from "./components/IntroSplash";
 import AdminLayout from "./layouts/AdminLayout";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -45,7 +46,9 @@ export default function App() {
   const esRh = sesion?.usuario.rol === "rh";
 
   return (
-    <Routes>
+    <div style={{ height: "100vh", position: "relative" }}>
+      <IntroSplash />
+      <Routes>
       <Route path="/" element={sesion ? <Navigate to={rutaInicialPara(sesion.usuario.rol)} replace /> : <LoginPage />} />
       <Route path="/panel" element={sesion ? <AdminLayout /> : <Navigate to="/" replace />}>
         <Route index element={<Navigate to={esRecepcion ? "asistencias" : "dashboard"} replace />} />
@@ -100,5 +103,6 @@ export default function App() {
       <Route path="/kiosco" element={<KioscoPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </div>
   );
 }

@@ -156,7 +156,7 @@ function PanelReporteAsistencia() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
+      <div className="tarjeta-admin" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Desde
           <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={estilosCampo} />
@@ -193,7 +193,7 @@ function PanelReporteAsistencia() {
             <TarjetaKPI etiqueta="Puntualidad" valor={pct(reporte.resumen.porcentajePuntualidad)} />
           </div>
 
-          <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+          <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por sección</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -219,7 +219,7 @@ function PanelReporteAsistencia() {
             </table>
           </div>
 
-          <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+          <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tendencia</div>
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -249,7 +249,7 @@ function PanelReporteAsistencia() {
         </>
       )}
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, padding: 20 }}>
+      <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, padding: 20 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>Histórico individual por trabajador</div>
         <input
           type="text"
@@ -351,7 +351,7 @@ function PanelReporteNomina() {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
+      <div className="tarjeta-admin" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Desde
           <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={estilosCampo} />
@@ -378,7 +378,7 @@ function PanelReporteNomina() {
             <TarjetaKPI etiqueta="Descuentos" valor={moneda(reporte.resumen.totalDescuentos)} />
           </div>
 
-          <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+          <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por categoría</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -400,7 +400,7 @@ function PanelReporteNomina() {
             </table>
           </div>
 
-          <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+          <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Comparativo por periodo</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>

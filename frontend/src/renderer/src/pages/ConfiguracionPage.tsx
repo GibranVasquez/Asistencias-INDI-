@@ -218,7 +218,7 @@ function PanelHorarios() {
   }
 
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
+    <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{horarios ? `${horarios.length} horario${horarios.length === 1 ? "" : "s"}` : "Cargando…"}</span>
         <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
@@ -420,7 +420,7 @@ function PanelSecciones() {
   const mapaHorarios = new Map((horarios ?? []).map((h) => [h.id, h.nombre]));
 
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
+    <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{secciones ? `${secciones.length} sección${secciones.length === 1 ? "" : "es"}` : "Cargando…"}</span>
         <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
@@ -599,7 +599,7 @@ function PanelTiposMovimiento() {
   }
 
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
+    <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{tipos ? `${tipos.length} tipo${tipos.length === 1 ? "" : "s"}` : "Cargando…"}</span>
         <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
@@ -731,7 +731,7 @@ function PanelTarifas() {
         una tarifa ya usada en una nómina generada no se puede editar ni borrar.
       </div>
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
+      <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{tarifas ? `${tarifas.length} tarifa${tarifas.length === 1 ? "" : "s"} en el historial` : "Cargando…"}</span>
           <button onClick={() => { setFormulario({ valor: 0, vigenteDesde: hoyISO() }); setErrorModal(null); setModal(true); }} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>

@@ -134,7 +134,7 @@ export default function AsistenciasPage() {
         </label>
       </div>
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+      <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
             {cargando ? "Cargando…" : `${asistenciasFiltradas.length} registro${asistenciasFiltradas.length === 1 ? "" : "s"}`}

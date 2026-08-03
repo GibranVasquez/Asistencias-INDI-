@@ -302,7 +302,7 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16, marginTop: 16 }}>
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px" }}>
+        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>Asistencia por día</h3>
             <span style={{ fontSize: 12, color: "var(--muted)" }}>
@@ -316,13 +316,13 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", alignSelf: "flex-start" }}>Puntualidad</h3>
           <DonaPuntualidad aTiempo={aTiempo} tarde={tarde} error={errorPuntualidad ?? asistenciasPeriodo.error} />
         </div>
       </div>
 
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", marginTop: 16 }}>
+      <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", marginTop: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>Últimas marcaciones de hoy</h3>
           <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)" }}>

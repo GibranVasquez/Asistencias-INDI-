@@ -330,6 +330,7 @@ export default function AdminLayout() {
       </nav>
 
       <main style={{ flex: 1, overflow: "auto", position: "relative", display: "flex", flexDirection: "column" }}>
+        <div className="om-ambient" />
         {sesionDegradada && (
           <div
             style={{
@@ -347,7 +348,7 @@ export default function AdminLayout() {
             normal de "Recordarme".
           </div>
         )}
-        <div style={{ flex: 1, overflow: "auto" }}>
+        <div style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 1 }}>
           <Outlet />
         </div>
       </main>

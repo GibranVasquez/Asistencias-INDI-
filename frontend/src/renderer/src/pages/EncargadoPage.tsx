@@ -294,7 +294,7 @@ function VistaConAsignacion({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 8 }}>
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
+        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <h3 style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>Presentes</h3>
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--ok)", fontWeight: 600 }}>
@@ -321,7 +321,7 @@ function VistaConAsignacion({
           )}
         </div>
 
-        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
+        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
           <h3 style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
             Ausentes {resumen.totalAsignado !== null && `(de ${resumen.totalAsignado} asignados)`}
           </h3>
