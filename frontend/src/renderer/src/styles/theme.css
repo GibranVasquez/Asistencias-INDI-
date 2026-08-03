@@ -17,6 +17,7 @@
   --desk: #dde3ee;
   --dots: radial-gradient(rgba(255, 255, 255, 0.18) 1.4px, transparent 1.5px);
   --indi-solid: #0b1e3d;
+  --sidebar-ink: #ffffff;
 }
 
 [data-theme="dark"] {
