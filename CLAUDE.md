@@ -852,10 +852,19 @@ decisión, ejecución o insumo externo del usuario/cliente:
   que el tipo de instancia EC2 del bastión).** 1 día de retención es
   insuficiente para nómina/datos biométricos reales — no hay margen para
   recuperar un backup si el problema se detecta unos días después. AWS no
-  documenta el límite exacto permitido bajo Free Tier; pendiente probar
-  en vivo (`terraform apply -target=aws_db_instance.postgres` tras subir
-  el valor en `terraform.tfvars`) si un valor mayor (7+) ya funciona, ya
-  sea porque la cuenta salió de esas restricciones o porque el límite
-  real es más alto de lo que pareció en el primer intento. Hacerlo antes
-  de migrar los datos reales desde Supabase (ver siguiente paso pendiente
-  más abajo), no después.
+  documenta el límite exacto permitido bajo Free Tier. **Reintentado en
+  vivo 2026-07-31** (`terraform apply -target=aws_db_instance.postgres`),
+  después de varias sesiones usando RDS/ECS/ALB/WAF/Route53/ACM en la
+  misma cuenta — probado con 7, 4 y 2: **los tres fallan con el mismo
+  `FreeTierRestrictionError`, idéntico al del primer intento.** El límite
+  real de la cuenta hoy sigue siendo exactamente 1, sin cambio — usar
+  otros servicios de AWS no afecta esta restricción específica de RDS.
+  Confirmado además contra el estado real de la instancia
+  (`aws rds describe-db-instances`, `BackupRetentionPeriod: 1`), no solo
+  contra el state de Terraform. La única salida que AWS documenta en el
+  mensaje de error es upgradear el plan de la cuenta (salir de Free Tier
+  por completo) — no hay un número intermedio que aceptar mientras la
+  cuenta siga en ese estado. Sigue siendo insuficiente para nómina/datos
+  biométricos reales; revisar de nuevo si la cuenta cambia de plan, o
+  aceptar el riesgo documentándolo explícitamente si se decide migrar
+  datos reales de todos modos sin resolver esto primero.
