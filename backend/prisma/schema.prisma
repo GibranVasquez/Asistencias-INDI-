@@ -4,6 +4,17 @@
 // via @map()/@@map(); ids uuid generados por Postgres (gen_random_uuid(),
 // nativo desde PG13, sin necesidad de extensiones); dinero en Decimal;
 // timestamps en Timestamptz(6); fechas sin hora en Date.
+//
+// TODO (sesión futura dedicada, no implementado a propósito): ningún modelo
+// editable tiene updatedAt/version — todo edit() de este proyecto hace un
+// UPDATE incondicional por id, así que dos ediciones concurrentes al mismo
+// registro terminan en last-write-wins silencioso, sin ningún 409/aviso de
+// conflicto para ninguna de las dos partes (confirmado auditando todos los
+// servicios de edición: trabajador, nomina, horario, seccion, tipoMovimiento,
+// tarifaHoraExtra, usuario, terminal — mismo patrón sin excepción). Prioridad
+// si se aborda: Trabajador y NominaSemanal primero (datos de nómina — el
+// caso real más probable es 2 personas de RH editando al mismo trabajador o
+// corrigiendo la misma nómina casi al mismo tiempo), después el resto.
 
 generator client {
   provider = "prisma-client-js"
@@ -113,6 +124,8 @@ model Usuario {
 // 3. TRABAJADORES
 // ---------------------------------------------------------------------
 
+// TODO concurrencia optimista pendiente (ver nota al inicio del archivo) —
+// prioridad #1 junto con NominaSemanal.
 model Trabajador {
   id                       String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nombreCompleto           String            @map("nombre_completo")
@@ -156,6 +169,34 @@ model Trabajador {
 
   @@index([estatus], map: "idx_trabajadores_estatus")
   @@map("trabajadores")
+}
+
+// Catálogo de sueldo por defecto por categoría — Trabajador.categoria se
+// queda como String libre a propósito (no se convierte en FK): el roster
+// real tiene ~52 valores distintos, varios el mismo puesto escrito de
+// formas distintas (ej. "OP EXCAVADORA"/"OPERADOR DE EXCAVADORA"/
+// "OP.EXCAVADORA"), así que forzar una relación exigiría una reconciliación
+// manual de RH que nadie ha hecho todavía. sueldoBaseDefault solo prellena
+// el campo sueldoBase al DAR DE ALTA un trabajador nuevo (editable antes de
+// guardar) — no es un valor vivo que Trabajador.sueldoBase siga
+// referenciando después. Confirmado en nomina.service.ts: sueldoBase se
+// copia (snapshot) dentro de NominaSemanal.montoSueldo al generar la
+// nómina, nunca se relee en vivo — así que ni esta tabla ni la acción de
+// "aplicar a todos" (ver categoriaTrabajador.service.ts) pueden alterar
+// nóminas ya generadas, solo las que se generen después del cambio.
+model CategoriaTrabajador {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre            String   @unique
+  sueldoBaseDefault Decimal? @map("sueldo_base_default") @db.Decimal(12, 2)
+  // Cuando ninguna categoría real del trabajador coincide con el nombre de
+  // ninguna fila de este catálogo, el formulario de alta cae aquí — caso
+  // "sueldo fijo para todos" sin inventar un mecanismo global paralelo. El
+  // servicio garantiza como máximo una fila con esDefault=true (ver
+  // categoriaTrabajador.service.ts).
+  esDefault         Boolean  @default(false) @map("es_default")
+  creadoEn          DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  @@map("categorias_trabajador")
 }
 
 // ---------------------------------------------------------------------
@@ -314,6 +355,8 @@ model TarifaHoraExtra {
   @@map("tarifas_hora_extra")
 }
 
+// TODO concurrencia optimista pendiente (ver nota al inicio del archivo) —
+// prioridad #1 junto con Trabajador.
 model NominaSemanal {
   id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   trabajadorId       String        @map("trabajador_id") @db.Uuid

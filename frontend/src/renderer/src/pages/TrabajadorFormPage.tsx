@@ -11,6 +11,7 @@ import {
   TrabajadorTipo,
 } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import { CategoriaTrabajador, listarCategoriasTrabajador } from "../api/categoriasTrabajador";
 import Boton from "../components/Boton";
 import CampoFecha from "../components/CampoFecha";
 
@@ -116,6 +117,7 @@ export default function TrabajadorFormPage() {
   const [cargando, setCargando] = useState(esEdicion);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categorias, setCategorias] = useState<CategoriaTrabajador[] | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -125,6 +127,35 @@ export default function TrabajadorFormPage() {
       .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
       .finally(() => setCargando(false));
   }, [id, token]);
+
+  // Solo al dar de alta (no al editar, donde categoria/sueldoBase ya son
+  // datos reales del trabajador) — el catálogo solo sirve para prellenar,
+  // ver config/CategoriaTrabajador en ConfiguracionPage.tsx.
+  useEffect(() => {
+    if (esEdicion) return;
+    listarCategoriasTrabajador(token)
+      .then((r) => {
+        setCategorias(r.categorias);
+        // "Sueldo fijo para todos": si hay una categoría marcada esDefault,
+        // se usa como sueldo sugerido desde el inicio, sin que el usuario
+        // tenga que elegir nada — sigue siendo editable antes de guardar.
+        const porDefecto = r.categorias.find((c) => c.esDefault);
+        if (porDefecto?.sueldoBaseDefault) {
+          setForm((f) => (f.sueldoBase === "" ? { ...f, sueldoBase: porDefecto.sueldoBaseDefault as string } : f));
+        }
+      })
+      .catch(() => setCategorias([]));
+  }, [esEdicion, token]);
+
+  function seleccionarCategoriaCatalogo(nombreCategoria: string) {
+    const categoria = categorias?.find((c) => c.nombre === nombreCategoria);
+    if (!categoria) return;
+    setForm((f) => ({
+      ...f,
+      categoria: categoria.nombre,
+      sueldoBase: categoria.sueldoBaseDefault ?? f.sueldoBase,
+    }));
+  }
 
   function actualizar<K extends keyof FormularioEstado>(campo: K, valor: FormularioEstado[K]) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -177,6 +208,24 @@ export default function TrabajadorFormPage() {
             Categoría
             <input required value={form.categoria} onChange={(e) => actualizar("categoria", e.target.value)} style={estiloInput} />
           </label>
+          {!esEdicion && categorias && categorias.length > 0 && (
+            <label style={estiloEtiqueta}>
+              Usar categoría del catálogo (opcional)
+              <select defaultValue="" onChange={(e) => seleccionarCategoriaCatalogo(e.target.value)} style={estiloInput}>
+                <option value="" disabled>
+                  Elegir para prellenar sueldo…
+                </option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.nombre}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+              <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}>
+                Solo prellena Categoría y Sueldo base arriba — ambos siguen editables.
+              </span>
+            </label>
+          )}
           <label style={estiloEtiqueta}>
             Jefe inmediato
             <input required value={form.jefeInmediato} onChange={(e) => actualizar("jefeInmediato", e.target.value)} style={estiloInput} />
