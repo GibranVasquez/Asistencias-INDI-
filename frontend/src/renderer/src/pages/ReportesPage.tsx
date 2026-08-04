@@ -13,6 +13,8 @@ import {
 import { listarSecciones, Seccion } from "../api/secciones";
 import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import TarjetaKPI from "../components/TarjetaKPI";
+import Boton from "../components/Boton";
 
 type Tab = "asistencia" | "nomina";
 
@@ -43,24 +45,15 @@ function moneda(valor: string): string {
   return `$${Number(valor).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
 }
 
-function TarjetaKPI({ etiqueta, valor }: { etiqueta: string; valor: string | number }) {
-  return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "16px 18px" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)" }}>{etiqueta}</div>
-      <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 24, marginTop: 8, color: "var(--ink)" }}>{valor}</div>
-    </div>
-  );
-}
-
 function BotonesExportar({ onExportar }: { onExportar: (formato: "pdf" | "excel") => void }) {
   return (
     <div style={{ display: "flex", gap: 8 }}>
-      <button onClick={() => onExportar("pdf")} style={{ padding: "9px 16px", background: "var(--surface)", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("pdf")}>
         Exportar PDF
-      </button>
-      <button onClick={() => onExportar("excel")} style={{ padding: "9px 16px", background: "var(--surface)", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+      </Boton>
+      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("excel")}>
         Exportar Excel
-      </button>
+      </Boton>
     </div>
   );
 }
@@ -76,13 +69,13 @@ export default function ReportesPage() {
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         <button
           onClick={() => setTab("asistencia")}
-          style={{ padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "none", background: tab === "asistencia" ? "var(--indi)" : "transparent", color: tab === "asistencia" ? "#fff" : "var(--muted)", cursor: "pointer" }}
+          style={{ padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "none", background: tab === "asistencia" ? "var(--indi)" : "transparent", color: tab === "asistencia" ? "var(--white)" : "var(--muted)", cursor: "pointer" }}
         >
           Asistencia y puntualidad
         </button>
         <button
           onClick={() => setTab("nomina")}
-          style={{ padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "none", background: tab === "nomina" ? "var(--indi)" : "transparent", color: tab === "nomina" ? "#fff" : "var(--muted)", cursor: "pointer" }}
+          style={{ padding: "9px 16px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "none", background: tab === "nomina" ? "var(--indi)" : "transparent", color: tab === "nomina" ? "var(--white)" : "var(--muted)", cursor: "pointer" }}
         >
           Financiero de nómina
         </button>

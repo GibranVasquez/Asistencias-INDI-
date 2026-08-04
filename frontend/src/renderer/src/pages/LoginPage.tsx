@@ -6,6 +6,7 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
 import ThemeToggle from "../components/ThemeToggle";
+import Boton from "../components/Boton";
 
 export default function LoginPage() {
   const { iniciarSesion } = useAuth();
@@ -153,23 +154,9 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={cargando}
-              style={{
-                marginTop: 6,
-                padding: 13,
-                background: "var(--indi)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 9,
-                fontSize: 15,
-                fontWeight: 700,
-                opacity: cargando ? 0.7 : 1,
-              }}
-            >
+            <Boton type="submit" disabled={cargando} style={{ marginTop: 6, width: "100%", fontSize: 15 }}>
               {cargando ? "Ingresando…" : "Ingresar al panel"}
-            </button>
+            </Boton>
           </div>
         </form>
       </div>

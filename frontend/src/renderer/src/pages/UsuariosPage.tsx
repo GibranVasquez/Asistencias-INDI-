@@ -14,6 +14,7 @@ import {
 } from "../api/usuarios";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
+import Boton from "../components/Boton";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
@@ -170,22 +171,18 @@ export default function UsuariosPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={alternarAuditoria}
-            style={{ padding: "11px 18px", background: "var(--surface)", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
-          >
+          <Boton variante="outline" onClick={alternarAuditoria}>
             {mostrarAuditoria ? "Ocultar historial" : "Historial de auditoría"}
-          </button>
-          <button
+          </Boton>
+          <Boton
             onClick={() => {
               setFormulario(formularioVacio());
               setErrorAlta(null);
               setMostrarAlta(true);
             }}
-            style={{ padding: "11px 20px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
           >
             + Nueva cuenta
-          </button>
+          </Boton>
         </div>
       </div>
 
@@ -271,39 +268,26 @@ export default function UsuariosPage() {
                       <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{vinculoDe(u)}</td>
                       <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{new Date(u.creadoEn).toLocaleDateString("es-MX")}</td>
                       <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
-                        <button
+                        <Boton
+                          variante="outline"
+                          tamano="pequeno"
                           onClick={() => {
                             setReseteando(u);
                             setPasswordTemporal("");
                             setErrorReseteo(null);
                           }}
-                          style={{
-                            padding: "7px 14px",
-                            borderRadius: 8,
-                            border: "1.5px solid var(--line)",
-                            background: "var(--surface)",
-                            color: "var(--ink)",
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                          }}
                         >
                           Resetear contraseña
-                        </button>
-                        <button
+                        </Boton>
+                        <Boton
+                          variante="outline"
+                          tamano="pequeno"
                           onClick={() => alternarEstado(u)}
                           disabled={filaEnProceso === u.id}
-                          style={{
-                            padding: "7px 14px",
-                            borderRadius: 8,
-                            border: "1.5px solid var(--line)",
-                            background: "var(--surface)",
-                            color: u.activo ? "var(--err)" : "var(--ok)",
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                          }}
+                          style={{ color: u.activo ? "var(--err)" : "var(--ok)" }}
                         >
                           {filaEnProceso === u.id ? "…" : u.activo ? "Dar de baja" : "Reactivar"}
-                        </button>
+                        </Boton>
                       </td>
                     </tr>
                     {erroresFila[u.id] && (
@@ -398,20 +382,12 @@ export default function UsuariosPage() {
             )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setMostrarAlta(false)}
-                style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
-              >
+              <Boton variante="outline" type="button" onClick={() => setMostrarAlta(false)} style={{ flex: 1 }}>
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardando}
-                style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "#fff", opacity: guardando ? 0.7 : 1 }}
-              >
+              </Boton>
+              <Boton type="submit" disabled={guardando} style={{ flex: 1 }}>
                 {guardando ? "Guardando…" : "Crear cuenta"}
-              </button>
+              </Boton>
             </div>
           </form>
         </div>
@@ -452,20 +428,12 @@ export default function UsuariosPage() {
             )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setReseteando(null)}
-                style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
-              >
+              <Boton variante="outline" type="button" onClick={() => setReseteando(null)} style={{ flex: 1 }}>
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardandoReseteo}
-                style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "#fff", opacity: guardandoReseteo ? 0.7 : 1 }}
-              >
+              </Boton>
+              <Boton type="submit" disabled={guardandoReseteo} style={{ flex: 1 }}>
                 {guardandoReseteo ? "Guardando…" : "Resetear"}
-              </button>
+              </Boton>
             </div>
           </form>
         </div>

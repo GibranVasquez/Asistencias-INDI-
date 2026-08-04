@@ -11,6 +11,8 @@ import { ApiError } from "../api/client";
 import { listarSecciones, Seccion } from "../api/secciones";
 import { listarTrabajadoresBasico, TrabajadorBasico } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import TarjetaKPI from "../components/TarjetaKPI";
+import Boton from "../components/Boton";
 
 const INTERVALO_POLL_MS = 20_000;
 
@@ -253,12 +255,9 @@ function EstadoSinAsignacion({ onCargar }: { onCargar: () => void }) {
         Todavía no se ha cargado la lista de trabajadores esperados hoy en esta sección. Las marcaciones reales de
         hoy no se pierden — se pueden ver en cuanto cargues la asignación.
       </p>
-      <button
-        onClick={onCargar}
-        style={{ marginTop: 18, padding: "12px 24px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700 }}
-      >
+      <Boton onClick={onCargar} style={{ marginTop: 18 }}>
         Cargar asignación de hoy
-      </button>
+      </Boton>
     </div>
   );
 }
@@ -337,18 +336,6 @@ function VistaConAsignacion({
         </div>
       </div>
     </>
-  );
-}
-
-function TarjetaKPI({ etiqueta, valor, color, fondo }: { etiqueta: string; valor: number | string; color: string; fondo: string }) {
-  return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: fondo, border: `2px solid ${color}` }} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>{etiqueta}</span>
-      </div>
-      <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 32, marginTop: 10, color: "var(--ink)" }}>{valor}</div>
-    </div>
   );
 }
 
@@ -477,16 +464,12 @@ function PanelCargarAsignacion({
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button
-            onClick={confirmar}
-            disabled={guardando || lista === null}
-            style={{ flex: 1, padding: 12, background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, opacity: guardando ? 0.7 : 1 }}
-          >
+          <Boton onClick={confirmar} disabled={guardando || lista === null} style={{ flex: 1 }}>
             {guardando ? "Guardando…" : `Confirmar (${lista?.length ?? 0})`}
-          </button>
-          <button onClick={onCancelar} style={{ padding: "12px 20px", background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>
+          </Boton>
+          <Boton variante="outline" onClick={onCancelar}>
             Cancelar
-          </button>
+          </Boton>
         </div>
       </div>
     </div>

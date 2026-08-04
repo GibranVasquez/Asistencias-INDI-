@@ -9,6 +9,7 @@ import {
   Terminal,
 } from "../api/terminales";
 import { useAuth } from "../context/AuthContext";
+import Boton from "../components/Boton";
 
 const estilosCampo = {
   padding: "10px 12px",
@@ -130,16 +131,15 @@ export default function TerminalesPage() {
             {terminales ? `${terminales.length} dispositivo${terminales.length === 1 ? "" : "s"}` : "Cargando…"}
           </p>
         </div>
-        <button
+        <Boton
           onClick={() => {
             setFormularioAlta(formularioAltaVacio());
             setErrorAlta(null);
             setMostrarAlta(true);
           }}
-          style={{ padding: "11px 20px", background: "var(--indi)", color: "var(--white)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
         >
           + Nuevo terminal
-        </button>
+        </Boton>
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
@@ -194,39 +194,26 @@ export default function TerminalesPage() {
                           </span>
                         </td>
                         <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
-                          <button
+                          <Boton
+                            variante="outline"
+                            tamano="pequeno"
                             onClick={() => {
                               setEditando(t);
                               setFormularioEdicion({ ubicacion: t.ubicacion, numeroSerie: t.numeroSerie });
                               setErrorEdicion(null);
                             }}
-                            style={{
-                              padding: "7px 14px",
-                              borderRadius: 8,
-                              border: "1.5px solid var(--line)",
-                              background: "var(--surface)",
-                              color: "var(--ink)",
-                              fontSize: 12.5,
-                              fontWeight: 700,
-                            }}
                           >
                             Editar
-                          </button>
-                          <button
+                          </Boton>
+                          <Boton
+                            variante="outline"
+                            tamano="pequeno"
                             onClick={() => alternarActivo(t)}
                             disabled={filaEnProceso === t.id}
-                            style={{
-                              padding: "7px 14px",
-                              borderRadius: 8,
-                              border: "1.5px solid var(--line)",
-                              background: "var(--surface)",
-                              color: t.activo ? "var(--err)" : "var(--ok)",
-                              fontSize: 12.5,
-                              fontWeight: 700,
-                            }}
+                            style={{ color: t.activo ? "var(--err)" : "var(--ok)" }}
                           >
                             {filaEnProceso === t.id ? "…" : t.activo ? "Desactivar" : "Activar"}
-                          </button>
+                          </Boton>
                         </td>
                       </tr>
                       {erroresFila[t.id] && (
@@ -323,20 +310,12 @@ export default function TerminalesPage() {
             )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setMostrarAlta(false)}
-                style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
-              >
+              <Boton variante="outline" type="button" onClick={() => setMostrarAlta(false)} style={{ flex: 1 }}>
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardandoAlta}
-                style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--white)", opacity: guardandoAlta ? 0.7 : 1 }}
-              >
+              </Boton>
+              <Boton type="submit" disabled={guardandoAlta} style={{ flex: 1 }}>
                 {guardandoAlta ? "Guardando…" : "Crear terminal"}
-              </button>
+              </Boton>
             </div>
           </form>
         </div>
@@ -387,20 +366,12 @@ export default function TerminalesPage() {
             )}
 
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setEditando(null)}
-                style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}
-              >
+              <Boton variante="outline" type="button" onClick={() => setEditando(null)} style={{ flex: 1 }}>
                 Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={guardandoEdicion}
-                style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--white)", opacity: guardandoEdicion ? 0.7 : 1 }}
-              >
+              </Boton>
+              <Boton type="submit" disabled={guardandoEdicion} style={{ flex: 1 }}>
                 {guardandoEdicion ? "Guardando…" : "Guardar cambios"}
-              </button>
+              </Boton>
             </div>
           </form>
         </div>

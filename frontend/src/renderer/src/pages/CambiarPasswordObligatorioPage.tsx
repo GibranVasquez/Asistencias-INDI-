@@ -3,6 +3,7 @@ import { cambiarPassword } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
+import Boton from "../components/Boton";
 
 const estilosCampo = {
   padding: "12px 14px",
@@ -78,13 +79,9 @@ export default function CambiarPasswordObligatorioPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={cargando}
-            style={{ marginTop: 6, padding: 13, background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 15, fontWeight: 700, opacity: cargando ? 0.7 : 1 }}
-          >
+          <Boton type="submit" disabled={cargando} style={{ marginTop: 6, width: "100%", fontSize: 15 }}>
             {cargando ? "Guardando…" : "Cambiar contraseña"}
-          </button>
+          </Boton>
         </div>
       </form>
     </div>

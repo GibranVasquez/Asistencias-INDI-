@@ -9,6 +9,8 @@ import {
 } from "../api/nominas";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import TarjetaKPI from "../components/TarjetaKPI";
+import Boton from "../components/Boton";
 
 const CONCURRENCIA_GENERACION = 6;
 
@@ -285,24 +287,18 @@ export default function NominaPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={() => setInicioSemana((f) => sumarDias(f, -7))}
-            style={{ padding: "9px 14px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13, fontWeight: 600 }}
-          >
+          <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, -7))}>
             ← Semana anterior
-          </button>
+          </Boton>
           <input
             type="date"
             value={periodoInicio}
             onChange={(e) => setInicioSemana(lunesDeSemana(new Date(`${e.target.value}T00:00:00`)))}
             style={estilosCampo}
           />
-          <button
-            onClick={() => setInicioSemana((f) => sumarDias(f, 7))}
-            style={{ padding: "9px 14px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13, fontWeight: 600 }}
-          >
+          <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, 7))}>
             Semana siguiente →
-          </button>
+          </Boton>
         </div>
       </div>
 
@@ -344,19 +340,15 @@ export default function NominaPage() {
           </select>
         </label>
         <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-          <button onClick={exportarCSV} disabled={!vistaPrevia} style={{ padding: "10px 16px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13, fontWeight: 700 }}>
+          <Boton variante="outline" onClick={exportarCSV} disabled={!vistaPrevia}>
             Exportar CSV (Excel)
-          </button>
-          <button onClick={() => window.print()} disabled={!vistaPrevia} style={{ padding: "10px 16px", borderRadius: 9, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 13, fontWeight: 700 }}>
+          </Boton>
+          <Boton variante="outline" onClick={() => window.print()} disabled={!vistaPrevia}>
             Exportar PDF
-          </button>
-          <button
-            onClick={calcularNominaDeLaSemana}
-            disabled={generando || !vistaPrevia || procesables === 0}
-            style={{ padding: "10px 18px", borderRadius: 9, border: "none", background: "var(--indi)", color: "var(--white)", fontSize: 13.5, fontWeight: 700 }}
-          >
+          </Boton>
+          <Boton onClick={calcularNominaDeLaSemana} disabled={generando || !vistaPrevia || procesables === 0}>
             {generando ? `Calculando… ${progreso}/${procesables}` : `Calcular nómina de la semana (${procesables})`}
-          </button>
+          </Boton>
         </div>
       </div>
 
@@ -465,15 +457,3 @@ export default function NominaPage() {
   );
 }
 
-function TarjetaKPI({ color, fondo, etiqueta, valor, nota }: { color: string; fondo: string; etiqueta: string; valor: string; nota?: string }) {
-  return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, color }}>
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: fondo, border: `2px solid ${color}` }} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>{etiqueta}</span>
-      </div>
-      <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 22, marginTop: 12, color: "var(--ink)" }}>{valor}</div>
-      {nota && <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600, marginTop: 2 }}>{nota}</div>}
-    </div>
-  );
-}

@@ -6,6 +6,7 @@ import { listarSecciones, Seccion } from "../api/secciones";
 import { listarTerminales, Terminal } from "../api/terminales";
 import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import TarjetaKPI from "../components/TarjetaKPI";
 
 type Rango = "dia" | "semana" | "mes";
 
@@ -235,7 +236,7 @@ export default function DashboardPage() {
                 fontWeight: 600,
                 border: "none",
                 background: rango === r ? "var(--indi)" : "transparent",
-                color: rango === r ? "#fff" : "var(--muted)",
+                color: rango === r ? "var(--white)" : "var(--muted)",
               }}
             >
               {r === "dia" ? "Día" : r === "semana" ? "Semana" : "Mes"}
@@ -448,33 +449,6 @@ function bucketsPorSemanaDelMes(asistencias: AsistenciaListada[], inicioMes: Dat
     numeroSemana++;
   }
   return conteos.map((valor, i) => ({ etiqueta: `Sem ${i + 1}`, valor, esFuturo: false }));
-}
-
-function TarjetaKPI({
-  color,
-  fondo,
-  etiqueta,
-  valor,
-  nota,
-}: {
-  color: string;
-  fondo: string;
-  etiqueta: string;
-  valor: number | string;
-  nota?: string;
-}) {
-  return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, color }}>
-        <span style={{ width: 10, height: 10, borderRadius: "50%", background: fondo, border: `2px solid ${color}` }} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>{etiqueta}</span>
-      </div>
-      <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: typeof valor === "string" && valor.length > 4 ? 16 : 36, marginTop: 12, color: "var(--ink)" }}>
-        {valor}
-      </div>
-      {nota && <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600, marginTop: 2 }}>{nota}</div>}
-    </div>
-  );
 }
 
 function GraficaBarras({ barras }: { barras: { etiqueta: string; valor: number; esFuturo: boolean }[] }) {

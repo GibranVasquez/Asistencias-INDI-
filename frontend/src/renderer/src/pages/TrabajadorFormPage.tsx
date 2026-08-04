@@ -11,6 +11,7 @@ import {
   TrabajadorTipo,
 } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import Boton from "../components/Boton";
 
 interface FormularioEstado {
   nombreCompleto: string;
@@ -273,20 +274,12 @@ export default function TrabajadorFormPage() {
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-          <button
-            type="submit"
-            disabled={guardando}
-            style={{ padding: "12px 24px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 14, fontWeight: 700, opacity: guardando ? 0.7 : 1 }}
-          >
+          <Boton type="submit" disabled={guardando}>
             {guardando ? "Guardando…" : esEdicion ? "Guardar cambios" : "Crear trabajador"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navegar("/panel/trabajadores")}
-            style={{ padding: "12px 24px", background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 14, fontWeight: 600, color: "var(--ink)" }}
-          >
+          </Boton>
+          <Boton variante="outline" type="button" onClick={() => navegar("/panel/trabajadores")}>
             Cancelar
-          </button>
+          </Boton>
         </div>
       </form>
     </div>

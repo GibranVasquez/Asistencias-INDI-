@@ -21,6 +21,7 @@ import {
   TipoMovimiento,
 } from "../api/tiposMovimiento";
 import { useAuth } from "../context/AuthContext";
+import Boton from "../components/Boton";
 
 type Tab = "horarios" | "secciones" | "tiposMovimiento" | "tarifas";
 
@@ -74,12 +75,12 @@ function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }
 function BotonesModal({ guardando, onCancelar, etiqueta }: { guardando: boolean; onCancelar: () => void; etiqueta: string }) {
   return (
     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-      <button type="button" onClick={onCancelar} style={{ flex: 1, padding: 11, background: "var(--surface)", border: "1.5px solid var(--line)", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
+      <Boton variante="outline" type="button" onClick={onCancelar} style={{ flex: 1 }}>
         Cancelar
-      </button>
-      <button type="submit" disabled={guardando} style={{ flex: 1, padding: 11, background: "var(--indi)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700, color: "#fff", opacity: guardando ? 0.7 : 1 }}>
+      </Boton>
+      <Boton type="submit" disabled={guardando} style={{ flex: 1 }}>
         {guardando ? "Guardando…" : etiqueta}
-      </button>
+      </Boton>
     </div>
   );
 }
@@ -221,9 +222,9 @@ function PanelHorarios() {
     <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{horarios ? `${horarios.length} horario${horarios.length === 1 ? "" : "s"}` : "Cargando…"}</span>
-        <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+        <Boton tamano="pequeno" onClick={abrirAlta}>
           + Nuevo horario
-        </button>
+        </Boton>
       </div>
 
       {error ? (
@@ -257,12 +258,12 @@ function PanelHorarios() {
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{h.toleranciaMinutos} min</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{h.secciones?.length ? h.secciones.map((s) => s.nombre).join(", ") : "—"}</td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
-                      <button onClick={() => abrirEdicion(h)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 12, fontWeight: 700 }}>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => abrirEdicion(h)}>
                         Editar
-                      </button>
-                      <button onClick={() => borrar(h)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--err)", fontSize: 12, fontWeight: 700 }}>
+                      </Boton>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => borrar(h)} style={{ color: "var(--err)" }}>
                         Borrar
-                      </button>
+                      </Boton>
                     </td>
                   </tr>
                   {erroresFila[h.id] && (
@@ -423,9 +424,9 @@ function PanelSecciones() {
     <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{secciones ? `${secciones.length} sección${secciones.length === 1 ? "" : "es"}` : "Cargando…"}</span>
-        <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+        <Boton tamano="pequeno" onClick={abrirAlta}>
           + Nueva sección
-        </button>
+        </Boton>
       </div>
 
       {error ? (
@@ -451,12 +452,12 @@ function PanelSecciones() {
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.horarioId ? mapaHorarios.get(s.horarioId) ?? "—" : "—"}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.encargados?.length ? s.encargados.map((e) => e.username).join(", ") : "—"}</td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
-                      <button onClick={() => abrirEdicion(s)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 12, fontWeight: 700 }}>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => abrirEdicion(s)}>
                         Editar
-                      </button>
-                      <button onClick={() => borrar(s)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--err)", fontSize: 12, fontWeight: 700 }}>
+                      </Boton>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => borrar(s)} style={{ color: "var(--err)" }}>
                         Borrar
-                      </button>
+                      </Boton>
                     </td>
                   </tr>
                   {erroresFila[s.id] && (
@@ -602,9 +603,9 @@ function PanelTiposMovimiento() {
     <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{tipos ? `${tipos.length} tipo${tipos.length === 1 ? "" : "s"}` : "Cargando…"}</span>
-        <button onClick={abrirAlta} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+        <Boton tamano="pequeno" onClick={abrirAlta}>
           + Nuevo tipo
-        </button>
+        </Boton>
       </div>
 
       {error ? (
@@ -632,12 +633,12 @@ function PanelTiposMovimiento() {
                     <td style={{ padding: "11px 12px" }}><Pill activo={t.esInformativo} /></td>
                     <td style={{ padding: "11px 12px" }}><Pill activo={t.requiereAutorizacion} /></td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
-                      <button onClick={() => abrirEdicion(t)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)", fontSize: 12, fontWeight: 700 }}>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => abrirEdicion(t)}>
                         Editar
-                      </button>
-                      <button onClick={() => borrar(t)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--err)", fontSize: 12, fontWeight: 700 }}>
+                      </Boton>
+                      <Boton variante="outline" tamano="pequeno" onClick={() => borrar(t)} style={{ color: "var(--err)" }}>
                         Borrar
-                      </button>
+                      </Boton>
                     </td>
                   </tr>
                   {erroresFila[t.id] && (
@@ -734,9 +735,16 @@ function PanelTarifas() {
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{tarifas ? `${tarifas.length} tarifa${tarifas.length === 1 ? "" : "s"} en el historial` : "Cargando…"}</span>
-          <button onClick={() => { setFormulario({ valor: 0, vigenteDesde: hoyISO() }); setErrorModal(null); setModal(true); }} style={{ padding: "9px 16px", background: "var(--indi)", color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700 }}>
+          <Boton
+            tamano="pequeno"
+            onClick={() => {
+              setFormulario({ valor: 0, vigenteDesde: hoyISO() });
+              setErrorModal(null);
+              setModal(true);
+            }}
+          >
             + Nueva tarifa
-          </button>
+          </Boton>
         </div>
 
         {error ? (

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { listarTrabajadores, Trabajador, tieneDatosNominaIncompletos } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import Boton from "../components/Boton";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -57,12 +58,7 @@ export default function TrabajadoresPage() {
             )}
           </p>
         </div>
-        <button
-          onClick={() => navegar("/panel/trabajadores/nuevo")}
-          style={{ padding: "11px 20px", background: "var(--indi)", color: "var(--white)", border: "none", borderRadius: 9, fontSize: 13.5, fontWeight: 700 }}
-        >
-          + Nuevo trabajador
-        </button>
+        <Boton onClick={() => navegar("/panel/trabajadores/nuevo")}>+ Nuevo trabajador</Boton>
       </div>
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
