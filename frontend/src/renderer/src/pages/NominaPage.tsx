@@ -363,7 +363,7 @@ export default function NominaPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 11.5, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
-                  <th style={{ padding: "10px 16px" }}>Trabajador</th>
+                  <th style={{ padding: "10px 16px", position: "sticky", left: 0, background: "var(--surface)" }}>Trabajador</th>
                   <th style={{ padding: "10px 10px" }}>Categoría</th>
                   <th style={{ padding: "10px 10px" }}>Sección(es)</th>
                   <th style={{ padding: "10px 10px" }}>Días</th>
@@ -384,7 +384,7 @@ export default function NominaPage() {
                   const bloqueada = t.datosIncompletos;
                   return (
                     <tr key={t.id} style={{ borderTop: "1px solid var(--line)", fontSize: 13, opacity: bloqueada ? 0.5 : 1 }}>
-                      <td style={{ padding: "9px 16px", fontWeight: 600, color: "var(--ink)" }}>{t.nombreCompleto}</td>
+                      <td style={{ padding: "9px 16px", fontWeight: 600, color: "var(--ink)", position: "sticky", left: 0, background: "var(--surface)" }}>{t.nombreCompleto}</td>
                       <td style={{ padding: "9px 10px", color: "var(--muted)" }}>{t.categoria}</td>
                       <td style={{ padding: "9px 10px", color: "var(--muted)" }}>
                         {t.seccionesTrabajadas.length > 0 ? t.seccionesTrabajadas.join(", ") : "—"}
