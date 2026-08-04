@@ -179,7 +179,7 @@ function PanelReporteAsistencia() {
         <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14, marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginTop: 16 }}>
             <TarjetaKPI etiqueta="Presentes" valor={reporte.resumen.presentes} />
             <TarjetaKPI etiqueta="Ausentes" valor={reporte.resumen.ausentes ?? "—"} />
             <TarjetaKPI etiqueta="Tardanzas" valor={reporte.resumen.tardanzas} />
@@ -365,7 +365,7 @@ function PanelReporteNomina() {
         <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14, marginTop: 16 }}>
             <TarjetaKPI etiqueta="Total pagado" valor={moneda(reporte.resumen.totalPagado)} />
             <TarjetaKPI etiqueta="Horas extra" valor={moneda(reporte.resumen.totalHorasExtra)} />
             <TarjetaKPI etiqueta="INFONAVIT" valor={moneda(reporte.resumen.totalInfonavit)} />

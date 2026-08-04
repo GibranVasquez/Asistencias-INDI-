@@ -275,7 +275,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginTop: 22 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginTop: 22 }}>
         <TarjetaKPI
           color="var(--indi2)"
           fondo="rgba(46,99,199,.12)"

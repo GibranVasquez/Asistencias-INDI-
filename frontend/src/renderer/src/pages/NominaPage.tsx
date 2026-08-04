@@ -301,7 +301,7 @@ export default function NominaPage() {
         </div>
       </div>
 
-      <div className="no-imprimir" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginTop: 22 }}>
+      <div className="no-imprimir" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginTop: 22 }}>
         <TarjetaKPI color="var(--indi2)" fondo="rgba(46,99,199,.12)" etiqueta="Total nómina semanal" valor={`$${kpis.totalNomina.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} nota={`${generadas} de ${vistaPrevia?.length ?? 0} generadas`} />
         <TarjetaKPI color="var(--indi)" fondo="rgba(122,92,224,.12)" etiqueta="Horas extra pagadas" valor={`$${kpis.horasExtraPagadas.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />
         <TarjetaKPI color="var(--warn)" fondo="color-mix(in srgb, var(--warn) 14%, transparent)" etiqueta="Retención INFONAVIT" valor={`$${kpis.infonavitTotal.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`} />

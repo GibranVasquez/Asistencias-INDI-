@@ -275,7 +275,7 @@ function VistaConAsignacion({
 
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginTop: 22 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16, marginTop: 22 }}>
         <TarjetaKPI etiqueta="Presentes" valor={resumen.presentes.length} color="var(--ok)" fondo="rgba(47,174,102,.12)" />
         <TarjetaKPI etiqueta="Ausentes" valor={totalAusentes} color="var(--err)" fondo="rgba(229,72,77,.12)" />
         <TarjetaKPI
