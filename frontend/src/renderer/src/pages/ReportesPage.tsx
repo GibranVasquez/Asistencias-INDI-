@@ -46,13 +46,13 @@ function moneda(valor: string): string {
   return `$${Number(valor).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
 }
 
-function BotonesExportar({ onExportar }: { onExportar: (formato: "pdf" | "excel") => void }) {
+function BotonesExportar({ onExportar }: { onExportar: (formato: "pdf" | "excel") => Promise<void> }) {
   return (
     <div style={{ display: "flex", gap: 8 }}>
-      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("pdf")}>
+      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("pdf")} textoEnProceso="Exportando…">
         Exportar PDF
       </Boton>
-      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("excel")}>
+      <Boton variante="outline" tamano="pequeno" onClick={() => onExportar("excel")} textoEnProceso="Exportando…">
         Exportar Excel
       </Boton>
     </div>
