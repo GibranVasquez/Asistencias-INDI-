@@ -1,5 +1,9 @@
+import { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { RolUsuario } from "./api/auth";
+import { puedeAcceder, RutaPanel, rutaInicialPara } from "./config/menuPorRol";
+import { leerRutaPersistida } from "./config/estadoUI";
 import IntroSplash from "./components/IntroSplash";
 import AdminLayout from "./layouts/AdminLayout";
 import LoginPage from "./pages/LoginPage";
@@ -16,11 +20,31 @@ import ReportesPage from "./pages/ReportesPage";
 import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
 import KioscoPage from "./pages/KioscoPage";
 
-// recepcion tiene bloqueado el Dashboard por completo (decision del usuario
-// 2026-07-21): su rol es "solo visualiza la lista de asistencia y nada
-// mas" — ni siquiera una version degradada del Dashboard le corresponde.
-function rutaInicialPara(rol: string): string {
-  return rol === "recepcion" ? "/panel/asistencias" : "/panel/dashboard";
+// Guard genérico: reemplaza los ternarios esRecepcion/esAdministrador/esRh
+// repetidos por ruta (uno por cada <Route>, cada uno con su propia lógica
+// ad hoc) por una sola consulta a menuPorRol (config/menuPorRol.ts) — la
+// misma fuente de verdad que filtra el sidebar en AdminLayout.tsx. Si el rol
+// no puede ver esa ruta, redirige a su propio home (primer ítem permitido),
+// no a un valor fijo — así un encargado_seccion que teclee /panel/nomina en
+// la barra de direcciones cae en /panel/encargado, no en /panel/dashboard.
+function RutaProtegida({ rol, ruta, children }: { rol: RolUsuario; ruta: RutaPanel; children: ReactNode }) {
+  return puedeAcceder(rol, ruta) ? <>{children}</> : <Navigate to={`/panel/${rutaInicialPara(rol)}`} replace />;
+}
+
+// Restaura la última pantalla vista (config/estadoUI.ts) al abrir la app —
+// pero solo si el rol de la sesión ACTUAL todavía puede acceder a esa ruta.
+// No se puede confiar ciegamente en lo persistido: pudo quedar de una
+// sesión con otro rol en la misma máquina, o de antes de que este mismo rol
+// perdiera acceso a algo (ej. el fix de menú por rol). Si no hay nada
+// persistido o ya no es válido, cae a rutaInicialPara(rol) como siempre.
+function rutaAlAbrir(rol: RolUsuario): RutaPanel {
+  const persistida = leerRutaPersistida();
+  const coincidencia = persistida?.match(/^\/panel\/([^/]+)/);
+  const rutaPanel = coincidencia?.[1] as RutaPanel | undefined;
+  if (rutaPanel && puedeAcceder(rol, rutaPanel)) {
+    return rutaPanel;
+  }
+  return rutaInicialPara(rol);
 }
 
 export default function App() {
@@ -41,68 +65,34 @@ export default function App() {
     return <CambiarPasswordObligatorioPage />;
   }
 
-  const esRecepcion = sesion?.usuario.rol === "recepcion";
-  const esAdministrador = sesion?.usuario.rol === "administrador";
-  const esRh = sesion?.usuario.rol === "rh";
+  const rol = sesion?.usuario.rol;
 
   return (
     <div style={{ height: "100vh", position: "relative" }}>
       <IntroSplash />
       <Routes>
-      <Route path="/" element={sesion ? <Navigate to={rutaInicialPara(sesion.usuario.rol)} replace /> : <LoginPage />} />
-      <Route path="/panel" element={sesion ? <AdminLayout /> : <Navigate to="/" replace />}>
-        <Route index element={<Navigate to={esRecepcion ? "asistencias" : "dashboard"} replace />} />
-        <Route
-          path="dashboard"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <DashboardPage />}
-        />
-        <Route path="asistencias" element={<AsistenciasPage />} />
-        <Route
-          path="trabajadores"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <TrabajadoresPage />}
-        />
-        <Route
-          path="trabajadores/nuevo"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <TrabajadorFormPage />}
-        />
-        <Route
-          path="trabajadores/:id"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <TrabajadorFormPage />}
-        />
-        <Route
-          path="encargado"
-          element={esRecepcion ? <Navigate to="/panel/asistencias" replace /> : <EncargadoPage />}
-        />
-        <Route
-          path="nomina"
-          element={
-            esRecepcion || esAdministrador ? (
-              <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />
-            ) : (
-              <NominaPage />
-            )
-          }
-        />
-        <Route
-          path="usuarios"
-          element={esAdministrador ? <UsuariosPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
-        />
-        <Route
-          path="terminales"
-          element={esAdministrador ? <TerminalesPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
-        />
-        <Route
-          path="configuracion"
-          element={esRh ? <ConfiguracionPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
-        />
-        <Route
-          path="reportes"
-          element={esRh ? <ReportesPage /> : <Navigate to={esRecepcion ? "/panel/asistencias" : "/panel/dashboard"} replace />}
-        />
-      </Route>
-      <Route path="/kiosco" element={<KioscoPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="/" element={sesion ? <Navigate to={`/panel/${rutaAlAbrir(sesion.usuario.rol)}`} replace /> : <LoginPage />} />
+        <Route path="/panel" element={sesion ? <AdminLayout /> : <Navigate to="/" replace />}>
+          {rol && (
+            <>
+              <Route index element={<Navigate to={rutaInicialPara(rol)} replace />} />
+              <Route path="dashboard" element={<RutaProtegida rol={rol} ruta="dashboard"><DashboardPage /></RutaProtegida>} />
+              <Route path="asistencias" element={<RutaProtegida rol={rol} ruta="asistencias"><AsistenciasPage /></RutaProtegida>} />
+              <Route path="trabajadores" element={<RutaProtegida rol={rol} ruta="trabajadores"><TrabajadoresPage /></RutaProtegida>} />
+              <Route path="trabajadores/nuevo" element={<RutaProtegida rol={rol} ruta="trabajadores"><TrabajadorFormPage /></RutaProtegida>} />
+              <Route path="trabajadores/:id" element={<RutaProtegida rol={rol} ruta="trabajadores"><TrabajadorFormPage /></RutaProtegida>} />
+              <Route path="encargado" element={<RutaProtegida rol={rol} ruta="encargado"><EncargadoPage /></RutaProtegida>} />
+              <Route path="nomina" element={<RutaProtegida rol={rol} ruta="nomina"><NominaPage /></RutaProtegida>} />
+              <Route path="usuarios" element={<RutaProtegida rol={rol} ruta="usuarios"><UsuariosPage /></RutaProtegida>} />
+              <Route path="terminales" element={<RutaProtegida rol={rol} ruta="terminales"><TerminalesPage /></RutaProtegida>} />
+              <Route path="configuracion" element={<RutaProtegida rol={rol} ruta="configuracion"><ConfiguracionPage /></RutaProtegida>} />
+              <Route path="reportes" element={<RutaProtegida rol={rol} ruta="reportes"><ReportesPage /></RutaProtegida>} />
+            </>
+          )}
+        </Route>
+        <Route path="/kiosco" element={<KioscoPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 }

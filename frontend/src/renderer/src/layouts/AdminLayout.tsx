@@ -1,10 +1,12 @@
-import { ReactNode, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { ReactNode, useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { asset } from "../assets";
 import { useAuth } from "../context/AuthContext";
 import { useTimeoutInactividad } from "../hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "../components/AyudaSoporteModal";
 import ThemeToggle from "../components/ThemeToggle";
+import { menuPorRol, RutaPanel } from "../config/menuPorRol";
+import { guardarRutaPersistida } from "../config/estadoUI";
 
 const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
@@ -17,7 +19,7 @@ const ETIQUETA_ROL: Record<string, string> = {
 };
 
 interface ItemNav {
-  ruta: string;
+  ruta: RutaPanel;
   etiqueta: string;
   icono: ReactNode;
 }
@@ -125,6 +127,7 @@ const ITEMS_NAV: ItemNav[] = [
 export default function AdminLayout() {
   const { sesion, sesionPersistida, cerrarSesion } = useAuth();
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const location = useLocation();
 
   // Antes del "if (!sesion) return null" de abajo: los hooks siempre deben
   // correr, sin importar el valor de sesion (reglas de hooks de React) - el
@@ -135,31 +138,22 @@ export default function AdminLayout() {
     cerrarSesion();
   });
 
+  // Guarda la ruta actual en cada navegación dentro de /panel — App.tsx la
+  // lee una sola vez al montar para decidir dónde aterrizar la próxima vez
+  // que se abra la app (ver config/estadoUI.ts).
+  useEffect(() => {
+    guardarRutaPersistida(location.pathname);
+  }, [location.pathname]);
+
   if (!sesion) return null;
 
   const sesionDegradada = sesionPersistida === false;
 
   const iniciales = sesion.usuario.username.slice(0, 2).toUpperCase();
 
-  // recepcion: "solo visualiza la lista de asistencia y nada más" (decision
-  // del usuario 2026-07-21) — el sidebar no debe insinuar acceso a
-  // pantallas que su rol no puede usar en absoluto, ni siquiera degradadas.
-  // "usuarios" (gestión de cuentas) es exclusivo de administrador y
-  // "configuracion"/"reportes" (catálogos, financiero de nómina) son
-  // exclusivos de rh — para todos los demás roles ninguna aparece en el sidebar.
-  // "nomina" tampoco le corresponde a administrador: su rol es gestión de
-  // cuentas de usuario, no nómina (backend ya lo rechaza, ver nomina.routes.ts).
-  const itemsNav =
-    sesion.usuario.rol === "recepcion"
-      ? ITEMS_NAV.filter((i) => i.ruta === "asistencias")
-      : ITEMS_NAV.filter(
-          (i) =>
-            (i.ruta !== "usuarios" || sesion.usuario.rol === "administrador") &&
-            (i.ruta !== "terminales" || sesion.usuario.rol === "administrador") &&
-            (i.ruta !== "configuracion" || sesion.usuario.rol === "rh") &&
-            (i.ruta !== "reportes" || sesion.usuario.rol === "rh") &&
-            (i.ruta !== "nomina" || sesion.usuario.rol !== "administrador")
-        );
+  // Única fuente de verdad para qué ve cada rol — ver config/menuPorRol.ts.
+  const rutasPermitidas = menuPorRol[sesion.usuario.rol];
+  const itemsNav = ITEMS_NAV.filter((i) => rutasPermitidas.includes(i.ruta));
 
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)" }}>
