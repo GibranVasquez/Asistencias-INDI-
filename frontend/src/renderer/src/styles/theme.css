@@ -169,6 +169,14 @@ input {
     radial-gradient(700px circle at 50% 100%, rgba(10, 37, 80, 0.25), transparent 60%);
 }
 
+/* --- intro: logo INDI ensamblándose en 4 piezas al arrancar la app.
+   Se ensambla (piezas terminan ~1.67s), queda quieto un momento breve, y
+   todo el overlay (logo + fondo) se desvanece con opacity en el mismo
+   lugar donde apareció — sin escalar ni trasladarse a ninguna coordenada.
+   Deliberadamente NO intenta "aterrizar" sobre el logo del sidebar: ese
+   traslado (antes via @keyframes toCorner, con transform/scale calibrados
+   a mano) dependía de coordenadas fijas en píxeles que no se sostienen
+   entre distintos tamaños de ventana — ver CLAUDE.md. */
 .intro-veil {
   position: absolute;
   inset: 0;
@@ -177,14 +185,14 @@ input {
   align-items: center;
   justify-content: center;
   background: var(--indi-solid);
-  animation: veilBg 0.55s ease 2.05s forwards;
+  animation: veilBg 0.5s ease 2.02s forwards;
 }
 
 .intro-lock {
   display: flex;
   align-items: flex-start;
-  animation: toCorner 1s cubic-bezier(0.65, 0, 0.35, 1) 1.85s forwards;
   filter: drop-shadow(0 22px 50px rgba(0, 0, 0, 0.6));
+  animation: logoFadeOut 0.45s ease 2.02s forwards;
 }
 
 .intro-lock i {
@@ -265,9 +273,9 @@ input {
   }
 }
 
-@keyframes toCorner {
+@keyframes logoFadeOut {
   to {
-    transform: translate(-442px, -304px) scale(0.342105);
+    opacity: 0;
   }
 }
 

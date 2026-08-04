@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { asset } from "../assets";
 
-const DURACION_MS = 3300;
+// Piezas del logo terminan de ensamblarse ~1.67s (ver theme.css, .il1-.il4),
+// el desvanecido (logo + fondo) arranca a los 2.02s y dura ~0.5s -> ~2.52s.
+// Este valor deja un margen corto después de eso.
+const DURACION_MS = 2800;
 
 export default function IntroSplash() {
   const [visible, setVisible] = useState(true);
