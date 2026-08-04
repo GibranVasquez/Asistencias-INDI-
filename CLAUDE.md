@@ -49,8 +49,8 @@ Copy `backend/.env.example` to `backend/.env`. Required at boot (validated in
 `ADMIN_SEED_PASSWORD` are required only by `prisma/seed.ts` (first-run admin
 account; the seed never overwrites an existing user's password).
 
-**Postgres vive en Supabase** (proyecto administrado), no en un Postgres
-local — desde 2026-07-24. Dos variables de conexión, no una:
+**Postgres vive en Supabase solo para desarrollo local** (proyecto
+administrado) — desde 2026-07-24. Dos variables de conexión, no una:
 `DATABASE_URL` (pooled, pgbouncer, puerto 6543 — la usa la app en runtime
 vía `@prisma/adapter-pg`) y `DIRECT_URL` (conexión directa, puerto 5432 —
 la usa solo el motor de migraciones de Prisma; pgbouncer en modo
@@ -60,12 +60,23 @@ en `prisma.config.ts`. Nada más cambió: sigue siendo el mismo Express +
 Prisma + JWT propio de siempre — Supabase aquí es únicamente el proveedor
 del Postgres, no su Auth, ni sus políticas RLS, ni su SDK.
 
-**Región del proyecto de Supabase: `us-east-1` (AWS, N. Virginia, EE.UU.)**
-— visible en el host de ambas connection strings
-(`aws-0-us-east-1.pooler.supabase.com`). Relevante para cuando se retome
-la conversación pendiente de cumplimiento legal sobre dónde vive el dato
-biométrico (ver "Bloqueado" más abajo): hoy ese dato vive físicamente en
-EE.UU., no en México.
+**Producción (ECS) ya NO apunta a Supabase — apunta a AWS RDS** (ver
+"Despliegue (AWS)" más abajo). `src/utils/prisma.ts` (`resolverArchivoCA`)
+elige el CA de confianza correcto según el host real de `DATABASE_URL`
+(`*.rds.amazonaws.com` → RDS, cualquier otro → Supabase) precisamente
+porque dev local y producción apuntan a proveedores distintos al mismo
+tiempo — un CA fijo para ambos casos rompía uno de los dos (bug real en
+producción 2026-07-30, oculto detrás de un 500 genérico). `DB_CA_PATH`
+permite forzar un archivo específico (dentro de `certs/`) si algún día
+hay un tercer proveedor.
+
+**Ubicación física del dato biométrico** (relevante para la conversación
+pendiente de cumplimiento legal, ver "Bloqueado" más abajo): Supabase
+(dev) vive en `us-east-1` (AWS, N. Virginia, EE.UU.); RDS de producción
+también nació en `us-east-1` y **está en migración activa a `mx-central-1`
+(México)** — ver "Despliegue (AWS)" más abajo. Hasta que esa migración
+termine (datos + corte de DNS), el dato real de producción sigue
+viviendo físicamente en EE. UU., no en México.
 
 Cosas a tener en cuenta si vuelves a tocar la conexión:
 - Si la contraseña de la base tiene caracteres especiales (`#`, `@`, etc.),
@@ -134,10 +145,50 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   desarrollo, nunca queda guardado; el fix es puramente de documentación
   para que la próxima vez se use el parámetro correcto desde el inicio.
 
-### Despliegue (Railway)
+### Despliegue (AWS) — la ruta real, ya aplicada
 
-Preparado pero **no conectado todavía** (ver "Bloqueado" más abajo — el
-despliegue real sigue pendiente). `PORT` ya se lee de `process.env.PORT`
+**AWS fue la ruta elegida, no Railway** — la sección "Despliegue (Railway)"
+de abajo describe una preparación que quedó en el código pero nunca se usó
+para el despliegue real. El backend corre en producción en AWS: RDS
+Postgres + ECS/Fargate + ALB con HTTPS real (`api.sistemasindi.com`,
+certificado ACM) + WAF (protege `/iclock/*` con lista blanca de IP) + VPC
+Endpoints (sin NAT) + Route53. Verificado en vivo de punta a punta
+(TLS 1.3, HTTP/2 200, login real, `{"status":"ok"}`), no solo `terraform
+apply` exitoso. `infra/AWS_MIGRATION.md` tiene la checklist completa de
+esta migración. `infra/terraform/` es el stack principal;
+`infra/terraform-network/` es la red dedicada (VPC/subredes/bastión SSM),
+con state propio independiente del backend S3 del stack principal.
+
+**Migración de región en curso: `us-east-1` → `mx-central-1` (México)**,
+por el mismo tema de cumplimiento legal de datos biométricos (ver
+"Bloqueado"). Un workspace de Terraform separado, `"mexico"` (mismo
+bucket S3 de state, distinta key vía workspace en `infra/terraform/`;
+state local propio en `infra/terraform-network/`, ver su
+`terraform.tfstate.d/mexico/`) tiene ya aplicado un stack paralelo
+completo en `mx-central-1` con sufijo `-mx` (RDS vacío todavía, ECS/ALB/
+WAF/ACM corriendo, verificado en `https://api-mx.sistemasindi.com`) sin
+tocar la infraestructura de producción real en `us-east-1`. Pendiente:
+migrar los datos reales (pg_dump/restore + checksums, mismo patrón que la
+migración Supabase→RDS original), el corte de DNS de
+`api.sistemasindi.com` hacia el ALB de México, y apagar/destruir la
+infraestructura vieja de `us-east-1` una vez confirmado que México es
+estable. Detalle completo y más actualizado de esta migración: ver
+memoria del proyecto / documento de traspaso, no duplicado aquí porque
+cambia con cada sesión de infra.
+
+**IAM**: `claude-code-indi` (usuario de automatización) tiene exactamente
+los permisos de aprovisionamiento que necesita y **nunca** puede modificar
+sus propias políticas (evita escalación de privilegios); `gibran-admin`
+(humano, `AdministratorAccess`) es quien corrige esas políticas cuando
+hace falta. Dos políticas separadas por el límite de 6144 caracteres de
+AWS (`indi-provisioning-policy` para compute, `indi-provisioning-policy-datos`
+para datos/red/WAF). `infra/terraform/iam_drift_check.tf` — ver sección
+ADMS más abajo para el detalle de qué hace y el drift real que ya
+encontró.
+
+### Despliegue (Railway) — preparado en código, no es la ruta usada
+
+`PORT` ya se lee de `process.env.PORT`
 (con fallback a 4000 solo para dev local); `GET /health` existe y está
 excluido del rate limiter general para que un healthcheck de
 infraestructura no cuente contra el cupo de un usuario/IP real.
@@ -581,8 +632,9 @@ detección rápida de fallos, no la reemplaza):
 1. **Aplicación** (`middlewares/restringirPorIP.ts`, capa principal):
    `ADMS_IPS_PERMITIDAS` (env var, IPs separadas por coma) — `req.ip` debe
    estar en la lista o se rechaza con 403 antes de llegar siquiera a
-   `resolverTerminalPorSN`. Funciona en cualquier plataforma de despliegue
-   (Railway o AWS — la decisión entre las dos sigue sin tomarse). **Fail-
+   `resolverTerminalPorSN`. Funciona igual en cualquier plataforma de
+   despliegue (código genérico, sin dependencia de AWS — la plataforma
+   elegida, ver "Despliegue (AWS)" arriba). **Fail-
    closed en producción**: si `NODE_ENV=production` y la variable no está
    configurada, se rechaza TODO /iclock/* (no se asume "sin lista, dejar
    pasar" como seguro — sin esta capa el endpoint quedaría sin ninguna
@@ -591,7 +643,7 @@ detección rápida de fallos, no la reemplaza):
    configurarla en cada entorno de desarrollo) — pero si sí está
    configurada, se respeta igual fuera de producción. Requirió
    `app.set("trust proxy", 1)` (`app.ts`) para que `req.ip` refleje al
-   cliente real detrás de un proxy administrado (Railway/App Runner), no
+   cliente real detrás de un proxy administrado (el ALB de ECS), no
    al balanceador — corregido de paso el mismo bug latente en el keying
    por IP del rate limiter general. Verificado en vivo con las 4
    combinaciones (sin configurar en dev, IP configurada que no coincide,
@@ -637,14 +689,13 @@ detección rápida de fallos, no la reemplaza):
    App Runner, no es nuestro caso), bloqueando cualquier request a rutas
    `/iclock/*` que no venga de `var.adms_ips_permitidas`. Esta capa
    protege *todo* el servicio (WAF no puede aplicarse a una sola ruta, la
-   regla en sí sí es específica de `/iclock/*` vía un `and_statement`),
-   pero solo aplica una vez que exista una cuenta de AWS real y se elija
-   esa plataforma sobre Railway — no aplicada todavía, igual que el resto
-   de `infra/terraform/`. **Actualización 2026-07-31: el WAF ya está
-   activo de verdad**, asociado al ALB real de ECS (no App Runner, migrado
-   desde entonces) — confirmado en vivo (`wafv2:GetWebACLForResource`
-   contra el ALB real) y probado con una petición real bloqueada desde una
-   IP fuera del allowlist (`403`, HTML genérico de bloqueo del WAF).
+   regla en sí sí es específica de `/iclock/*` vía un `and_statement`).
+   **El WAF ya está activo de verdad** (desde 2026-07-31), asociado al ALB
+   real de ECS (AWS es la plataforma elegida, no Railway — ver "Despliegue
+   (AWS)" arriba; el ALB reemplazó a App Runner en esa misma migración) —
+   confirmado en vivo (`wafv2:GetWebACLForResource` contra el ALB real) y
+   probado con una petición real bloqueada desde una IP fuera del
+   allowlist (`403`, HTML genérico de bloqueo del WAF).
 
 **Pendiente real, no cerrado hoy (2026-07-31) — logging del WAF a
 CloudWatch Logs:** el recurso `aws_wafv2_web_acl_logging_configuration.adms`
@@ -802,6 +853,19 @@ screen reacts automatically to an external push without anyone touching
 the app) — **not yet tested against the physical MB10-VL**, which isn't
 connected yet (see "Bloqueado").
 
+Between 2026-07-27 and 2026-07-31, real AWS infrastructure was built and
+verified end-to-end for production (see "Despliegue (AWS)" above for the
+technical detail): App Runner → ECS/Fargate migration, RDS Postgres, ALB
+with real HTTPS, WAF protecting `/iclock/*`, VPC Endpoints, Route53/ACM
+domain, and an IAM drift-check. Backend is no longer "local only" — it's
+deployed and confirmed working live. Since then, a region migration to
+`mx-central-1` (data-residency motivation, see "Bloqueado") is in
+progress via a separate Terraform workspace, with the network + compute
+stacks already applied in parallel without touching `us-east-1`
+production; data migration and DNS cutover are what's left. Full
+day-by-day detail of this infra work lives in project memory / the
+traspaso document, not duplicated here.
+
 ## Bloqueado — fuera del alcance de este repositorio
 
 Estos puntos no se resuelven con código en este repo; requieren una
@@ -834,15 +898,15 @@ decisión, ejecución o insumo externo del usuario/cliente:
 - **Datos operativos reales de RH** — horario real de campo, nombres de
   encargados de sección, y confirmación de si existen más obras además
   de Tren Golfo de México.
-- **Despliegue real del backend a producción** — sigue corriendo solo en
-  local; no hay ambiente de producción todavía. Preparado pero no
-  conectado en dos rutas paralelas (ninguna aplicada/desplegada aún):
-  Railway (`PORT`/`/health` listos, `.env.example` documentado) y AWS App
-  Runner + RDS vía Terraform (`infra/terraform/`, ver
-  `infra/AWS_MIGRATION.md` para la checklist completa) — falta decidir
-  cuál de las dos se usa de verdad, crear la cuenta correspondiente, y
-  para AWS específicamente falta además probar en vivo el CA pinning de
-  RDS (código listo, no verificado contra una instancia real todavía).
+- **Ya NO bloqueado — el backend está desplegado y verificado en
+  producción real** (AWS, no Railway; ver "Despliegue (AWS)" arriba para
+  el detalle técnico completo). Lo que sigue abierto de esto es trabajo
+  de infra normal, no una decisión/insumo externo, así que vive en
+  "Current state"/memoria del proyecto, no aquí: completar la migración
+  de región `us-east-1` → `mx-central-1` (datos + corte de DNS + limpieza
+  de la infraestructura vieja) y pasar la cuenta de AWS a Paid Plan antes
+  de que se agote el crédito de Free Tier o llegue su fecha límite (ver
+  memoria del proyecto para el saldo/fecha más reciente).
 - **`db_backup_retention_days` de RDS debe subirse antes de que la
   instancia tenga datos reales de producción — hoy vale `1` día, no por
   elección, sino porque `7` (el valor original) falló en vivo contra la
