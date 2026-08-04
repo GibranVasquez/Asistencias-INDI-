@@ -4,6 +4,7 @@ import { ApiError } from "../api/client";
 import { listarTrabajadores, Trabajador, tieneDatosNominaIncompletos } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
+import ChipEstado from "../components/ChipEstado";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -130,29 +131,22 @@ export default function TrabajadoresPage() {
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.categoria}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{ETIQUETA_TIPO[t.tipo] ?? t.tipo}</td>
                     <td style={{ padding: "11px 12px" }}>
-                      <span
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          color: t.estatus === "activo" ? "var(--ok)" : "var(--err)",
-                          background:
-                            t.estatus === "activo"
-                              ? "color-mix(in srgb, var(--ok) 12%, transparent)"
-                              : "color-mix(in srgb, var(--err) 12%, transparent)",
-                          padding: "3px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        {t.estatus === "activo" ? "Activo" : "Baja"}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <ChipEstado
+                          tamano={24}
+                          color={t.estatus === "activo" ? "ok" : "err"}
+                          icono={t.estatus === "activo" ? "✓" : "✕"}
+                        />
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: t.estatus === "activo" ? "var(--ok)" : "var(--err)" }}>
+                          {t.estatus === "activo" ? "Activo" : "Baja"}
+                        </span>
+                      </div>
                     </td>
-                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>
-                      <span title="Huella" style={{ marginRight: 8, opacity: t.huellaRegistrada ? 1 : 0.25 }}>
-                        👆
-                      </span>
-                      <span title="Rostro" style={{ opacity: t.rostroRegistrado ? 1 : 0.25 }}>
-                        🙂
-                      </span>
+                    <td style={{ padding: "11px 12px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <ChipEstado tamano={24} color={t.huellaRegistrada ? "ok" : "muted"} icono="👆" titulo="Huella" />
+                        <ChipEstado tamano={24} color={t.rostroRegistrado ? "ok" : "muted"} icono="🙂" titulo="Rostro" />
+                      </div>
                     </td>
                     <td style={{ padding: "11px 20px" }}>
                       {tieneDatosNominaIncompletos(t) ? (

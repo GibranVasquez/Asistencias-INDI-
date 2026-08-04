@@ -18,6 +18,16 @@
   --dots: radial-gradient(rgba(255, 255, 255, 0.18) 1.4px, transparent 1.5px);
   --indi-solid: #0b1e3d;
   --sidebar-ink: #ffffff;
+  /* Fondos de chip (ChipEstado) — NO son --ok/--warn/--err directos: esos
+     tres, a color completo, no pasan 4.5:1 de contraste con texto/ícono
+     blanco (verificado: --ok da 2.85:1, --warn 2.00:1, --err 3.91:1 — muy
+     por debajo del mínimo AA). Estos son versiones oscurecidas mínimas
+     (el menor oscurecimiento posible) que sí llegan a ~4.5:1+ con blanco,
+     calculado con la fórmula de luminancia relativa de WCAG. --indi2 no
+     necesita una variante propia: a color completo ya da 7.94:1. */
+  --chip-ok-bg: #24864f;
+  --chip-warn-bg: #9b6c26;
+  --chip-err-bg: #d34247;
 }
 
 [data-theme="dark"] {

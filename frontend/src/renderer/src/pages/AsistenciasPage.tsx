@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AsistenciaListada, listarAsistencias } from "../api/asistencias";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import ChipEstado from "../components/ChipEstado";
 
 function hoyISO(): string {
   const ahora = new Date();
@@ -173,18 +174,17 @@ export default function AsistenciasPage() {
                     </td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)", textTransform: "capitalize" }}>{a.turno}</td>
                     <td style={{ padding: "11px 20px" }}>
-                      <span
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          color: "var(--indi2)",
-                          background: "rgba(46,99,199,.1)",
-                          padding: "3px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        {ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                        <ChipEstado
+                          tamano={26}
+                          color="indi"
+                          icono={a.metodoUsado === "rostro" ? "🙂" : "👆"}
+                          titulo={ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado}
+                        />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                          {ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))}

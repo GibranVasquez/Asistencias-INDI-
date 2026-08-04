@@ -7,6 +7,7 @@ import { listarTerminales, Terminal } from "../api/terminales";
 import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
+import ChipEstado from "../components/ChipEstado";
 
 type Rango = "dia" | "semana" | "mes";
 
@@ -382,24 +383,20 @@ export default function DashboardPage() {
                     </span>
                     <span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{nombre}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    <span style={{ fontSize: 13, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {puntual !== null && (
+                      <ChipEstado tamano={26} color={puntual ? "ok" : "warn"} icono={puntual ? "✓" : "⏱"} titulo={puntual ? "A tiempo" : "Tardanza"} />
+                    )}
+                    <span
+                      style={{
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        fontVariantNumeric: "tabular-nums",
+                        color: puntual === null ? "var(--muted)" : puntual ? "var(--ok)" : "var(--warn)",
+                      }}
+                    >
                       {new Date(a.hora).toISOString().slice(11, 16)}
                     </span>
-                    {puntual !== null && (
-                      <span
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          color: puntual ? "var(--ok)" : "var(--warn)",
-                          background: puntual ? "rgba(47,174,102,.12)" : "rgba(242,169,59,.14)",
-                          padding: "3px 10px",
-                          borderRadius: 999,
-                        }}
-                      >
-                        {puntual ? "A tiempo" : "Tardanza"}
-                      </span>
-                    )}
                   </div>
                 </div>
               );
