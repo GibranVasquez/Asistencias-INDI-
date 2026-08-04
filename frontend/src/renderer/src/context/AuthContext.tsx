@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { UsuarioPublico } from "../api/auth";
+import { limpiarEstadoUI } from "../config/estadoUI";
 
 interface SesionAuth {
   token: string;
@@ -87,6 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       cerrarSesion: async () => {
         await window.indiApp?.sesionSegura.borrar();
+        // Un cambio de usuario en la misma máquina no debe heredar la
+        // ruta/filtros de la sesión anterior (rol distinto podría ya ni
+        // siquiera poder ver esa ruta) — ver config/estadoUI.ts.
+        limpiarEstadoUI();
         setSesion(null);
         setSesionPersistida(null);
       },
