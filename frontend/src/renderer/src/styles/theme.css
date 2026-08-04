@@ -1,6 +1,14 @@
 /* Tokens y estilos base tomados 1:1 del mockup de referencia
    (App INDI Asistencia.dc.html) para mantener paridad visual exacta. */
 :root {
+  /* Le dice al navegador qué tema usan los controles nativos (date picker,
+     scrollbars, etc.) — sin esto, Chromium siempre asume "light" para esos
+     controles sin importar nuestro [data-theme], y por eso el ícono nativo
+     del <input type="date"> se volvía invisible en modo oscuro (gris oscuro
+     sobre fondo navy oscuro). Este fix es aparte del ícono propio de
+     CampoFecha — beneficia a cualquier otro control nativo del navegador
+     que dependa de esto, no solo el date picker. */
+  color-scheme: light;
   --indi: #0b1e3d;
   --indi2: #1b4f9c;
   --indi3: #3e7bc4;
@@ -31,6 +39,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --surface: #161f2e;
   --bg: #0f1626;
   --desk: #080d16;
@@ -84,6 +93,13 @@ button {
 
 input {
   font-family: inherit;
+}
+
+/* opacity:0 en vez de display:none — así el ícono nativo sigue ahí para
+   foco/teclado, solo se oculta visualmente detrás del ícono propio de
+   CampoFecha.tsx (superpuesto en el mismo lugar). */
+.campo-fecha-input::-webkit-calendar-picker-indicator {
+  opacity: 0;
 }
 
 @keyframes ringpulse {

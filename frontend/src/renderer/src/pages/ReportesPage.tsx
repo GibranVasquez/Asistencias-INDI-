@@ -15,6 +15,7 @@ import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import Boton from "../components/Boton";
+import CampoFecha from "../components/CampoFecha";
 
 type Tab = "asistencia" | "nomina";
 
@@ -152,11 +153,11 @@ function PanelReporteAsistencia() {
       <div className="tarjeta-admin" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Desde
-          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={estilosCampo} />
+          <CampoFecha value={desde} onChange={(e) => setDesde(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Hasta
-          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={estilosCampo} />
+          <CampoFecha value={hasta} onChange={(e) => setHasta(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Sección
@@ -347,11 +348,11 @@ function PanelReporteNomina() {
       <div className="tarjeta-admin" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Desde
-          <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} style={estilosCampo} />
+          <CampoFecha value={desde} onChange={(e) => setDesde(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Hasta
-          <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} style={estilosCampo} />
+          <CampoFecha value={hasta} onChange={(e) => setHasta(e.target.value)} />
         </label>
         <div style={{ marginLeft: "auto" }}>
           <BotonesExportar onExportar={exportar} />

@@ -12,6 +12,7 @@ import {
 } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
+import CampoFecha from "../components/CampoFecha";
 
 interface FormularioEstado {
   nombreCompleto: string;
@@ -205,7 +206,7 @@ export default function TrabajadorFormPage() {
         >
           <label style={estiloEtiqueta}>
             Fecha de ingreso
-            <input type="date" value={form.fechaIngreso} onChange={(e) => actualizar("fechaIngreso", e.target.value)} style={estiloInput} />
+            <CampoFecha value={form.fechaIngreso} onChange={(e) => actualizar("fechaIngreso", e.target.value)} />
           </label>
           <label style={estiloEtiqueta}>
             Sueldo base

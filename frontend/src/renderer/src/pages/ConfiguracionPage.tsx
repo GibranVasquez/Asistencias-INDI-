@@ -22,6 +22,7 @@ import {
 } from "../api/tiposMovimiento";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
+import CampoFecha from "../components/CampoFecha";
 
 type Tab = "horarios" | "secciones" | "tiposMovimiento" | "tarifas";
 
@@ -790,7 +791,7 @@ function PanelTarifas() {
               <input type="number" min={0.01} step="0.01" required value={formulario.valor} onChange={(e) => setFormulario((f) => ({ ...f, valor: Number(e.target.value) }))} style={estilosCampo} />
             </Campo>
             <Campo etiqueta="Vigente desde">
-              <input type="date" required value={formulario.vigenteDesde} onChange={(e) => setFormulario((f) => ({ ...f, vigenteDesde: e.target.value }))} style={estilosCampo} />
+              <CampoFecha required value={formulario.vigenteDesde} onChange={(e) => setFormulario((f) => ({ ...f, vigenteDesde: e.target.value }))} />
             </Campo>
             <BotonesModal guardando={guardando} onCancelar={() => setModal(false)} etiqueta="Crear tarifa" />
           </form>

@@ -11,6 +11,7 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import Boton from "../components/Boton";
+import CampoFecha from "../components/CampoFecha";
 
 const CONCURRENCIA_GENERACION = 6;
 
@@ -290,11 +291,9 @@ export default function NominaPage() {
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, -7))}>
             ← Semana anterior
           </Boton>
-          <input
-            type="date"
+          <CampoFecha
             value={periodoInicio}
             onChange={(e) => setInicioSemana(lunesDeSemana(new Date(`${e.target.value}T00:00:00`)))}
-            style={estilosCampo}
           />
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, 7))}>
             Semana siguiente →

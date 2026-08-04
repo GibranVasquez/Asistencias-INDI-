@@ -3,6 +3,7 @@ import { AsistenciaListada, listarAsistencias } from "../api/asistencias";
 import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ChipEstado from "../components/ChipEstado";
+import CampoFecha from "../components/CampoFecha";
 
 function hoyISO(): string {
   const ahora = new Date();
@@ -92,21 +93,11 @@ export default function AsistenciasPage() {
       >
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Desde
-          <input
-            type="date"
-            value={fechaDesde}
-            onChange={(e) => setFechaDesde(e.target.value)}
-            style={{ padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" }}
-          />
+          <CampoFecha value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Hasta
-          <input
-            type="date"
-            value={fechaHasta}
-            onChange={(e) => setFechaHasta(e.target.value)}
-            style={{ padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" }}
-          />
+          <CampoFecha value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
           Sección
