@@ -9,7 +9,8 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-terraform.tfvars
+*.tfvars
+!*.tfvars.example
 
 # Entornos
 .env
@@ -18,3 +19,4 @@ terraform.tfvars
 # Node
 node_modules/
 dist/
+docs/
