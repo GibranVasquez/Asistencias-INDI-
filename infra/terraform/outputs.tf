@@ -1,6 +1,6 @@
 output "backend_url" {
   description = "URL publica real del backend (dominio propio, no la de App Runner)"
-  value       = "https://api.${var.root_domain_name}"
+  value       = "https://${var.backend_subdomain}.${var.root_domain_name}"
 }
 
 output "alb_dns_name" {
@@ -10,12 +10,12 @@ output "alb_dns_name" {
 
 output "route53_name_servers" {
   description = "Los 4 NS de la zona de Route 53 - copiar estos EXACTOS a la configuracion de nameservers del dominio en Namecheap (o el registrador que sea). Paso manual obligatorio, ver AWS_MIGRATION.md."
-  value       = aws_route53_zone.this.name_servers
+  value       = data.aws_route53_zone.this.name_servers
 }
 
 output "route53_zone_id" {
-  description = "Zone ID de la zona de Route 53 creada para el dominio."
-  value       = aws_route53_zone.this.zone_id
+  description = "Zone ID de la zona de Route 53 real del dominio (unica para todos los workspaces, ver var.route53_zone_id)."
+  value       = data.aws_route53_zone.this.zone_id
 }
 
 output "rds_endpoint" {

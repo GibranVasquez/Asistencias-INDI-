@@ -52,12 +52,15 @@ resource "aws_security_group" "rds" {
   # cualquier cambio aqui, sin importar cual, fuerza un destroy+recreate
   # del SG completo (confirmado en vivo dos veces: primero intentando
   # reescribirlo de "App Runner" a "ECS", luego con un texto generico
-  # nuevo - ambos mostraron "forces replacement" en el plan). Se deja
-  # exactamente igual al valor ya existente en AWS a proposito, aunque ya
-  # mencione App Runner y el compute layer real ahora sea ECS - el detalle
-  # correcto y actualizado vive en la description de cada regla de ingress
-  # de abajo, que si se puede modificar sin reemplazar el SG.
-  description = "Postgres RDS - unico ingreso permitido: el SG del VPC Connector de App Runner"
+  # nuevo - ambos mostraron "forces replacement" en el plan). Para
+  # environment == "production" (el SG real de us-east-1, ya existente) se
+  # deja exactamente igual al valor ya existente en AWS a proposito, aunque
+  # ya mencione App Runner y el compute layer real ahora sea ECS - el
+  # detalle correcto y actualizado vive en la description de cada regla de
+  # ingress de abajo, que si se puede modificar sin reemplazar el SG.
+  # Cualquier otro ambiente (ej. production-mx) todavia no tiene un SG real
+  # que preservar, asi que puede usar un texto correcto desde el inicio.
+  description = var.environment == "production" ? "Postgres RDS - unico ingreso permitido: el SG del VPC Connector de App Runner" : "Security group para RDS de indi-asistencia en ${var.environment} (${var.aws_region})"
   vpc_id      = var.vpc_id
 
   ingress {

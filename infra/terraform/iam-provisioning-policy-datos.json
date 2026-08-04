@@ -1,205 +1,229 @@
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "RDS",
-      "Effect": "Allow",
-      "Action": [
-        "rds:CreateDBInstance",
-        "rds:DeleteDBInstance",
-        "rds:ModifyDBInstance",
-        "rds:DescribeDBInstances",
-        "rds:CreateDBSubnetGroup",
-        "rds:DeleteDBSubnetGroup",
-        "rds:ModifyDBSubnetGroup",
-        "rds:DescribeDBSubnetGroups",
-        "rds:DescribeDBEngineVersions",
-        "rds:CreateDBSnapshot",
-        "rds:DescribeDBSnapshots",
-        "rds:AddTagsToResource",
-        "rds:RemoveTagsFromResource",
-        "rds:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "SecretsManager",
-      "Effect": "Allow",
-      "Action": [
-        "secretsmanager:CreateSecret",
-        "secretsmanager:DeleteSecret",
-        "secretsmanager:DescribeSecret",
-        "secretsmanager:PutSecretValue",
-        "secretsmanager:UpdateSecret",
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:TagResource",
-        "secretsmanager:ListSecretVersionIds",
-        "secretsmanager:GetResourcePolicy"
-      ],
-      "Resource": "arn:aws:secretsmanager:*:*:secret:indi-asistencia/*"
-    },
-    {
-      "Sid": "S3BackendDeEstado",
-      "Effect": "Allow",
-      "Action": [
-        "s3:CreateBucket",
-        "s3:DeleteBucket",
-        "s3:PutBucketVersioning",
-        "s3:PutEncryptionConfiguration",
-        "s3:PutBucketPublicAccessBlock",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:Get*",
-        "s3:List*"
-      ],
-      "Resource": [
-        "arn:aws:s3:::indi-asistencia-tfstate",
-        "arn:aws:s3:::indi-asistencia-tfstate/*"
-      ]
-    },
-    {
-      "Sid": "DynamoDBLockDelState",
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:CreateTable",
-        "dynamodb:DeleteTable",
-        "dynamodb:GetItem",
-        "dynamodb:PutItem",
-        "dynamodb:DeleteItem",
-        "dynamodb:UpdateItem",
-        "dynamodb:TagResource",
-        "dynamodb:Describe*",
-        "dynamodb:List*"
-      ],
-      "Resource": "arn:aws:dynamodb:*:*:table/indi-asistencia-tfstate-lock"
-    },
-    {
-      "Sid": "Route53ParaDominio",
-      "Effect": "Allow",
-      "Action": [
-        "route53:CreateHostedZone",
-        "route53:DeleteHostedZone",
-        "route53:GetHostedZone",
-        "route53:ListHostedZones",
-        "route53:ChangeResourceRecordSets",
-        "route53:ListResourceRecordSets",
-        "route53:GetChange",
-        "route53:ChangeTagsForResource",
-        "route53:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ACMParaCertificadoBackend",
-      "Effect": "Allow",
-      "Action": [
-        "acm:RequestCertificate",
-        "acm:DeleteCertificate",
-        "acm:DescribeCertificate",
-        "acm:AddTagsToCertificate",
-        "acm:ListTagsForCertificate"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "WAFParaEndpointADMS",
-      "Effect": "Allow",
-      "Action": [
-        "wafv2:CreateWebACL",
-        "wafv2:DeleteWebACL",
-        "wafv2:UpdateWebACL",
-        "wafv2:GetWebACL",
-        "wafv2:ListWebACLs",
-        "wafv2:CreateIPSet",
-        "wafv2:DeleteIPSet",
-        "wafv2:UpdateIPSet",
-        "wafv2:GetIPSet",
-        "wafv2:TagResource",
-        "wafv2:AssociateWebACL",
-        "wafv2:DisassociateWebACL",
-        "wafv2:GetWebACLForResource",
-        "wafv2:ListTagsForResource",
-        "wafv2:PutLoggingConfiguration",
-        "wafv2:DeleteLoggingConfiguration",
-        "wafv2:GetLoggingConfiguration"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "CloudWatchLogsParaWAF",
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:DeleteLogGroup",
-        "logs:PutRetentionPolicy",
-        "logs:TagResource",
-        "logs:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:logs:us-east-1:183537898129:log-group:aws-waf-logs-indi-asistencia-*",
-        "arn:aws:logs:us-east-1:183537898129:log-group:aws-waf-logs-indi-asistencia-*:*"
-      ]
-    },
-    {
-      "Sid": "CloudWatchLogsDescribeGruposSinAlcanceDeRecurso",
-      "Effect": "Allow",
-      "Action": "logs:DescribeLogGroups",
-      "Resource": "*"
-    },
-    {
-      "Sid": "IAMLeerPoliticasPropiasParaDetectarDrift",
-      "Effect": "Allow",
-      "Action": [
-        "iam:GetPolicy",
-        "iam:GetPolicyVersion"
-      ],
-      "Resource": [
-        "arn:aws:iam::183537898129:policy/indi-provisioning-policy",
-        "arn:aws:iam::183537898129:policy/indi-provisioning-policy-datos"
-      ]
-    },
-    {
-      "Sid": "IAMInstanceProfileBastion",
-      "Effect": "Allow",
-      "Action": [
-        "iam:CreateInstanceProfile",
-        "iam:DeleteInstanceProfile",
-        "iam:GetInstanceProfile",
-        "iam:AddRoleToInstanceProfile",
-        "iam:RemoveRoleFromInstanceProfile",
-        "iam:TagInstanceProfile"
-      ],
-      "Resource": "arn:aws:iam::183537898129:instance-profile/indi-asistencia-*"
-    },
-    {
-      "Sid": "ECRRepositorio",
-      "Effect": "Allow",
-      "Action": [
-        "ecr:CreateRepository",
-        "ecr:DeleteRepository",
-        "ecr:DescribeRepositories",
-        "ecr:DescribeImages",
-        "ecr:PutLifecyclePolicy",
-        "ecr:GetLifecyclePolicy",
-        "ecr:DeleteLifecyclePolicy",
-        "ecr:TagResource",
-        "ecr:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ECRPushDeImagen",
-      "Effect": "Allow",
-      "Action": [
-        "ecr:GetAuthorizationToken",
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:InitiateLayerUpload",
-        "ecr:UploadLayerPart",
-        "ecr:CompleteLayerUpload",
-        "ecr:PutImage",
-        "ecr:BatchGetImage"
-      ],
-      "Resource": "*"
-    }
-  ]
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "RDS",
+            "Effect": "Allow",
+            "Action": [
+                "rds:CreateDBInstance",
+                "rds:DeleteDBInstance",
+                "rds:ModifyDBInstance",
+                "rds:DescribeDBInstances",
+                "rds:CreateDBSubnetGroup",
+                "rds:DeleteDBSubnetGroup",
+                "rds:ModifyDBSubnetGroup",
+                "rds:DescribeDBSubnetGroups",
+                "rds:DescribeDBEngineVersions",
+                "rds:CreateDBSnapshot",
+                "rds:DescribeDBSnapshots",
+                "rds:AddTagsToResource",
+                "rds:RemoveTagsFromResource",
+                "rds:ListTagsForResource"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SecretsManager",
+            "Effect": "Allow",
+            "Action": [
+                "secretsmanager:CreateSecret",
+                "secretsmanager:DeleteSecret",
+                "secretsmanager:DescribeSecret",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:UpdateSecret",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:TagResource",
+                "secretsmanager:ListSecretVersionIds",
+                "secretsmanager:GetResourcePolicy"
+            ],
+            "Resource": "arn:aws:secretsmanager:*:*:secret:indi-asistencia/*"
+        },
+        {
+            "Sid": "S3BackendDeEstado",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:DeleteBucket",
+                "s3:PutBucketVersioning",
+                "s3:PutEncryptionConfiguration",
+                "s3:PutBucketPublicAccessBlock",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:Get*",
+                "s3:List*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::indi-asistencia-tfstate",
+                "arn:aws:s3:::indi-asistencia-tfstate/*"
+            ]
+        },
+        {
+            "Sid": "DynamoDBLockDelState",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:CreateTable",
+                "dynamodb:DeleteTable",
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:TagResource",
+                "dynamodb:Describe*",
+                "dynamodb:List*"
+            ],
+            "Resource": "arn:aws:dynamodb:*:*:table/indi-asistencia-tfstate-lock"
+        },
+        {
+            "Sid": "Route53ParaDominio",
+            "Effect": "Allow",
+            "Action": [
+                "route53:CreateHostedZone",
+                "route53:DeleteHostedZone",
+                "route53:GetHostedZone",
+                "route53:ListHostedZones",
+                "route53:ChangeResourceRecordSets",
+                "route53:ListResourceRecordSets",
+                "route53:GetChange",
+                "route53:ChangeTagsForResource",
+                "route53:ListTagsForResource"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ACMParaCertificadoBackend",
+            "Effect": "Allow",
+            "Action": [
+                "acm:RequestCertificate",
+                "acm:DeleteCertificate",
+                "acm:DescribeCertificate",
+                "acm:AddTagsToCertificate",
+                "acm:ListTagsForCertificate"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "WAFParaEndpointADMS",
+            "Effect": "Allow",
+            "Action": [
+                "wafv2:CreateWebACL",
+                "wafv2:DeleteWebACL",
+                "wafv2:UpdateWebACL",
+                "wafv2:GetWebACL",
+                "wafv2:ListWebACLs",
+                "wafv2:CreateIPSet",
+                "wafv2:DeleteIPSet",
+                "wafv2:UpdateIPSet",
+                "wafv2:GetIPSet",
+                "wafv2:TagResource",
+                "wafv2:AssociateWebACL",
+                "wafv2:DisassociateWebACL",
+                "wafv2:GetWebACLForResource",
+                "wafv2:ListTagsForResource",
+                "wafv2:PutLoggingConfiguration",
+                "wafv2:DeleteLoggingConfiguration",
+                "wafv2:GetLoggingConfiguration"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudWatchLogsParaWAF",
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:DeleteLogGroup",
+                "logs:PutRetentionPolicy",
+                "logs:TagResource",
+                "logs:ListTagsForResource"
+            ],
+            "Resource": [
+                "arn:aws:logs:*:183537898129:log-group:aws-waf-logs-indi-asistencia-*",
+                "arn:aws:logs:*:183537898129:log-group:aws-waf-logs-indi-asistencia-*:*"
+            ]
+        },
+        {
+            "Sid": "CloudWatchLogsDescribeGruposSinAlcanceDeRecurso",
+            "Effect": "Allow",
+            "Action": "logs:DescribeLogGroups",
+            "Resource": "*"
+        },
+        {
+            "Sid": "CloudWatchLogsResourcePolicyParaWAF",
+            "Effect": "Allow",
+            "Action": [
+                "logs:PutResourcePolicy",
+                "logs:DescribeResourcePolicies",
+                "logs:CreateLogDelivery",
+                "logs:GetLogDelivery",
+                "logs:UpdateLogDelivery",
+                "logs:DeleteLogDelivery",
+                "logs:ListLogDeliveries"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IAMLeerPoliticasPropiasParaDetectarDrift",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GetPolicy",
+                "iam:GetPolicyVersion"
+            ],
+            "Resource": [
+                "arn:aws:iam::183537898129:policy/indi-provisioning-policy",
+                "arn:aws:iam::183537898129:policy/indi-provisioning-policy-datos"
+            ]
+        },
+        {
+            "Sid": "IAMInstanceProfileBastion",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateInstanceProfile",
+                "iam:DeleteInstanceProfile",
+                "iam:GetInstanceProfile",
+                "iam:AddRoleToInstanceProfile",
+                "iam:RemoveRoleFromInstanceProfile",
+                "iam:TagInstanceProfile"
+            ],
+            "Resource": "arn:aws:iam::183537898129:instance-profile/indi-asistencia-*"
+        },
+        {
+            "Sid": "ECRRepositorio",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:CreateRepository",
+                "ecr:DeleteRepository",
+                "ecr:DescribeRepositories",
+                "ecr:DescribeImages",
+                "ecr:PutLifecyclePolicy",
+                "ecr:GetLifecyclePolicy",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:TagResource",
+                "ecr:ListTagsForResource"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "ECRPushDeImagen",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+                "ecr:PutImage",
+                "ecr:BatchGetImage"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "SoloLecturaParaVerificacionDeRegion",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeRegions",
+                "ecs:ListClusters",
+                "acm:ListCertificates"
+            ],
+            "Resource": "*"
+        }
+    ]
 }

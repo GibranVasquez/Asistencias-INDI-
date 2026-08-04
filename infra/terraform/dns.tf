@@ -1,30 +1,23 @@
-# Route 53 + ACM para exponer el backend en https://api.${var.root_domain_name}
+# Route 53 + ACM para exponer el backend en https://${var.backend_subdomain}.${var.root_domain_name}
 # (2026-07-28, parte de la migracion de App Runner a ECS/ALB - ver ecs.tf
-# y CLAUDE.md). El dominio se compra fuera de Terraform (ej. Namecheap) -
-# no se registro directamente en Route 53, asi que la zona se crea aqui
-# como recurso (no como data source de una zona ya existente).
-#
-# ORDEN OBLIGATORIO, no opcional - ver infra/AWS_MIGRATION.md para el
-# detalle completo: comprar el dominio -> aplicar SOLO aws_route53_zone.this
-# (via -target) -> copiar los 4 NS que devuelve a Namecheap -> ESPERAR
-# propagacion real (verificar con `dig NS`) -> recien entonces correr el
-# apply completo (que crea el certificado + su validacion). Si el
-# certificado se aplica antes de que la delegacion de NS haya propagado
-# publicamente, la validacion de ACM se queda esperando indefinidamente un
-# registro DNS que sus servidores de validacion todavia no pueden ver -
-# no es una condicion de carrera de Terraform, es que el propio DNS
-# publico todavia no resuelve hacia la zona nueva.
+# y CLAUDE.md). El dominio se compro fuera de Terraform (Namecheap) y la
+# zona de Route 53 ya se creo (una sola vez, via el flujo de -target
+# documentado en infra/AWS_MIGRATION.md: comprar el dominio -> aplicar SOLO
+# aws_route53_zone.this -> copiar los 4 NS a Namecheap -> esperar
+# propagacion real -> recien entonces el apply completo). Esa zona
+# (Z01688701AOYXKKFDBYVP, var.route53_zone_id) es unica para el dominio
+# real y se comparte entre TODOS los workspaces/regiones (default y
+# mexico incluidos) - por eso esto es un data source, no un resource: cada
+# workspace apunta al mismo Zone ID ya existente en vez de crear una zona
+# propia (que duplicaria la zona real y dejaria la delegacion de NS del
+# registrador apuntando a la zona equivocada).
 
-resource "aws_route53_zone" "this" {
-  name = var.root_domain_name
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}"
-  }
+data "aws_route53_zone" "this" {
+  zone_id = var.route53_zone_id
 }
 
 resource "aws_acm_certificate" "backend" {
-  domain_name       = "api.${var.root_domain_name}"
+  domain_name       = "${var.backend_subdomain}.${var.root_domain_name}"
   validation_method = "DNS"
 
   lifecycle {
@@ -49,7 +42,7 @@ resource "aws_route53_record" "cert_validation" {
     }
   }
 
-  zone_id = aws_route53_zone.this.zone_id
+  zone_id = data.aws_route53_zone.this.zone_id
   name    = each.value.name
   type    = each.value.type
   ttl     = 60
@@ -61,12 +54,12 @@ resource "aws_acm_certificate_validation" "backend" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-# Registro real que hace que "api.${var.root_domain_name}" resuelva hacia
-# el ALB - sin esto, el certificado existiria pero nada apuntaria al ALB
-# todavia.
+# Registro real que hace que "${var.backend_subdomain}.${var.root_domain_name}"
+# resuelva hacia el ALB - sin esto, el certificado existiria pero nada
+# apuntaria al ALB todavia.
 resource "aws_route53_record" "api" {
-  zone_id = aws_route53_zone.this.zone_id
-  name    = "api.${var.root_domain_name}"
+  zone_id = data.aws_route53_zone.this.zone_id
+  name    = "${var.backend_subdomain}.${var.root_domain_name}"
   type    = "A"
 
   alias {

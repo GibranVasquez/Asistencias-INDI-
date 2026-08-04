@@ -43,8 +43,20 @@ variable "private_route_table_id" {
 }
 
 variable "root_domain_name" {
-  description = "Dominio raiz real (ej. \"sistemasindi.com\") - se crea una zona de Route 53 para el (aws_route53_zone, recurso, no data source, porque el dominio NO se registro directamente en Route 53 - ver dns.tf). El backend queda expuesto en el subdominio api de ese dominio (construido dentro de Terraform, no una variable separada). Sin default: no se puede asumir todavia - ver infra/AWS_MIGRATION.md para el orden obligatorio de pasos (comprar dominio -> crear zona -> copiar NS a Namecheap -> esperar propagacion -> recien entonces aplicar el certificado)."
+  description = "Dominio raiz real (ej. \"sistemasindi.com\") - la zona de Route 53 para el ya existe (var.route53_zone_id, data source en dns.tf, no resource: el dominio no se registro directamente en Route 53). El backend queda expuesto en var.backend_subdomain de ese dominio. Sin default: no se puede asumir todavia - ver infra/AWS_MIGRATION.md para el orden obligatorio de pasos (comprar dominio -> crear zona -> copiar NS a Namecheap -> esperar propagacion -> recien entonces aplicar el certificado)."
   type        = string
+}
+
+variable "route53_zone_id" {
+  description = "Zone ID de la zona real de Route 53 para root_domain_name (Z01688701AOYXKKFDBYVP, unica para todos los workspaces - nunca se debe overridear por workspace, ver dns.tf)."
+  type        = string
+  default     = "Z01688701AOYXKKFDBYVP"
+}
+
+variable "backend_subdomain" {
+  description = "Subdominio del backend (api en produccion us-east-1, api-mx durante la fase paralela en mexico)."
+  type        = string
+  default     = "api"
 }
 
 variable "project_name" {
