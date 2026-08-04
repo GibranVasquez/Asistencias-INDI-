@@ -189,33 +189,35 @@ function PanelReporteAsistencia() {
 
           <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por sección</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
-                  <th style={{ padding: "10px 20px" }}>Sección</th>
-                  <th style={{ padding: "10px 12px" }}>Presentes</th>
-                  <th style={{ padding: "10px 12px" }}>A tiempo</th>
-                  <th style={{ padding: "10px 12px" }}>Tardanzas</th>
-                  <th style={{ padding: "10px 20px" }}>Puntualidad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporte.porSeccion.map((s) => (
-                  <tr key={s.seccionId} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
-                    <td style={{ padding: "10px 20px", fontWeight: 600, color: "var(--ink)" }}>{s.seccionNombre}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.presentes}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.aTiempo}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.tardanzas}</td>
-                    <td style={{ padding: "10px 20px", color: "var(--ink)" }}>{pct(s.porcentajePuntualidad)}</td>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
+                    <th style={{ padding: "10px 20px" }}>Sección</th>
+                    <th style={{ padding: "10px 12px" }}>Presentes</th>
+                    <th style={{ padding: "10px 12px" }}>A tiempo</th>
+                    <th style={{ padding: "10px 12px" }}>Tardanzas</th>
+                    <th style={{ padding: "10px 20px" }}>Puntualidad</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reporte.porSeccion.map((s) => (
+                    <tr key={s.seccionId} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
+                      <td style={{ padding: "10px 20px", fontWeight: 600, color: "var(--ink)" }}>{s.seccionNombre}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.presentes}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.aTiempo}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{s.tardanzas}</td>
+                      <td style={{ padding: "10px 20px", color: "var(--ink)" }}>{pct(s.porcentajePuntualidad)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Tendencia</div>
-            <div style={{ maxHeight: 320, overflowY: "auto" }}>
+            <div style={{ maxHeight: 320, overflowY: "auto", overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase", position: "sticky", top: 0, background: "var(--surface)" }}>
@@ -374,50 +376,54 @@ function PanelReporteNomina() {
 
           <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por categoría</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
-                  <th style={{ padding: "10px 20px" }}>Categoría</th>
-                  <th style={{ padding: "10px 12px" }}>Total pagado</th>
-                  <th style={{ padding: "10px 20px" }}>Trabajadores</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporte.porCategoria.map((c) => (
-                  <tr key={c.categoria} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
-                    <td style={{ padding: "10px 20px", fontWeight: 600, color: "var(--ink)" }}>{c.categoria}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--ink)" }}>{moneda(c.totalPagado)}</td>
-                    <td style={{ padding: "10px 20px", color: "var(--muted)" }}>{c.cantidadTrabajadores}</td>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
+                    <th style={{ padding: "10px 20px" }}>Categoría</th>
+                    <th style={{ padding: "10px 12px" }}>Total pagado</th>
+                    <th style={{ padding: "10px 20px" }}>Trabajadores</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reporte.porCategoria.map((c) => (
+                    <tr key={c.categoria} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
+                      <td style={{ padding: "10px 20px", fontWeight: 600, color: "var(--ink)" }}>{c.categoria}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--ink)" }}>{moneda(c.totalPagado)}</td>
+                      <td style={{ padding: "10px 20px", color: "var(--muted)" }}>{c.cantidadTrabajadores}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
             <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Comparativo por periodo</div>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
-                  <th style={{ padding: "10px 20px" }}>Periodo</th>
-                  <th style={{ padding: "10px 12px" }}>Total pagado</th>
-                  <th style={{ padding: "10px 12px" }}>Horas extra</th>
-                  <th style={{ padding: "10px 12px" }}>INFONAVIT</th>
-                  <th style={{ padding: "10px 20px" }}>Descuentos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reporte.porPeriodo.map((p) => (
-                  <tr key={p.periodoInicio} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
-                    <td style={{ padding: "10px 20px", color: "var(--ink)" }}>{p.periodoInicio} – {p.periodoFin}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--ink)", fontWeight: 600 }}>{moneda(p.totalPagado)}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{moneda(p.montoHorasExtra)}</td>
-                    <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{moneda(p.infonavitDescuento)}</td>
-                    <td style={{ padding: "10px 20px", color: "var(--muted)" }}>{moneda(p.descuentosVarios)}</td>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
+                    <th style={{ padding: "10px 20px" }}>Periodo</th>
+                    <th style={{ padding: "10px 12px" }}>Total pagado</th>
+                    <th style={{ padding: "10px 12px" }}>Horas extra</th>
+                    <th style={{ padding: "10px 12px" }}>INFONAVIT</th>
+                    <th style={{ padding: "10px 20px" }}>Descuentos</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reporte.porPeriodo.map((p) => (
+                    <tr key={p.periodoInicio} style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
+                      <td style={{ padding: "10px 20px", color: "var(--ink)" }}>{p.periodoInicio} – {p.periodoFin}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--ink)", fontWeight: 600 }}>{moneda(p.totalPagado)}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{moneda(p.montoHorasExtra)}</td>
+                      <td style={{ padding: "10px 12px", color: "var(--muted)" }}>{moneda(p.infonavitDescuento)}</td>
+                      <td style={{ padding: "10px 20px", color: "var(--muted)" }}>{moneda(p.descuentosVarios)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
