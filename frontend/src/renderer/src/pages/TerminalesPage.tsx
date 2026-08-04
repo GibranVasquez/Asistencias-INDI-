@@ -10,6 +10,7 @@ import {
 } from "../api/terminales";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
+import ModalConfirmacion from "../components/ModalConfirmacion";
 
 const estilosCampo = {
   padding: "10px 12px",
@@ -54,6 +55,7 @@ export default function TerminalesPage() {
 
   const [erroresFila, setErroresFila] = useState<Record<string, string>>({});
   const [filaEnProceso, setFilaEnProceso] = useState<string | null>(null);
+  const [confirmandoActivo, setConfirmandoActivo] = useState<Terminal | null>(null);
 
   function cargar() {
     setCargando(true);
@@ -208,7 +210,7 @@ export default function TerminalesPage() {
                           <Boton
                             variante="outline"
                             tamano="pequeno"
-                            onClick={() => alternarActivo(t)}
+                            onClick={() => setConfirmandoActivo(t)}
                             disabled={filaEnProceso === t.id}
                             style={{ color: t.activo ? "var(--err)" : "var(--ok)" }}
                           >
@@ -375,6 +377,30 @@ export default function TerminalesPage() {
             </div>
           </form>
         </div>
+      )}
+
+      {confirmandoActivo && (
+        <ModalConfirmacion
+          titulo={confirmandoActivo.activo ? "Desactivar terminal" : "Activar terminal"}
+          mensaje={
+            confirmandoActivo.activo ? (
+              <>
+                <strong>{confirmandoActivo.username}</strong> dejará de poder registrar marcaciones hasta que se active de nuevo.
+              </>
+            ) : (
+              <>
+                <strong>{confirmandoActivo.username}</strong> podrá volver a registrar marcaciones normalmente.
+              </>
+            )
+          }
+          etiquetaConfirmar={confirmandoActivo.activo ? "Desactivar" : "Activar"}
+          peligroso={confirmandoActivo.activo}
+          onCancelar={() => setConfirmandoActivo(null)}
+          onConfirmar={async () => {
+            await alternarActivo(confirmandoActivo);
+            setConfirmandoActivo(null);
+          }}
+        />
       )}
     </div>
   );

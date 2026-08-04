@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
 import Boton from "../components/Boton";
+import ModalConfirmacion from "../components/ModalConfirmacion";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
@@ -54,6 +55,7 @@ export default function UsuariosPage() {
 
   const [erroresFila, setErroresFila] = useState<Record<string, string>>({});
   const [filaEnProceso, setFilaEnProceso] = useState<string | null>(null);
+  const [confirmandoEstado, setConfirmandoEstado] = useState<UsuarioListado | null>(null);
 
   const [reseteando, setReseteando] = useState<UsuarioListado | null>(null);
   const [passwordTemporal, setPasswordTemporal] = useState("");
@@ -282,7 +284,7 @@ export default function UsuariosPage() {
                         <Boton
                           variante="outline"
                           tamano="pequeno"
-                          onClick={() => alternarEstado(u)}
+                          onClick={() => setConfirmandoEstado(u)}
                           disabled={filaEnProceso === u.id}
                           style={{ color: u.activo ? "var(--err)" : "var(--ok)" }}
                         >
@@ -437,6 +439,30 @@ export default function UsuariosPage() {
             </div>
           </form>
         </div>
+      )}
+
+      {confirmandoEstado && (
+        <ModalConfirmacion
+          titulo={confirmandoEstado.activo ? "Dar de baja a la cuenta" : "Reactivar la cuenta"}
+          mensaje={
+            confirmandoEstado.activo ? (
+              <>
+                <strong>{confirmandoEstado.username}</strong> no podrá iniciar sesión hasta que se reactive de nuevo.
+              </>
+            ) : (
+              <>
+                <strong>{confirmandoEstado.username}</strong> podrá volver a iniciar sesión con su contraseña actual.
+              </>
+            )
+          }
+          etiquetaConfirmar={confirmandoEstado.activo ? "Dar de baja" : "Reactivar"}
+          peligroso={confirmandoEstado.activo}
+          onCancelar={() => setConfirmandoEstado(null)}
+          onConfirmar={async () => {
+            await alternarEstado(confirmandoEstado);
+            setConfirmandoEstado(null);
+          }}
+        />
       )}
     </div>
   );
