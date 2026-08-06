@@ -172,6 +172,13 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       continue;
     }
 
+    // Chequeo de aplicación para el caso comun (backlog reenviado
+    // secuencialmente, ya verificado en vivo — ver CLAUDE.md). Para el
+    // caso realmente concurrente (dos POST /iclock/cdata superpuestos),
+    // registrarAsistencia tiene su propio respaldo real via la restricción
+    // única de la base y devuelve el registro existente en silencio en vez
+    // de fallar — ese caso raro se cuenta como "procesados", no
+    // "duplicados", pero no crea una fila repetida, que es lo que importa.
     if (await yaExisteAsistencia(trabajador.id, terminal.id, registro.fechaHora)) {
       duplicados++;
       continue;

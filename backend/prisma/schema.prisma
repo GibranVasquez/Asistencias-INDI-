@@ -282,6 +282,15 @@ model AsistenciaDiaria {
 
   @@index([trabajadorId, fecha], map: "idx_asistencias_trabajador_fecha")
   @@index([seccionId, fecha], map: "idx_asistencias_seccion_fecha")
+  // Mismo natural key que ya usa adms.service.ts (yaExisteAsistencia) para
+  // detectar reenvios del mismo backlog -- antes solo era un chequeo de
+  // aplicacion sin respaldo real en la base, asi que dos escrituras
+  // realmente concurrentes (equipo con reintento agresivo mientras la
+  // peticion anterior seguia en proceso, o un doble tap del Kiosco dentro
+  // del mismo minuto) podian crear dos filas idénticas. No bloquea
+  // marcaciones legitimas multiples el mismo dia (entrada/salida): esas
+  // tienen una `hora` distinta, asi que caen fuera de esta restriccion.
+  @@unique([trabajadorId, terminalOrigenId, fecha, hora], map: "uq_asistencias_trabajador_terminal_fecha_hora")
   @@map("asistencias_diarias")
 }
 

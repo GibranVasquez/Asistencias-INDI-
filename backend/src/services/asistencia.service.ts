@@ -1,4 +1,4 @@
-import { AsistenciaDiaria, MetodoAsistencia, RolUsuario, TrabajadorEstatus } from "@prisma/client";
+import { AsistenciaDiaria, MetodoAsistencia, Prisma, RolUsuario, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { verificarAccesoSeccion } from "../utils/accesoSeccion";
@@ -62,18 +62,39 @@ export async function registrarAsistencia(
 
   // terminalOrigenId no se valida contra la BD aquí: terminalAuthMiddleware
   // ya garantizó que corresponde a un Terminal existente y activo.
-  return prisma.asistenciaDiaria.create({
-    data: {
-      trabajadorId,
-      fecha: aFechaUTC(datos.fecha),
-      hora: new Date(`1970-01-01T${normalizarHora(datos.hora)}Z`),
-      seccionId: datos.seccionId,
-      turno: datos.turno,
-      metodoUsado: datos.metodoUsado,
-      terminalOrigenId,
-      ubicacionGPS: datos.ubicacionGPS ?? null,
-    },
-  });
+  const fecha = aFechaUTC(datos.fecha);
+  const hora = new Date(`1970-01-01T${normalizarHora(datos.hora)}Z`);
+
+  try {
+    return await prisma.asistenciaDiaria.create({
+      data: {
+        trabajadorId,
+        fecha,
+        hora,
+        seccionId: datos.seccionId,
+        turno: datos.turno,
+        metodoUsado: datos.metodoUsado,
+        terminalOrigenId,
+        ubicacionGPS: datos.ubicacionGPS ?? null,
+      },
+    });
+  } catch (error) {
+    // El mismo trabajador+terminal+fecha+hora ya existe (restricción única
+    // uq_asistencias_trabajador_terminal_fecha_hora) — un reintento de red
+    // del Kiosco, un reenvío de backlog de ADMS, o un doble tap accidental
+    // dentro del mismo minuto (el Kiosco solo manda HH:MM, sin segundos).
+    // No es un error real: se devuelve el registro ya existente en vez de
+    // fallar, para que quien reintenta reciba la misma confirmación de
+    // éxito — no tiene sentido mostrarle un error a un trabajador parado
+    // frente al kiosco por algo que técnicamente ya se registró bien.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const existente = await prisma.asistenciaDiaria.findFirst({
+        where: { trabajadorId, terminalOrigenId, fecha, hora },
+      });
+      if (existente) return existente;
+    }
+    throw error;
+  }
 }
 
 /**
