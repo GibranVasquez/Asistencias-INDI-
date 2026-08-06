@@ -69,7 +69,7 @@ export async function editarCategoriaTrabajador(
   id: string,
   datos: DatosCategoriaTrabajador
 ): Promise<CategoriaTrabajador> {
-  await obtenerCategoriaTrabajador(id);
+  const actual = await obtenerCategoriaTrabajador(id);
 
   const conflicto = await prisma.categoriaTrabajador.findUnique({ where: { nombre: datos.nombre } });
   if (conflicto && conflicto.id !== id) {
@@ -95,13 +95,28 @@ export async function editarCategoriaTrabajador(
           },
         });
 
+        // Trabajador.categoria es texto libre, no una FK a esta tabla (ver
+        // schema.prisma) — sin esto, renombrar una categoría del catálogo
+        // desconecta en silencio a todos los trabajadores que ya tenían el
+        // nombre viejo: "aplicar sueldo a todos los de esta categoría"
+        // (aplicarSueldoATodosDeCategoria, más abajo) busca por el nombre
+        // NUEVO, que nadie tiene todavía, y da un 404 falso de "no hay
+        // trabajadores activos" sin ninguna pista de por qué. Solo corre
+        // si el nombre de verdad cambió.
+        if (actual.nombre !== datos.nombre) {
+          await tx.trabajador.updateMany({
+            where: { categoria: actual.nombre },
+            data: { categoria: datos.nombre },
+          });
+        }
+
         await tx.auditLog.create({
           data: {
             usuarioId: usuarioActorId,
             accion: "editar_categoria_trabajador",
             entidad: "CategoriaTrabajador",
             entidadId: id,
-            detalle: { nombre: categoria.nombre },
+            detalle: { nombreAnterior: actual.nombre, nombreNuevo: categoria.nombre },
           },
         });
 
