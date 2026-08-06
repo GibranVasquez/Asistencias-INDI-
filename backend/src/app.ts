@@ -1,5 +1,8 @@
 import cors from "cors";
-import "dotenv/config";
+// { quiet: true }: ver el mismo comentario en prisma.config.ts — sin esto,
+// dotenv 17+ imprime un "tip" a stdout en cada arranque del servidor.
+import { config as cargarDotenv } from "dotenv";
+cargarDotenv({ quiet: true });
 import express from "express";
 import helmet from "helmet";
 import { validarVariablesDeEntorno } from "./config/env";

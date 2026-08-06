@@ -144,6 +144,28 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   para uso de CLI siempre se teclea manualmente en la máquina de
   desarrollo, nunca queda guardado; el fix es puramente de documentación
   para que la próxima vez se use el parámetro correcto desde el inicio.
+- **Password de Supabase (dev) se expuso accidentalmente en la salida de
+  terminal el 2026-08-05** — no por un bug de dotenv en sí, sino por un
+  script ad-hoc que capturaba `DIRECT_URL` vía `console.log` para pasarlo
+  como argumento de `npx prisma migrate diff`; el loglevel `notice` por
+  defecto de npm hace eco del comando completo ya resuelto, incluyendo el
+  valor real. Menor severidad que el incidente de RDS (documentado en
+  memoria del proyecto / el traspaso): es la base de **desarrollo local**,
+  no producción. Mitigado en una capa, **pendiente la que de verdad
+  importa**: (1) hecho — `{ quiet: true }` agregado a la carga de dotenv
+  en `prisma.config.ts` y `src/app.ts` (dotenv 17+ imprime un aviso "tip"
+  por defecto en cada carga — no incluye ningún valor real, pero es la
+  misma librería activa en el momento del incidente, defensa en
+  profundidad, no la causa directa); (2) **pendiente** — rotar la password
+  real desde el panel de Supabase (Project Settings → Database → Reset
+  database password) y actualizar `DATABASE_URL`/`DIRECT_URL` en
+  `backend/.env` local — Claude Code no tiene credenciales de Supabase
+  configuradas en este entorno para hacerlo por su cuenta, requiere acción
+  manual del usuario. Verificado que el valor viejo no quedó en ningún
+  archivo del repo ni en logs — sí persiste en el transcript local de la
+  sesión de Claude Code donde ocurrió (archivo fuera del repo, permisos
+  restringidos al usuario), motivo por el que rotar la password real (no
+  solo suprimir el log) es la corrección que de verdad cierra el riesgo.
 
 ### Despliegue (AWS) — la ruta real, ya aplicada
 
