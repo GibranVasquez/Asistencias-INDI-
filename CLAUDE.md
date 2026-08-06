@@ -151,21 +151,27 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   defecto de npm hace eco del comando completo ya resuelto, incluyendo el
   valor real. Menor severidad que el incidente de RDS (documentado en
   memoria del proyecto / el traspaso): es la base de **desarrollo local**,
-  no producción. Mitigado en una capa, **pendiente la que de verdad
-  importa**: (1) hecho — `{ quiet: true }` agregado a la carga de dotenv
+  no producción. **Cerrado en dos capas** (ambas confirmadas, no solo
+  aplicadas): (1) `{ quiet: true }` agregado a la carga de dotenv
   en `prisma.config.ts` y `src/app.ts` (dotenv 17+ imprime un aviso "tip"
   por defecto en cada carga — no incluye ningún valor real, pero es la
   misma librería activa en el momento del incidente, defensa en
-  profundidad, no la causa directa); (2) **pendiente** — rotar la password
-  real desde el panel de Supabase (Project Settings → Database → Reset
-  database password) y actualizar `DATABASE_URL`/`DIRECT_URL` en
-  `backend/.env` local — Claude Code no tiene credenciales de Supabase
-  configuradas en este entorno para hacerlo por su cuenta, requiere acción
-  manual del usuario. Verificado que el valor viejo no quedó en ningún
-  archivo del repo ni en logs — sí persiste en el transcript local de la
+  profundidad, no la causa directa); (2) **password rotada el
+  2026-08-06** desde el panel de Supabase (Project Settings → Database →
+  Reset database password) y `DATABASE_URL`/`DIRECT_URL` actualizadas en
+  `backend/.env` local con las cadenas nuevas (pestaña Prisma del panel).
+  Verificado en vivo, no solo "se guardó el .env": backend reiniciado
+  conecta limpio (sin P1000/P1001), query real de punta a punta (`GET
+  /trabajadores` autenticado → 137 trabajadores) confirma que la
+  contraseña nueva funciona en el pool de conexión real de la app, y la
+  contraseña vieja (probada deliberadamente, embebida solo en un script
+  temporal nunca impreso ni comiteado) ahora responde `P1000`
+  ("Authentication failed") — confirma que el reset de Supabase invalidó
+  la anterior de inmediato. El valor viejo no quedó en ningún archivo del
+  repo ni en logs — sigue persistiendo en el transcript local de la
   sesión de Claude Code donde ocurrió (archivo fuera del repo, permisos
-  restringidos al usuario), motivo por el que rotar la password real (no
-  solo suprimir el log) es la corrección que de verdad cierra el riesgo.
+  restringidos al usuario), pero ya es inofensivo: la rotación es
+  justamente lo que cierra ese riesgo sin necesitar tocar ese archivo.
 
 ### Despliegue (AWS) — la ruta real, ya aplicada
 
