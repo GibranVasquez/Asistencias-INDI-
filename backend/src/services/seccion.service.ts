@@ -40,16 +40,28 @@ export interface ResumenSeccionHoy {
   ausentes: TrabajadorResumen[] | null;
 }
 
-// "Hoy" segun la hora LOCAL del servidor, no UTC — el resto del sistema
+const ZONA_HORARIA_OBRA = "America/Mexico_City";
+
+// "Hoy" segun la fecha calendario real de la obra (America/Mexico_City),
+// no segun el reloj/TZ del proceso del servidor — el resto del sistema
 // (POST /asignaciones, GET /asignaciones/sugerencia, el kiosco) ya trabaja
-// con la fecha local que manda el frontend; usar UTC aqui hacia que este
-// endpoint "saltara" al dia siguiente ~5-6 horas antes que el resto del
-// sistema (Mexico esta detras de UTC), rompiendo la vista de hoy durante
-// esas horas. Requiere que el servidor corra con TZ configurada a la
-// zona horaria real de la obra (America/Mexico_City o equivalente).
-function hoyUTC(): Date {
-  const ahora = new Date();
-  return new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()));
+// con la fecha local que manda el frontend; calcular "hoy" en UTC aqui
+// hacia que este endpoint "saltara" al dia siguiente ~5-6 horas antes que
+// el resto del sistema (Mexico esta detras de UTC), rompiendo la vista de
+// hoy durante esas horas (bug real confirmado en produccion: ECS corre en
+// UTC por defecto, nadie configuraba TZ). Usa Intl.DateTimeFormat con
+// timeZone explicito en vez de depender de que el proceso tenga la TZ
+// correcta configurada (defensa en profundidad — la TZ del contenedor
+// tambien se fija a nivel de infraestructura, ver Dockerfile/ECS, pero
+// este calculo es correcto sin importar como quede configurado eso).
+function hoyEnZonaObra(): Date {
+  const fechaISO = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ZONA_HORARIA_OBRA,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // "YYYY-MM-DD"
+  return new Date(`${fechaISO}T00:00:00Z`);
 }
 
 async function verificarHorarioExiste(horarioId: string | null | undefined): Promise<void> {
@@ -182,7 +194,7 @@ export async function obtenerResumenHoy(
   await verificarAccesoSeccion(usuarioId, rol, seccionId);
   await obtenerSeccion(seccionId);
 
-  const fecha = hoyUTC();
+  const fecha = hoyEnZonaObra();
 
   const [asistenciasHoy, asignacionesHoy] = await Promise.all([
     prisma.asistenciaDiaria.findMany({

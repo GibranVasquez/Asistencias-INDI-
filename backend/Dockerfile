@@ -24,6 +24,18 @@ RUN npm run build
 FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+# node:22-alpine corre en UTC por defecto (bug real: GET /secciones/:id/hoy
+# calculaba "hoy" con el reloj del contenedor, adelantandose ~5-6h al dia
+# real de Mexico cada tarde). El codigo que depende de esto ya usa
+# Intl.DateTimeFormat con timeZone explicito (no depende de esto para ser
+# correcto), pero fijar TZ aqui es la capa de infraestructura: cualquier
+# `new Date()` + getters locales que se agregue despues (aqui o en una
+# libreria) queda correcto por default en vez de silenciosamente en UTC.
+# tzdata explicito porque alpine no lo trae preinstalado (musl necesita los
+# archivos de zoneinfo para que TZ resuelva a algo real, no solo el ICU que
+# trae Node compilado).
+RUN apk add --no-cache tzdata
+ENV TZ=America/Mexico_City
 
 COPY package.json package-lock.json ./
 # Solo schema.prisma, NO toda la carpeta prisma/: `npx prisma generate`

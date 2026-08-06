@@ -225,6 +225,14 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "JWT_EXPIRES_IN_TERMINAL", value = var.jwt_expires_in_terminal },
         { name = "NODE_ENV", value = var.node_env },
         { name = "PORT", value = tostring(var.container_port) },
+        # Literal (no var.tz): la zona horaria real de la obra no cambia
+        # segun en que region de AWS corra el backend (us-east-1 hoy,
+        # mx-central-1 durante la migracion) - a diferencia de aws_region,
+        # que si varia por workspace. Mismo criterio que la ENV del
+        # Dockerfile (defensa en profundidad); el codigo que de verdad
+        # calcula "hoy" (seccion.service.ts) ya usa Intl.DateTimeFormat con
+        # timeZone explicito y no depende de esto para ser correcto.
+        { name = "TZ", value = "America/Mexico_City" },
       ]
 
       # DIRECT_URL apunta al mismo secret que DATABASE_URL a proposito -

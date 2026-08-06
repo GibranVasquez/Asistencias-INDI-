@@ -112,7 +112,32 @@ export default function DashboardPage() {
   const token = sesion!.token;
 
   const [rango, setRango] = useState<Rango>("semana");
-  const hoy = useMemo(() => new Date(), []);
+  // `hoy` NO puede ser un useMemo([]) — se congelaba en el momento de montar
+  // la pantalla y nunca se volvía a calcular: alguien que deja el Dashboard
+  // abierto (uso normal en un escritorio de oficina) seguía viendo
+  // "Asistencias hoy" del día en que se abrió, aunque ya fuera el día
+  // siguiente. Se recalcula al recuperar foco/visibilidad (cubre el caso
+  // común de minimizar/cambiar de ventana y volver) y con un intervalo de
+  // respaldo (cubre dejar la ventana en primer plano toda la noche sin que
+  // nadie la toque) — solo dispara un re-render cuando el día calendario
+  // realmente cambió, no en cada tick.
+  const [hoy, setHoy] = useState(() => new Date());
+  useEffect(() => {
+    function actualizarSiCambioElDia() {
+      setHoy((actual) => {
+        const ahora = new Date();
+        return aFechaISO(ahora) !== aFechaISO(actual) ? ahora : actual;
+      });
+    }
+    window.addEventListener("focus", actualizarSiCambioElDia);
+    document.addEventListener("visibilitychange", actualizarSiCambioElDia);
+    const intervalo = setInterval(actualizarSiCambioElDia, 60_000);
+    return () => {
+      window.removeEventListener("focus", actualizarSiCambioElDia);
+      document.removeEventListener("visibilitychange", actualizarSiCambioElDia);
+      clearInterval(intervalo);
+    };
+  }, []);
   const hoyISO = aFechaISO(hoy);
   const { inicio, fin } = useMemo(() => rangoConsulta(rango, hoy), [rango, hoy]);
 
