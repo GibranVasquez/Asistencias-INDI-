@@ -130,6 +130,10 @@ export default function UsuariosPage() {
     } catch (err) {
       const mensaje = err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.";
       setErroresFila((prev) => ({ ...prev, [u.id]: mensaje }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un 409 (ej. cuenta en
+      // uso) cerraba el modal igual, dando sensación de éxito.
+      throw err;
     } finally {
       setFilaEnProceso(null);
     }

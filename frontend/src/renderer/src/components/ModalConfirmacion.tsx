@@ -30,6 +30,12 @@ export default function ModalConfirmacion({
     setProcesando(true);
     try {
       await onConfirmar();
+    } catch {
+      // onConfirmar ya registra/muestra su propio error (banner rojo bajo
+      // la fila en la tabla de fondo) y, a propósito, ya NO llama a su
+      // setConfirmandoX(null) cuando falla — así el modal se queda abierto
+      // con la acción todavía pendiente en vez de cerrarse dando sensación
+      // de éxito. Este catch solo evita que la rejection quede sin manejar.
     } finally {
       setProcesando(false);
     }

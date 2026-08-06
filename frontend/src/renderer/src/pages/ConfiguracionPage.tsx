@@ -230,6 +230,10 @@ function PanelHorarios() {
       cargar();
     } catch (err) {
       setErroresFila((p) => ({ ...p, [h.id]: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor." }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un 409 (ej. horario en
+      // uso) cerraba el modal igual, dando sensación de éxito.
+      throw err;
     }
   }
 
@@ -448,6 +452,10 @@ function PanelSecciones() {
       cargar();
     } catch (err) {
       setErroresFila((p) => ({ ...p, [s.id]: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor." }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un 409 (ej. sección en
+      // uso) cerraba el modal igual, dando sensación de éxito.
+      throw err;
     }
   }
 
@@ -647,6 +655,10 @@ function PanelTiposMovimiento() {
       cargar();
     } catch (err) {
       setErroresFila((p) => ({ ...p, [t.id]: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor." }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un 409 (ej. tipo de
+      // movimiento en uso) cerraba el modal igual, dando sensación de éxito.
+      throw err;
     }
   }
 
@@ -956,6 +968,10 @@ function PanelCategoriasTrabajador() {
       cargar();
     } catch (err) {
       setErroresFila((p) => ({ ...p, [c.id]: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor." }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un 409 (ej. categoría
+      // en uso) cerraba el modal igual, dando sensación de éxito.
+      throw err;
     }
   }
 

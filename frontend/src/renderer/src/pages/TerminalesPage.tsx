@@ -119,6 +119,10 @@ export default function TerminalesPage() {
     } catch (err) {
       const mensaje = err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.";
       setErroresFila((prev) => ({ ...prev, [t.id]: mensaje }));
+      // Relanzar: el ModalConfirmacion que llama a esta función solo cierra
+      // el modal si onConfirmar resuelve — sin esto, un fallo cerraba el
+      // modal igual, dando sensación de éxito.
+      throw err;
     } finally {
       setFilaEnProceso(null);
     }
