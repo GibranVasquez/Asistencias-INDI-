@@ -2,6 +2,7 @@ import { RolUsuario, Seccion } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { verificarAccesoSeccion } from "../utils/accesoSeccion";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 export interface DatosAltaSeccion {
   obraId: string;
@@ -106,28 +107,32 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
   await verificarHorarioExiste(datos.horarioId);
   await verificarEncargadosValidos(datos.encargadoIds);
 
-  return prisma.$transaction(async (tx) => {
-    const seccion = await tx.seccion.create({
-      data: {
-        obraId: datos.obraId,
-        nombre: datos.nombre,
-        horarioId: datos.horarioId ?? null,
-        encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
-      },
-    });
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const seccion = await tx.seccion.create({
+          data: {
+            obraId: datos.obraId,
+            nombre: datos.nombre,
+            horarioId: datos.horarioId ?? null,
+            encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "crear_seccion",
-        entidad: "Seccion",
-        entidadId: seccion.id,
-        detalle: { nombre: seccion.nombre, obraId: seccion.obraId },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "crear_seccion",
+            entidad: "Seccion",
+            entidadId: seccion.id,
+            detalle: { nombre: seccion.nombre, obraId: seccion.obraId },
+          },
+        });
 
-    return seccion;
-  });
+        return seccion;
+      }),
+    "Ya existe una sección con ese nombre en esa obra."
+  );
 }
 
 export async function listarSecciones(): Promise<SeccionConEncargados[]> {
@@ -162,28 +167,32 @@ export async function editarSeccion(
   await verificarHorarioExiste(datos.horarioId);
   await verificarEncargadosValidos(datos.encargadoIds);
 
-  return prisma.$transaction(async (tx) => {
-    const actualizada = await tx.seccion.update({
-      where: { id },
-      data: {
-        nombre: datos.nombre,
-        horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
-        encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
-      },
-    });
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const actualizada = await tx.seccion.update({
+          where: { id },
+          data: {
+            nombre: datos.nombre,
+            horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
+            encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "editar_seccion",
-        entidad: "Seccion",
-        entidadId: id,
-        detalle: { nombre: actualizada.nombre },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "editar_seccion",
+            entidad: "Seccion",
+            entidadId: id,
+            detalle: { nombre: actualizada.nombre },
+          },
+        });
 
-    return actualizada;
-  });
+        return actualizada;
+      }),
+    "Ya existe una sección con ese nombre en esa obra."
+  );
 }
 
 export async function obtenerResumenHoy(

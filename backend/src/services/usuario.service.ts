@@ -3,6 +3,7 @@ import { RolUsuario } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { serializarUsuario, UsuarioPublico } from "../utils/usuarioSerializer";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 const RONDAS_BCRYPT = 10;
 
@@ -85,36 +86,40 @@ export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsu
 
   const passwordHash = await bcrypt.hash(datos.password, RONDAS_BCRYPT);
 
-  const usuario = await prisma.$transaction(async (tx) => {
-    const nuevo = await tx.usuario.create({
-      data: {
-        username: datos.username,
-        passwordHash,
-        rol: datos.rol,
-        trabajadorId: datos.rol === RolUsuario.trabajador ? datos.trabajadorId : null,
-        seccionesAsignadas: datos.seccionesAsignadas?.length
-          ? { connect: datos.seccionesAsignadas.map((id) => ({ id })) }
-          : undefined,
-      },
-    });
+  const usuario = await conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const nuevo = await tx.usuario.create({
+          data: {
+            username: datos.username,
+            passwordHash,
+            rol: datos.rol,
+            trabajadorId: datos.rol === RolUsuario.trabajador ? datos.trabajadorId : null,
+            seccionesAsignadas: datos.seccionesAsignadas?.length
+              ? { connect: datos.seccionesAsignadas.map((id) => ({ id })) }
+              : undefined,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioCreadorId,
-        accion: "crear_usuario",
-        entidad: "Usuario",
-        entidadId: nuevo.id,
-        detalle: {
-          username: nuevo.username,
-          rol: nuevo.rol,
-          trabajadorId: nuevo.trabajadorId,
-          seccionesAsignadas: datos.seccionesAsignadas ?? [],
-        },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioCreadorId,
+            accion: "crear_usuario",
+            entidad: "Usuario",
+            entidadId: nuevo.id,
+            detalle: {
+              username: nuevo.username,
+              rol: nuevo.rol,
+              trabajadorId: nuevo.trabajadorId,
+              seccionesAsignadas: datos.seccionesAsignadas ?? [],
+            },
+          },
+        });
 
-    return nuevo;
-  });
+        return nuevo;
+      }),
+    "Ya existe una cuenta con ese username, o el trabajador ya tiene una cuenta asociada."
+  );
 
   return serializarUsuario(usuario);
 }

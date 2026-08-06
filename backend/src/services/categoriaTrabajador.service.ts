@@ -1,6 +1,7 @@
 import { CategoriaTrabajador, Prisma, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 export interface DatosCategoriaTrabajador {
   nombre: string;
@@ -17,34 +18,38 @@ export async function crearCategoriaTrabajador(
     throw new AppError(409, "Ya existe una categoría con ese nombre.");
   }
 
-  return prisma.$transaction(async (tx) => {
-    // A lo más una fila con esDefault=true (ver comentario en schema.prisma) —
-    // Prisma no tiene un índice único parcial sin SQL crudo, así que se
-    // garantiza aquí, igual que el resto de las validaciones de este archivo.
-    if (datos.esDefault) {
-      await tx.categoriaTrabajador.updateMany({ where: { esDefault: true }, data: { esDefault: false } });
-    }
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        // A lo más una fila con esDefault=true (ver comentario en schema.prisma) —
+        // Prisma no tiene un índice único parcial sin SQL crudo, así que se
+        // garantiza aquí, igual que el resto de las validaciones de este archivo.
+        if (datos.esDefault) {
+          await tx.categoriaTrabajador.updateMany({ where: { esDefault: true }, data: { esDefault: false } });
+        }
 
-    const categoria = await tx.categoriaTrabajador.create({
-      data: {
-        nombre: datos.nombre,
-        sueldoBaseDefault: datos.sueldoBaseDefault === null ? null : new Prisma.Decimal(datos.sueldoBaseDefault),
-        esDefault: datos.esDefault,
-      },
-    });
+        const categoria = await tx.categoriaTrabajador.create({
+          data: {
+            nombre: datos.nombre,
+            sueldoBaseDefault: datos.sueldoBaseDefault === null ? null : new Prisma.Decimal(datos.sueldoBaseDefault),
+            esDefault: datos.esDefault,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "crear_categoria_trabajador",
-        entidad: "CategoriaTrabajador",
-        entidadId: categoria.id,
-        detalle: { nombre: categoria.nombre },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "crear_categoria_trabajador",
+            entidad: "CategoriaTrabajador",
+            entidadId: categoria.id,
+            detalle: { nombre: categoria.nombre },
+          },
+        });
 
-    return categoria;
-  });
+        return categoria;
+      }),
+    "Ya existe una categoría con ese nombre."
+  );
 }
 
 export async function listarCategoriasTrabajador(): Promise<CategoriaTrabajador[]> {
@@ -71,35 +76,39 @@ export async function editarCategoriaTrabajador(
     throw new AppError(409, "Ya existe una categoría con ese nombre.");
   }
 
-  return prisma.$transaction(async (tx) => {
-    if (datos.esDefault) {
-      await tx.categoriaTrabajador.updateMany({
-        where: { esDefault: true, id: { not: id } },
-        data: { esDefault: false },
-      });
-    }
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        if (datos.esDefault) {
+          await tx.categoriaTrabajador.updateMany({
+            where: { esDefault: true, id: { not: id } },
+            data: { esDefault: false },
+          });
+        }
 
-    const categoria = await tx.categoriaTrabajador.update({
-      where: { id },
-      data: {
-        nombre: datos.nombre,
-        sueldoBaseDefault: datos.sueldoBaseDefault === null ? null : new Prisma.Decimal(datos.sueldoBaseDefault),
-        esDefault: datos.esDefault,
-      },
-    });
+        const categoria = await tx.categoriaTrabajador.update({
+          where: { id },
+          data: {
+            nombre: datos.nombre,
+            sueldoBaseDefault: datos.sueldoBaseDefault === null ? null : new Prisma.Decimal(datos.sueldoBaseDefault),
+            esDefault: datos.esDefault,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "editar_categoria_trabajador",
-        entidad: "CategoriaTrabajador",
-        entidadId: id,
-        detalle: { nombre: categoria.nombre },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "editar_categoria_trabajador",
+            entidad: "CategoriaTrabajador",
+            entidadId: id,
+            detalle: { nombre: categoria.nombre },
+          },
+        });
 
-    return categoria;
-  });
+        return categoria;
+      }),
+    "Ya existe una categoría con ese nombre."
+  );
 }
 
 export async function borrarCategoriaTrabajador(usuarioActorId: string, id: string): Promise<void> {

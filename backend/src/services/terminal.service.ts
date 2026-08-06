@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { serializarTerminal, TerminalPublico } from "../utils/terminalSerializer";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 const RONDAS_BCRYPT = 10;
 // Bytes de entropía (antes de base64) para la password autogenerada de un
@@ -62,29 +63,33 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
 
   const passwordHash = await bcrypt.hash(password, RONDAS_BCRYPT);
 
-  const terminal = await prisma.$transaction(async (tx) => {
-    const nuevo = await tx.terminal.create({
-      data: {
-        username: datos.username,
-        passwordHash,
-        tipo: datos.tipo,
-        ubicacion: datos.ubicacion,
-        numeroSerie: datos.numeroSerie ?? null,
-      },
-    });
+  const terminal = await conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const nuevo = await tx.terminal.create({
+          data: {
+            username: datos.username,
+            passwordHash,
+            tipo: datos.tipo,
+            ubicacion: datos.ubicacion,
+            numeroSerie: datos.numeroSerie ?? null,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioCreadorId,
-        accion: "crear_terminal",
-        entidad: "Terminal",
-        entidadId: nuevo.id,
-        detalle: { username: nuevo.username, tipo: nuevo.tipo, ubicacion: nuevo.ubicacion },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioCreadorId,
+            accion: "crear_terminal",
+            entidad: "Terminal",
+            entidadId: nuevo.id,
+            detalle: { username: nuevo.username, tipo: nuevo.tipo, ubicacion: nuevo.ubicacion },
+          },
+        });
 
-    return nuevo;
-  });
+        return nuevo;
+      }),
+    "Ya existe un terminal con ese username o ese número de serie."
+  );
 
   return serializarTerminal(terminal);
 }
@@ -116,21 +121,25 @@ export async function editarTerminal(
 
   const camposEditados = Object.keys(datos).filter((k) => (datos as Record<string, unknown>)[k] !== undefined);
 
-  const terminal = await prisma.$transaction(async (tx) => {
-    const actualizado = await tx.terminal.update({ where: { id }, data });
+  const terminal = await conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const actualizado = await tx.terminal.update({ where: { id }, data });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "editar_terminal",
-        entidad: "Terminal",
-        entidadId: id,
-        detalle: { camposEditados },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "editar_terminal",
+            entidad: "Terminal",
+            entidadId: id,
+            detalle: { camposEditados },
+          },
+        });
 
-    return actualizado;
-  });
+        return actualizado;
+      }),
+    "Ya existe otro terminal dado de alta con ese número de serie."
+  );
 
   return serializarTerminal(terminal);
 }

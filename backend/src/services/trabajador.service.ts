@@ -1,6 +1,7 @@
 import { Prisma, Trabajador, TrabajadorEstatus, TrabajadorTipo } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 export interface DatosAltaTrabajador {
   nombreCompleto: string;
@@ -93,21 +94,25 @@ async function verificarNumeroCheckadorDisponible(numeroChecador: number | null 
 export async function crearTrabajador(usuarioActorId: string, datos: DatosAltaTrabajador): Promise<Trabajador> {
   await verificarNumeroCheckadorDisponible(datos.numeroChecador);
 
-  return prisma.$transaction(async (tx) => {
-    const trabajador = await tx.trabajador.create({ data: datosAltaParaPrisma(datos) });
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const trabajador = await tx.trabajador.create({ data: datosAltaParaPrisma(datos) });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "crear_trabajador",
-        entidad: "Trabajador",
-        entidadId: trabajador.id,
-        detalle: { nombreCompleto: trabajador.nombreCompleto, categoria: trabajador.categoria },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "crear_trabajador",
+            entidad: "Trabajador",
+            entidadId: trabajador.id,
+            detalle: { nombreCompleto: trabajador.nombreCompleto, categoria: trabajador.categoria },
+          },
+        });
 
-    return trabajador;
-  });
+        return trabajador;
+      }),
+    "Ya existe otro trabajador con ese número de checador."
+  );
 }
 
 export async function listarTrabajadores(): Promise<Trabajador[]> {
@@ -153,21 +158,25 @@ export async function editarTrabajador(
 
   const camposEditados = Object.keys(datos).filter((k) => (datos as Record<string, unknown>)[k] !== undefined);
 
-  return prisma.$transaction(async (tx) => {
-    const trabajador = await tx.trabajador.update({ where: { id }, data: datosEdicionParaPrisma(datos) });
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const trabajador = await tx.trabajador.update({ where: { id }, data: datosEdicionParaPrisma(datos) });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId: usuarioActorId,
-        accion: "editar_trabajador",
-        entidad: "Trabajador",
-        entidadId: id,
-        detalle: { camposEditados },
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId: usuarioActorId,
+            accion: "editar_trabajador",
+            entidad: "Trabajador",
+            entidadId: id,
+            detalle: { camposEditados },
+          },
+        });
 
-    return trabajador;
-  });
+        return trabajador;
+      }),
+    "Ya existe otro trabajador con ese número de checador."
+  );
 }
 
 export async function borrarTrabajador(usuarioActorId: string, id: string): Promise<void> {

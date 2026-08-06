@@ -1,6 +1,7 @@
 import { MovimientoTrabajador, NominaEstatus, NominaSemanal, Prisma, Trabajador, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
+import { conManejoDeUnicidad } from "../utils/erroresPrisma";
 
 const DIAS_POR_PERIODO = 7;
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
@@ -232,37 +233,41 @@ export async function generarNominaSemanal(
   const totalAPagar = devengado.minus(descontado);
   verificarTotalNoNegativo(devengado, descontado, totalAPagar);
 
-  return prisma.$transaction(async (tx) => {
-    const nomina = await tx.nominaSemanal.create({
-      data: {
-        trabajadorId,
-        periodoInicio,
-        periodoFin,
-        diasLaborados,
-        montoSueldo,
-        horasExtra,
-        montoHorasExtra,
-        viaticosSemanal,
-        viaticosMensual,
-        infonavitDescuento,
-        descuentosVarios,
-        aguinaldo,
-        totalAPagar,
-      },
-    });
+  return conManejoDeUnicidad(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const nomina = await tx.nominaSemanal.create({
+          data: {
+            trabajadorId,
+            periodoInicio,
+            periodoFin,
+            diasLaborados,
+            montoSueldo,
+            horasExtra,
+            montoHorasExtra,
+            viaticosSemanal,
+            viaticosMensual,
+            infonavitDescuento,
+            descuentosVarios,
+            aguinaldo,
+            totalAPagar,
+          },
+        });
 
-    await tx.auditLog.create({
-      data: {
-        usuarioId,
-        accion: "crear_nomina",
-        entidad: "NominaSemanal",
-        entidadId: nomina.id,
-        detalle: serializarNomina(nomina),
-      },
-    });
+        await tx.auditLog.create({
+          data: {
+            usuarioId,
+            accion: "crear_nomina",
+            entidad: "NominaSemanal",
+            entidadId: nomina.id,
+            detalle: serializarNomina(nomina),
+          },
+        });
 
-    return nomina;
-  });
+        return nomina;
+      }),
+    "Ya existe una nómina generada para este trabajador en ese periodo."
+  );
 }
 
 /**
