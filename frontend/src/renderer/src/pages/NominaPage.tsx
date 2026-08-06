@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CamposEditablesNomina,
   corregirNomina,
@@ -101,12 +101,24 @@ export default function NominaPage() {
   const [seccionFiltro, setSeccionFiltro] = useState("");
   const [estatusFiltro, setEstatusFiltro] = useState<FiltroEstatus>("todos");
 
+  // Clics rápidos entre "Semana anterior"/"Semana siguiente" pueden disparar
+  // varias `obtenerVistaPreviaNomina` en paralelo; sin esto, la que responde
+  // más tarde (no necesariamente la de la semana visible en el encabezado)
+  // pisaba vistaPrevia/ediciones sin aviso — RH podía terminar viendo/editando
+  // la nómina de una semana distinta a la mostrada. idPeticionRef se
+  // incrementa en cada carga (efecto por cambio de semana Y el refetch tras
+  // calcularNominaDeLaSemana, mismo contador para ambos) y cualquier
+  // respuesta que llegue cuando ya no es la más reciente se ignora.
+  const idPeticionRef = useRef(0);
+
   function cargarVistaPrevia() {
+    const idPeticion = ++idPeticionRef.current;
     setCargando(true);
     setError(null);
     setResultados({});
     obtenerVistaPreviaNomina(token, periodoInicio, periodoFin)
       .then((r) => {
+        if (idPeticionRef.current !== idPeticion) return;
         setVistaPrevia(r.trabajadores);
         const nuevasEdiciones: Record<string, CamposEditablesNomina> = {};
         r.trabajadores.forEach((t) => {
@@ -115,6 +127,7 @@ export default function NominaPage() {
         setEdiciones(nuevasEdiciones);
       })
       .catch((err) => {
+        if (idPeticionRef.current !== idPeticion) return;
         const mensaje =
           err instanceof ApiError
             ? err.status === 403
@@ -124,7 +137,9 @@ export default function NominaPage() {
         setError(mensaje);
         setVistaPrevia(null);
       })
-      .finally(() => setCargando(false));
+      .finally(() => {
+        if (idPeticionRef.current === idPeticion) setCargando(false);
+      });
   }
 
   useEffect(cargarVistaPrevia, [token, periodoInicio, periodoFin]);
@@ -215,8 +230,12 @@ export default function NominaPage() {
 
     // Refresca desde el backend para que KPIs/estatus/totales reflejen lo
     // recién calculado — nuevosResultados se conserva por separado para
-    // seguir mostrando el resultado por fila de esta corrida.
+    // seguir mostrando el resultado por fila de esta corrida. Mismo
+    // idPeticionRef que cargarVistaPrevia: si RH cambia de semana antes de
+    // que este refetch resuelva, se ignora en vez de pisar la semana nueva.
+    const idPeticion = ++idPeticionRef.current;
     obtenerVistaPreviaNomina(token, periodoInicio, periodoFin).then((r) => {
+      if (idPeticionRef.current !== idPeticion) return;
       setVistaPrevia(r.trabajadores);
       const nuevasEdiciones: Record<string, CamposEditablesNomina> = {};
       r.trabajadores.forEach((t) => {
