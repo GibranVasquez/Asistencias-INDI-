@@ -18,6 +18,18 @@ function archivoSesion(): string {
   return join(app.getPath("userData"), "sesion.enc");
 }
 
+function archivoSesionTerminal(): string {
+  return join(app.getPath("userData"), "terminal-sesion.enc");
+}
+
+function terminalPuedePersistirseConCifradoReal(): boolean {
+  if (!safeStorage.isEncryptionAvailable()) return false;
+  // En Linux Electron puede reportar safeStorage disponible usando
+  // `basic_text`, que solo ofusca. Para un JWT persistente eso no cuenta
+  // como almacenamiento seguro y debe fallar cerrado.
+  return process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text";
+}
+
 export function registrarHandlersSecureStore(): void {
   ipcMain.handle("secure-store:guardar", (_evento, valor: string, persistir: boolean) => {
     const ruta = archivoSesion();
@@ -55,6 +67,34 @@ export function registrarHandlersSecureStore(): void {
   ipcMain.handle("secure-store:borrar", () => {
     sesionEnMemoria = null;
     const ruta = archivoSesion();
+    if (existsSync(ruta)) unlinkSync(ruta);
+  });
+
+  // La sesion del Terminal siempre debe sobrevivir reinicios, por lo que no
+  // tiene fallback en memoria ni en texto plano. Usa un archivo distinto al
+  // de la sesion humana para que cerrar una no afecte a la otra.
+  ipcMain.handle("terminal-secure-store:guardar", (_evento, valor: string) => {
+    if (!terminalPuedePersistirseConCifradoReal()) {
+      throw new Error("El almacenamiento seguro del sistema operativo no está disponible en este equipo.");
+    }
+    writeFileSync(archivoSesionTerminal(), safeStorage.encryptString(valor));
+  });
+
+  ipcMain.handle("terminal-secure-store:leer", (): string | null => {
+    const ruta = archivoSesionTerminal();
+    if (!existsSync(ruta)) return null;
+    if (!terminalPuedePersistirseConCifradoReal()) {
+      throw new Error("El almacenamiento seguro del sistema operativo no está disponible en este equipo.");
+    }
+    try {
+      return safeStorage.decryptString(readFileSync(ruta));
+    } catch {
+      throw new Error("No se pudo descifrar la sesión segura del Terminal.");
+    }
+  });
+
+  ipcMain.handle("terminal-secure-store:borrar", () => {
+    const ruta = archivoSesionTerminal();
     if (existsSync(ruta)) unlinkSync(ruta);
   });
 }

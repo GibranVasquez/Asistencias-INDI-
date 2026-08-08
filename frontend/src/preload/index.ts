@@ -25,4 +25,9 @@ contextBridge.exposeInMainWorld("indiApp", {
     leer: (): Promise<{ valor: string; persistida: boolean } | null> => ipcRenderer.invoke("secure-store:leer"),
     borrar: (): Promise<void> => ipcRenderer.invoke("secure-store:borrar"),
   },
+  sesionTerminalSegura: {
+    guardar: (valor: string): Promise<void> => ipcRenderer.invoke("terminal-secure-store:guardar", valor),
+    leer: (): Promise<string | null> => ipcRenderer.invoke("terminal-secure-store:leer"),
+    borrar: (): Promise<void> => ipcRenderer.invoke("terminal-secure-store:borrar"),
+  },
 });

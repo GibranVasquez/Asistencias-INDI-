@@ -40,7 +40,7 @@ const iconoHuella = (
 );
 
 export default function KioscoPage() {
-  const { sesion, config, iniciarSesion, cerrarSesion, guardarConfig, limpiarConfig } = useTerminal();
+  const { sesion, config, restaurandoSesion, errorAlmacenamiento, iniciarSesion, cerrarSesion, guardarConfig, limpiarConfig } = useTerminal();
 
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => {
@@ -48,8 +48,12 @@ export default function KioscoPage() {
     return () => clearInterval(id);
   }, []);
 
+  if (restaurandoSesion) {
+    return <div style={{ height: "100vh", background: "var(--indi)" }} aria-label="Restaurando sesión del Terminal" />;
+  }
+
   if (!sesion) {
-    return <LoginTerminalForm onListo={iniciarSesion} />;
+    return <LoginTerminalForm onListo={iniciarSesion} errorAlmacenamiento={errorAlmacenamiento} />;
   }
 
   if (!config) {
@@ -87,7 +91,13 @@ export default function KioscoPage() {
   );
 }
 
-function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal>["iniciarSesion"] }) {
+function LoginTerminalForm({
+  onListo,
+  errorAlmacenamiento,
+}: {
+  onListo: ReturnType<typeof useTerminal>["iniciarSesion"];
+  errorAlmacenamiento: string | null;
+}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -99,9 +109,9 @@ function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal
     setCargando(true);
     try {
       const { token, terminal } = await loginTerminal(username, password);
-      onListo({ token, terminal });
+      await onListo({ token, terminal });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+      setError(err instanceof ApiError ? err.message : "No se pudo guardar la sesión en el almacenamiento seguro del equipo.");
     } finally {
       setCargando(false);
     }
@@ -151,7 +161,9 @@ function LoginTerminalForm({ onListo }: { onListo: ReturnType<typeof useTerminal
             required
             style={{ padding: "12px 14px", borderRadius: 9, border: "none", fontSize: 14 }}
           />
-          {error && <div style={{ color: "#ffb4b6", fontSize: 13 }}>{error}</div>}
+          {(error || errorAlmacenamiento) && (
+            <div style={{ color: "#ffb4b6", fontSize: 13 }}>{error || errorAlmacenamiento}</div>
+          )}
           <button
             type="submit"
             disabled={cargando}

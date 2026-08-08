@@ -1,13 +1,7 @@
-import { createContext, ReactNode, useContext, useMemo, useState } from "react";
-import { TerminalPublico } from "../api/auth";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { crearPersistenciaSesionTerminal, SesionTerminal } from "../security/terminalSession";
 
-const CLAVE_SESION = "indi_terminal_sesion";
 const CLAVE_CONFIG = "indi_terminal_config";
-
-interface SesionTerminal {
-  token: string;
-  terminal: TerminalPublico;
-}
 
 // Config fisica del kiosco. Dos modos:
 // - "marcacion" (default, comportamiento historico): a que seccion
@@ -28,8 +22,10 @@ export interface ConfigKiosco {
 interface TerminalContextValor {
   sesion: SesionTerminal | null;
   config: ConfigKiosco | null;
-  iniciarSesion: (sesion: SesionTerminal) => void;
-  cerrarSesion: () => void;
+  restaurandoSesion: boolean;
+  errorAlmacenamiento: string | null;
+  iniciarSesion: (sesion: SesionTerminal) => Promise<void>;
+  cerrarSesion: () => Promise<void>;
   guardarConfig: (config: ConfigKiosco) => void;
   limpiarConfig: () => void;
 }
@@ -47,19 +43,44 @@ function leerJSON<T>(clave: string): T | null {
 }
 
 export function TerminalProvider({ children }: { children: ReactNode }) {
-  const [sesion, setSesion] = useState<SesionTerminal | null>(() => leerJSON(CLAVE_SESION));
+  const [sesion, setSesion] = useState<SesionTerminal | null>(null);
   const [config, setConfig] = useState<ConfigKiosco | null>(() => leerJSON(CLAVE_CONFIG));
+  const [restaurandoSesion, setRestaurandoSesion] = useState(true);
+  const [errorAlmacenamiento, setErrorAlmacenamiento] = useState<string | null>(null);
+
+  const persistencia = useMemo(
+    () => crearPersistenciaSesionTerminal(window.indiApp?.sesionTerminalSegura, localStorage),
+    []
+  );
+
+  useEffect(() => {
+    let activo = true;
+    persistencia.restaurar()
+      .then((restaurada) => {
+        if (activo) setSesion(restaurada);
+      })
+      .catch(() => {
+        if (activo) setErrorAlmacenamiento("No se pudo abrir el almacenamiento seguro del Terminal.");
+      })
+      .finally(() => {
+        if (activo) setRestaurandoSesion(false);
+      });
+    return () => { activo = false; };
+  }, [persistencia]);
 
   const valor = useMemo<TerminalContextValor>(
     () => ({
       sesion,
       config,
-      iniciarSesion: (nuevaSesion) => {
-        localStorage.setItem(CLAVE_SESION, JSON.stringify(nuevaSesion));
+      restaurandoSesion,
+      errorAlmacenamiento,
+      iniciarSesion: async (nuevaSesion) => {
+        await persistencia.guardar(nuevaSesion);
         setSesion(nuevaSesion);
+        setErrorAlmacenamiento(null);
       },
-      cerrarSesion: () => {
-        localStorage.removeItem(CLAVE_SESION);
+      cerrarSesion: async () => {
+        await persistencia.borrar();
         setSesion(null);
       },
       guardarConfig: (nuevaConfig) => {
@@ -71,7 +92,7 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
         setConfig(null);
       },
     }),
-    [sesion, config]
+    [sesion, config, restaurandoSesion, errorAlmacenamiento, persistencia]
   );
 
   return <TerminalContext.Provider value={valor}>{children}</TerminalContext.Provider>;

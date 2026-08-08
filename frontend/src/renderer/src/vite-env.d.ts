@@ -25,5 +25,10 @@ interface Window {
       leer: () => Promise<{ valor: string; persistida: boolean } | null>;
       borrar: () => Promise<void>;
     };
+    sesionTerminalSegura: {
+      guardar: (valor: string) => Promise<void>;
+      leer: () => Promise<string | null>;
+      borrar: () => Promise<void>;
+    };
   };
 }
