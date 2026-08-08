@@ -1,6 +1,7 @@
 import { app, BrowserWindow, session } from "electron";
 import { join } from "path";
 import { resolverApiBaseUrl } from "./apiConfig";
+import { construirContentSecurityPolicy, esNavegacionAlMismoDocumento } from "./contentSecurityPolicy";
 import { registrarHandlersSecureStore } from "./secureStore";
 
 // El kiosco fisico se lanza con --kiosk (o INDI_KIOSK=1): pantalla completa,
@@ -24,12 +25,7 @@ if (process.platform === "linux") {
   }
 }
 
-function crearVentanaPrincipal(): void {
-  // Resuelta en tiempo de ejecución (env var o config.json en userData, ver
-  // apiConfig.ts) — nunca horneada en el build, para que el paquete final
-  // pueda apuntar a donde termine viviendo el backend sin recompilar.
-  const apiBaseUrl = resolverApiBaseUrl();
-
+function crearVentanaPrincipal(apiBaseUrl: string): void {
   const ventana = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -44,17 +40,49 @@ function crearVentanaPrincipal(): void {
       preload: join(__dirname, "../preload/index.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
       additionalArguments: [`--indi-api-base-url=${apiBaseUrl}`],
     },
+  });
+
+  ventana.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  ventana.webContents.on("will-navigate", (evento, destino) => {
+    if (!esNavegacionAlMismoDocumento(ventana.webContents.getURL(), destino)) {
+      evento.preventDefault();
+    }
   });
 
   const rutaInicial = esLanzamientoKiosco ? "/kiosco" : "/";
 
   if (process.env["ELECTRON_RENDERER_URL"]) {
-    ventana.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}#${rutaInicial}`);
+    void ventana.loadURL(`${process.env["ELECTRON_RENDERER_URL"]}#${rutaInicial}`);
   } else {
-    ventana.loadFile(join(__dirname, "../renderer/index.html"), { hash: rutaInicial });
+    void ventana.loadFile(join(__dirname, "../renderer/index.html"), { hash: rutaInicial });
   }
+}
+
+function registrarPoliticaDeContenido(apiBaseUrl: string): void {
+  const politica = construirContentSecurityPolicy({
+    apiBaseUrl,
+    desarrollo: Boolean(process.env["ELECTRON_RENDERER_URL"]),
+  });
+  session.defaultSession.webRequest.onHeadersReceived((detalles, responder) => {
+    if (detalles.resourceType !== "mainFrame") {
+      responder({ responseHeaders: detalles.responseHeaders });
+      return;
+    }
+    responder({
+      responseHeaders: {
+        ...detalles.responseHeaders,
+        "Content-Security-Policy": [politica],
+      },
+    });
+  });
+}
+
+function restringirPermisos(): void {
+  session.defaultSession.setPermissionCheckHandler(() => false);
+  session.defaultSession.setPermissionRequestHandler((_webContents, _permiso, responder) => responder(false));
 }
 
 // Sin este handler, guardar un blob (reportes en PDF/Excel, ver
@@ -68,14 +96,18 @@ function registrarDescargas(): void {
   });
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
+  // La URL se resuelve una sola vez y alimenta tanto al preload como a CSP.
+  const apiBaseUrl = resolverApiBaseUrl();
   registrarHandlersSecureStore();
   registrarDescargas();
-  crearVentanaPrincipal();
+  registrarPoliticaDeContenido(apiBaseUrl);
+  restringirPermisos();
+  crearVentanaPrincipal(apiBaseUrl);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      crearVentanaPrincipal();
+      crearVentanaPrincipal(apiBaseUrl);
     }
   });
 });
