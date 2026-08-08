@@ -51,11 +51,26 @@ function resolverArchivoCA(): string {
   return url.includes(".rds.amazonaws.com") ? "rds-global-bundle.pem" : "supabase-root-2021-ca.pem";
 }
 
-const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
+const URL_INTEGRACION_LOCAL = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test";
+const esIntegracionLocal = process.env.INTEGRATION_TEST_DB === "1";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true, ca: ca.toString() },
-});
+if (esIntegracionLocal && process.env.DATABASE_URL !== URL_INTEGRACION_LOCAL) {
+  throw new Error(
+    "INTEGRATION_TEST_DB=1 solo admite la base efímera exacta en 127.0.0.1:55432/indi_test. Operación abortada."
+  );
+}
+
+// PostgreSQL efímero de integración no usa TLS y solo se admite detrás de
+// la guardia exacta anterior. Cualquier ejecución normal conserva la CA y
+// verificación TLS estricta existente; no hay fallback inseguro.
+const adapter = esIntegracionLocal
+  ? new PrismaPg({ connectionString: URL_INTEGRACION_LOCAL })
+  : (() => {
+      const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
+      return new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: true, ca: ca.toString() },
+      });
+    })();
 
 export const prisma = new PrismaClient({ adapter });
