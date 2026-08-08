@@ -118,11 +118,11 @@ Cosas a tener en cuenta si vuelves a tocar la conexión:
   in certificate chain" aunque el CA correcto sí se esté leyendo y pasando
   bien. Aislado con una prueba mínima usando `pg` puro (sin Prisma): la
   misma `connectionString` + `ssl` explícito conecta bien sin ese
-  parámetro, y falla con él. `infra/terraform/secrets.tf` ya no lo incluye
-  en la `DATABASE_URL` que arma para RDS — pendiente real: `backend/.env.example`
-  todavía documenta `?sslmode=require` para Supabase, mismo riesgo latente
-  ahí, no corregido todavía por estar fuera del alcance urgente de este
-  hallazgo.
+  parámetro, y falla con él. `infra/terraform/secrets.tf` y
+  `backend/.env.example` ya no lo incluyen en la `DATABASE_URL`. El ejemplo
+  conserva validación explícita para el `DIRECT_URL` del CLI mediante
+  `sslmode=verify-full` + `sslrootcert`, porque ese flujo no pasa por el
+  adaptador JS de la aplicación.
 - **El CLI de Prisma (`prisma migrate deploy`) NUNCA validó el CA de RDS
   — confirmado en vivo 2026-07-30, y es un problema distinto del anterior.**
   El motor de migraciones es Rust, no pasa por el `ssl: { ca: ... }`
@@ -418,10 +418,9 @@ Layered Express app, one direction of dependency only:
   `/auth/login-terminal` regardless of what password is guessed → `401`
   (wrong) or would be `403` (right, but there's no way to know it — it's
   never exposed); a non-`adms` terminal alta without `password` still
-  gets the original `400`. No frontend form for creating `Terminal` rows
-  exists yet anywhere in the app (checked `UsuariosPage.tsx`, all other
-  pages) — every terminal alta so far has gone through the API directly,
-  so there was no UI password field to remove.
+  gets the original `400`. `TerminalesPage.tsx` ya implementa alta,
+  edición y activar/desactivar terminales; para `tipo="adms"` no solicita
+  contraseña y captura el número de serie requerido por ese flujo.
 
 ### Data model (`prisma/schema.prisma`)
 
@@ -709,12 +708,8 @@ detección rápida de fallos, no la reemplaza):
    con el nombre del terminal y la fecha exacta; terminal eliminado →
    banner desaparece.
 3. **Infraestructura** (`infra/terraform/waf.tf`, capa adicional,
-   específica de AWS): un Web ACL de WAF asociado directamente al
-   servicio de App Runner (confirmado que esto es posible sin CloudFront
-   ni cambiar de arquitectura — un servicio *público* de App Runner sí
-   soporta reglas de IP origen vía WAF; la limitación documentada de
-   "las reglas de IP no funcionan" aplica solo a servicios *privados* de
-   App Runner, no es nuestro caso), bloqueando cualquier request a rutas
+   específica de AWS): un Web ACL de WAF asociado al ALB de ECS/Fargate,
+   bloqueando cualquier request a rutas
    `/iclock/*` que no venga de `var.adms_ips_permitidas`. Esta capa
    protege *todo* el servicio (WAF no puede aplicarse a una sola ruta, la
    regla en sí sí es específica de `/iclock/*` vía un `and_statement`).
@@ -725,41 +720,11 @@ detección rápida de fallos, no la reemplaza):
    probado con una petición real bloqueada desde una IP fuera del
    allowlist (`403`, HTML genérico de bloqueo del WAF).
 
-**Pendiente real, no cerrado hoy (2026-07-31) — logging del WAF a
-CloudWatch Logs:** el recurso `aws_wafv2_web_acl_logging_configuration.adms`
-(`infra/terraform/waf.tf`) sigue sin poder aplicarse. No es un problema de
-código ni de las políticas IAM ya corregidas hoy (`iam-provisioning-policy-compute.json`/`-datos.json`,
-ambas sincronizadas y confirmadas) — es un permiso adicional, genuinamente
-nuevo, que no se anticipó: `wafv2:PutLoggingConfiguration` internamente
-necesita que quien la llama (la identidad de Terraform) también pueda
-crear/modificar la política de recurso del log group destino
-(`logs:PutResourcePolicy` + `logs:DescribeResourcePolicies`) — confirmado
-con la misma fuente autoritativa que ya se usó para `DescribeLogGroups`
-(dataset del Service Authorization Reference de AWS): ambas acciones
-tienen `resource_types` vacío, igual que `DescribeLogGroups`, y por lo
-tanto exigen `Resource: "*"` sin excepción, no acotable a un ARN
-específico. Error real obtenido en vivo: `AccessDeniedException: You
-don't have the permissions that are required to perform this operation`
-al correr `terraform apply` sobre ese recurso puntual.
-
-**Para retomar cuando se decida continuar:**
-1. Agregar un statement nuevo (en `iam-provisioning-policy-datos.json`,
-   mismo criterio que `CloudWatchLogsDescribeGruposSinAlcanceDeRecurso` —
-   tiene margen de caracteres) con `"Action": ["logs:PutResourcePolicy",
-   "logs:DescribeResourcePolicies"]` y `"Resource": "*"`.
-2. Pegar el archivo completo actualizado en la consola AWS
-   (`indi-provisioning-policy-datos`).
-3. Correr `cd infra/terraform && terraform apply` — debe crear
-   `aws_wafv2_web_acl_logging_configuration.adms` sin error (el log group
-   destino, `aws-waf-logs-indi-asistencia-production-adms`, ya existe,
-   creado y confirmado hoy).
-4. Repetir la prueba real ya usada antes: `curl
-   "https://api.sistemasindi.com/iclock/cdata?SN=TEST-SN-MB10VL-001&options=all"`
-   (debe seguir dando `403`) y confirmar que el intento aparece en
-   CloudWatch Logs, log group `aws-waf-logs-indi-asistencia-production-adms`
-   (requiere además el permiso de lectura de logs ya agregado hoy,
-   `CloudWatchLogsParaWAF`/`CloudWatchLogsDescribeGruposSinAlcanceDeRecurso`
-   en `iam-provisioning-policy-datos.json`, ya confirmado funcionando).
+**Logging del WAF resuelto:**
+`aws_wafv2_web_acl_logging_configuration.adms` está aplicado y verificado;
+los permisos requeridos para la política de recurso de CloudWatch Logs ya no
+son un bloqueo IAM. `waf.tf` conserva el log group con el prefijo exigido por
+AWS y retención de 30 días.
 
 **El drift-check de IAM (`infra/terraform/iam_drift_check.tf`, agregado
 hoy) ya demostró su valor en esta misma sesión** — encontró un drift real
@@ -769,8 +734,8 @@ nadie lo pidiera explícitamente, y superó tanto la prueba positiva (plan
 limpio con ambas políticas sincronizadas) como la negativa (modificación
 local temporal → `Error: Resource postcondition failed` con el mensaje
 esperado, sin necesitar que un error de permisos a medias lo revelara
-por accidente). Que el pendiente de arriba (logging del WAF) siga abierto
-no le resta valor a esto — son dos cosas independientes.
+por accidente). El logging del WAF ya está resuelto; el drift-check sigue
+siendo una protección independiente para futuros cambios IAM.
 
 **Reconciliación PIN → Trabajador:** `Trabajador.numeroChecador` (`Int?
 @unique`, migración `20260725145731_agregar_soporte_adms_zkteco`) — el ID
@@ -893,6 +858,24 @@ stacks already applied in parallel without touching `us-east-1`
 production; data migration and DNS cutover are what's left. Full
 day-by-day detail of this infra work lives in project memory / the
 traspaso document, not duplicated here.
+
+Estado funcional y de seguridad relevante para cambios futuros:
+
+- RH puede seleccionar trabajadores activos en `TrabajadoresPage.tsx` y
+  aplicarles un mismo `sueldoBase` mediante
+  `POST /trabajadores/aplicar-sueldo`. La operación es transaccional y no
+  modifica snapshots históricos de `NominaSemanal`.
+- La interfaz presenta el término **Frente**, pero el dominio técnico conserva
+  `Seccion`/`seccion`, las rutas `/secciones` y el rol
+  `encargado_seccion`. No migrar esos identificadores por un cambio de texto.
+- Los avisos altos de React Router y las copias transitivas de
+  `brace-expansion` fueron corregidos con actualizaciones mínimas. Permanece
+  aceptado temporalmente el aviso moderado de `uuid@8.3.2` transitivo de
+  `exceljs@4.4.0`: la última versión de ExcelJS aún declara `uuid@^8.3.0`,
+  npm propone un downgrade mayor y el vector afectado (UUID v3/v5/v6 con
+  buffer) no es alcanzable por las exportaciones XLSX actuales. No aplicar
+  `npm audit fix --force` ni un override entre versiones mayores sin una
+  solución compatible y pruebas de exportación.
 
 ## Bloqueado — fuera del alcance de este repositorio
 

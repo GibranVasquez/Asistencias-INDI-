@@ -1,4 +1,4 @@
-# Migración a AWS (ECS/Fargate + ALB + RDS) — preparación, no ejecución
+# Migración regional AWS (ECS/Fargate + ALB + RDS) — ejecución parcial
 
 **2026-07-28: reemplazado App Runner por ECS (Fargate + ALB a mano).**
 App Runner dejó de aceptar clientes nuevos desde el 30 de abril de 2026
@@ -10,11 +10,13 @@ reales documentados en el CHANGELOG del provider de Terraform para ese
 recurso en sus primeras ~4 semanas de vida — ver `terraform/ecs.tf` y
 `CLAUDE.md` para el detalle completo de ambas decisiones.
 
-**Estado real (2026-07-24): nada de esto está aplicado.** No existe cuenta
-de AWS. La base de datos real sigue siendo Supabase — no se toca hasta que
-la infraestructura de AWS exista y esté probada. Este documento es la
-checklist a seguir cuando llegue ese momento, para que sea "seguir una
-lista", no reinventar cada decisión de nuevo.
+**Estado actual (2026-08-08):** `us-east-1` mantiene la producción funcional
+y `mx-central-1` ya tiene un stack paralelo desplegado. La migración continúa
+abierta hasta completar la transferencia final de datos, sus checksums, el
+corte DNS, la validación posterior y la limpieza controlada de `us-east-1`.
+Este documento conserva la checklist operativa y el historial de pasos ya
+ejecutados; las casillas antiguas no implican que la infraestructura siga sin
+existir.
 
 Los archivos de Terraform viven en `terraform/` (stack principal) y
 `terraform-bootstrap/` (backend remoto de estado, ver paso 0). Ver
