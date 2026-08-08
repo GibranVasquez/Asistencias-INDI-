@@ -126,12 +126,10 @@ function calcularResumen(
   const asistencias = unaMarcaPorDia(asistenciasCrudas);
   let aTiempo = 0;
   let tardanzas = 0;
-  let sinHorario = 0;
 
   for (const a of asistencias) {
     const horario = mapas.seccionHorario.get(a.seccionId);
     if (!horario) {
-      sinHorario++;
       continue;
     }
     if (llegoATiempo(a.hora, horario)) aTiempo++;

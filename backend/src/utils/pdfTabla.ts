@@ -1,5 +1,3 @@
-import PDFDocument from "pdfkit";
-
 export interface ColumnaTabla {
   etiqueta: string;
   ancho: number;
