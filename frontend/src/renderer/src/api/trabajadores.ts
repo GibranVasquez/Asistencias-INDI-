@@ -75,6 +75,18 @@ export function editarTrabajador(token: string, id: string, datos: Partial<Datos
   return apiClient.patch<{ trabajador: Trabajador }>(`/trabajadores/${id}`, datos, token);
 }
 
+export function aplicarSueldoATrabajadores(
+  token: string,
+  ids: string[],
+  nuevoSueldoBase: number
+) {
+  return apiClient.post<{ afectados: number }>(
+    "/trabajadores/aplicar-sueldo",
+    { ids, nuevoSueldoBase },
+    token
+  );
+}
+
 export interface TrabajadorBasico {
   id: string;
   nombreCompleto: string;

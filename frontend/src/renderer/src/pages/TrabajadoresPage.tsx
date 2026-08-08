@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
-import { listarTrabajadores, Trabajador, tieneDatosNominaIncompletos } from "../api/trabajadores";
+import {
+  aplicarSueldoATrabajadores,
+  listarTrabajadores,
+  Trabajador,
+  tieneDatosNominaIncompletos,
+} from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
 import ChipEstado from "../components/ChipEstado";
+import ModalConfirmacion from "../components/ModalConfirmacion";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -18,17 +24,30 @@ export default function TrabajadoresPage() {
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(() => new Set());
+  const [nuevoSueldo, setNuevoSueldo] = useState("");
+  const [confirmandoSueldo, setConfirmandoSueldo] = useState(false);
+  const [errorAplicar, setErrorAplicar] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-  function cargar() {
+  async function cargar(): Promise<void> {
     setCargando(true);
     setError(null);
-    listarTrabajadores(token)
-      .then((r) => setTrabajadores(r.trabajadores))
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
-      .finally(() => setCargando(false));
+    try {
+      const respuesta = await listarTrabajadores(token);
+      setTrabajadores(respuesta.trabajadores);
+      const idsActivos = new Set(respuesta.trabajadores.filter((t) => t.estatus === "activo").map((t) => t.id));
+      setSeleccionados((actuales) => new Set([...actuales].filter((id) => idsActivos.has(id))));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+    } finally {
+      setCargando(false);
+    }
   }
 
-  useEffect(cargar, [token]);
+  useEffect(() => {
+    void cargar();
+  }, [token]);
 
   const categorias = useMemo(() => {
     if (!trabajadores) return [];
@@ -46,6 +65,51 @@ export default function TrabajadoresPage() {
   }, [trabajadores, busqueda, categoriaFiltro]);
 
   const incompletos = trabajadores?.filter(tieneDatosNominaIncompletos).length ?? 0;
+  const activosFiltrados = filtrados.filter((t) => t.estatus === "activo");
+  const todosActivosFiltradosSeleccionados =
+    activosFiltrados.length > 0 && activosFiltrados.every((t) => seleccionados.has(t.id));
+  const sueldoNumero = Number(nuevoSueldo);
+  const sueldoValido = nuevoSueldo.trim() !== "" && Number.isFinite(sueldoNumero) && sueldoNumero >= 0;
+
+  function alternarSeleccion(id: string) {
+    setSeleccionados((actuales) => {
+      const siguientes = new Set(actuales);
+      if (siguientes.has(id)) siguientes.delete(id);
+      else siguientes.add(id);
+      return siguientes;
+    });
+    setMensajeExito(null);
+  }
+
+  function alternarActivosFiltrados() {
+    setSeleccionados((actuales) => {
+      const siguientes = new Set(actuales);
+      if (todosActivosFiltradosSeleccionados) {
+        activosFiltrados.forEach((t) => siguientes.delete(t.id));
+      } else {
+        activosFiltrados.forEach((t) => siguientes.add(t.id));
+      }
+      return siguientes;
+    });
+    setMensajeExito(null);
+  }
+
+  async function confirmarAplicarSueldo(): Promise<void> {
+    setErrorAplicar(null);
+    try {
+      const resultado = await aplicarSueldoATrabajadores(token, [...seleccionados], sueldoNumero);
+      await cargar();
+      setSeleccionados(new Set());
+      setNuevoSueldo("");
+      setConfirmandoSueldo(false);
+      setMensajeExito(
+        `Sueldo aplicado correctamente a ${resultado.afectados} trabajador${resultado.afectados === 1 ? "" : "es"}.`
+      );
+    } catch (err) {
+      setErrorAplicar(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+      throw err;
+    }
+  }
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
@@ -100,6 +164,56 @@ export default function TrabajadoresPage() {
         </select>
       </div>
 
+      <div
+        style={{
+          marginTop: 14,
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: 12,
+        }}
+      >
+        <strong style={{ color: "var(--ink)", fontSize: 13.5 }}>
+          {seleccionados.size} trabajador{seleccionados.size === 1 ? "" : "es"} seleccionado{seleccionados.size === 1 ? "" : "s"}
+        </strong>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--muted)", fontSize: 13 }}>
+          Nuevo sueldo base
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={nuevoSueldo}
+            onChange={(e) => {
+              setNuevoSueldo(e.target.value);
+              setErrorAplicar(null);
+              setMensajeExito(null);
+            }}
+            placeholder="0.00"
+            style={{ width: 130, padding: "8px 10px", border: "1.5px solid var(--line)", borderRadius: 8, background: "var(--surface)", color: "var(--ink)" }}
+          />
+        </label>
+        <Boton
+          tamano="pequeno"
+          disabled={seleccionados.size === 0 || !sueldoValido}
+          onClick={() => {
+            setErrorAplicar(null);
+            setConfirmandoSueldo(true);
+          }}
+        >
+          Aplicar sueldo
+        </Boton>
+        {seleccionados.size > 0 && (
+          <Boton tamano="pequeno" variante="outline" onClick={() => setSeleccionados(new Set())}>
+            Limpiar selección
+          </Boton>
+        )}
+        {mensajeExito && <span style={{ color: "var(--ok)", fontSize: 13, fontWeight: 600 }}>{mensajeExito}</span>}
+      </div>
+
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
@@ -112,6 +226,16 @@ export default function TrabajadoresPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
+                  <th style={{ padding: "10px 12px 10px 20px", width: 40 }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Seleccionar trabajadores activos visibles"
+                      checked={todosActivosFiltradosSeleccionados}
+                      disabled={activosFiltrados.length === 0}
+                      onChange={alternarActivosFiltrados}
+                      style={{ width: 16, height: 16, accentColor: "var(--indi2)" }}
+                    />
+                  </th>
                   <th style={{ padding: "10px 20px" }}>Nombre</th>
                   <th style={{ padding: "10px 12px" }}>Categoría</th>
                   <th style={{ padding: "10px 12px" }}>Tipo</th>
@@ -125,8 +249,24 @@ export default function TrabajadoresPage() {
                   <tr
                     key={t.id}
                     onClick={() => navegar(`/panel/trabajadores/${t.id}`)}
-                    style={{ borderTop: "1px solid var(--line)", fontSize: 13.5, cursor: "pointer" }}
+                    style={{
+                      borderTop: "1px solid var(--line)",
+                      fontSize: 13.5,
+                      cursor: "pointer",
+                      background: seleccionados.has(t.id) ? "color-mix(in srgb, var(--indi2) 8%, var(--surface))" : undefined,
+                    }}
                   >
+                    <td style={{ padding: "11px 12px 11px 20px" }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Seleccionar a ${t.nombreCompleto}`}
+                        checked={seleccionados.has(t.id)}
+                        disabled={t.estatus !== "activo"}
+                        title={t.estatus !== "activo" ? "Solo se puede aplicar sueldo a trabajadores activos" : undefined}
+                        onChange={() => alternarSeleccion(t.id)}
+                        style={{ width: 16, height: 16, accentColor: "var(--indi2)" }}
+                      />
+                    </td>
                     <td style={{ padding: "11px 20px", fontWeight: 600, color: "var(--ink)" }}>{t.nombreCompleto}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.categoria}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{ETIQUETA_TIPO[t.tipo] ?? t.tipo}</td>
@@ -184,6 +324,27 @@ export default function TrabajadoresPage() {
           </div>
         )}
       </div>
+
+      {confirmandoSueldo && (
+        <ModalConfirmacion
+          titulo="Aplicar sueldo a trabajadores seleccionados"
+          mensaje={
+            <>
+              Se asignará un sueldo base de <strong>${sueldoNumero.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> a
+              {" "}<strong>{seleccionados.size} trabajador{seleccionados.size === 1 ? "" : "es"}</strong>.
+              Las nóminas históricas no se modificarán.
+              {errorAplicar && <div style={{ color: "var(--err)", marginTop: 10, fontWeight: 600 }}>{errorAplicar}</div>}
+            </>
+          }
+          etiquetaConfirmar={`Aplicar a ${seleccionados.size}`}
+          peligroso={false}
+          onConfirmar={confirmarAplicarSueldo}
+          onCancelar={() => {
+            setConfirmandoSueldo(false);
+            setErrorAplicar(null);
+          }}
+        />
+      )}
     </div>
   );
 }

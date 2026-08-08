@@ -179,6 +179,57 @@ export async function editarTrabajador(
   );
 }
 
+export interface ResultadoAplicarSueldoMasivo {
+  afectados: number;
+}
+
+// Mismo criterio que aplicarSueldoATodosDeCategoria (categoriaTrabajador.service.ts):
+// AuditLog solo registra qué campo cambió, nunca el valor. A diferencia de
+// esa función (que resuelve trabajadores por categoria.nombre), aquí el
+// caller ya eligió IDs específicos a mano — por eso, si CUALQUIERA de esos
+// IDs no existe o no está activo, se rechaza la operación COMPLETA con 400
+// en vez de aplicar en silencio solo a los válidos: quien seleccionó 5
+// trabajadores espera que se apliquen a los 5, no a una cantidad distinta
+// sin aviso explícito.
+export async function aplicarSueldoATrabajadores(
+  usuarioActorId: string,
+  ids: string[],
+  nuevoSueldoBase: number
+): Promise<ResultadoAplicarSueldoMasivo> {
+  const idsUnicos = [...new Set(ids)];
+
+  return prisma.$transaction(async (tx) => {
+    // El filtro de estatus vive en la escritura, no en una consulta previa:
+    // así un trabajador dado de baja concurrentemente nunca recibe el sueldo.
+    // Si falta uno, lanzar dentro de la transacción revierte también cualquier
+    // fila válida que updateMany alcanzó a tocar (operación todo-o-nada).
+    const actualizados = await tx.trabajador.updateMany({
+      where: { id: { in: idsUnicos }, estatus: TrabajadorEstatus.activo },
+      data: { sueldoBase: new Prisma.Decimal(nuevoSueldoBase) },
+    });
+
+    if (actualizados.count !== idsUnicos.length) {
+      const invalidos = idsUnicos.length - actualizados.count;
+      throw new AppError(
+        400,
+        `${invalidos} de los ${idsUnicos.length} trabajadores seleccionados ya no están activos o no existen — revisa la selección.`
+      );
+    }
+
+    await tx.auditLog.createMany({
+      data: idsUnicos.map((trabajadorId) => ({
+        usuarioId: usuarioActorId,
+        accion: "aplicar_sueldo_masivo_seleccion",
+        entidad: "Trabajador",
+        entidadId: trabajadorId,
+        detalle: { camposEditados: ["sueldoBase"] },
+      })),
+    });
+
+    return { afectados: idsUnicos.length };
+  });
+}
+
 export async function borrarTrabajador(usuarioActorId: string, id: string): Promise<void> {
   const trabajador = await obtenerTrabajador(id);
 

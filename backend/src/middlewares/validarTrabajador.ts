@@ -141,3 +141,18 @@ export function validarIdTrabajador(req: Request, res: Response, next: NextFunct
   }
   next();
 }
+
+export function validarAplicarSueldoMasivo(req: Request, res: Response, next: NextFunction): void {
+  const { ids, nuevoSueldoBase } = req.body ?? {};
+
+  if (!Array.isArray(ids) || ids.length === 0 || !ids.every((id) => esUUID(id))) {
+    res.status(400).json({ error: "ids es requerido y debe ser un arreglo no vacío de UUIDs válidos." });
+    return;
+  }
+  if (!esNumeroNoNegativo(nuevoSueldoBase)) {
+    res.status(400).json({ error: "nuevoSueldoBase es requerido y debe ser un número mayor o igual a 0." });
+    return;
+  }
+
+  next();
+}

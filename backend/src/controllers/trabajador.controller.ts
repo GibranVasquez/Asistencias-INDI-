@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  aplicarSueldoATrabajadores,
   borrarTrabajador,
   crearTrabajador,
   editarTrabajador,
@@ -31,6 +32,15 @@ export async function obtener(req: Request, res: Response): Promise<void> {
 export async function editar(req: Request, res: Response): Promise<void> {
   const trabajador = await editarTrabajador(req.user!.usuarioId, req.params.id as string, req.body);
   res.json({ trabajador });
+}
+
+export async function aplicarSueldo(req: Request, res: Response): Promise<void> {
+  const resultado = await aplicarSueldoATrabajadores(
+    req.user!.usuarioId,
+    req.body.ids,
+    req.body.nuevoSueldoBase
+  );
+  res.json(resultado);
 }
 
 export async function borrar(req: Request, res: Response): Promise<void> {
