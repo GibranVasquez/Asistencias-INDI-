@@ -1,4 +1,4 @@
-import { SubmitEvent, useEffect, useRef, useState } from "react";
+import { SubmitEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AsistenciaListada, obtenerAsistenciaReciente, registrarAsistencia } from "../api/asistencias";
 import { loginTerminal } from "../api/auth";
 import { asset } from "../assets";
@@ -195,7 +195,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
-  async function cargarCatalogos() {
+  const cargarCatalogos = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
@@ -209,12 +209,13 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
     } finally {
       setCargando(false);
     }
-  }
+  }, [token]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    cargarCatalogos();
-  }, []);
+    // cargarCatalogos contiene su propio manejo de error y no propaga
+    // rechazos; el efecto solo dispara la carga inicial.
+    void cargarCatalogos();
+  }, [cargarCatalogos]);
 
   function manejarEnvio(evento: SubmitEvent) {
     evento.preventDefault();
@@ -559,7 +560,9 @@ function PantallaKiosco({
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (trabajadorIdPrueba.trim()) registrar(trabajadorIdPrueba.trim());
+                  // registrar traduce sus fallas a estado visual y no propaga
+                  // rechazos; el submit no necesita bloquear esperando.
+                  if (trabajadorIdPrueba.trim()) void registrar(trabajadorIdPrueba.trim());
                 }}
                 style={{
                   marginTop: -6,
@@ -799,7 +802,8 @@ function PantallaConfirmacion({
       }
     }
 
-    verificar();
+    // El polling maneja internamente los fallos de red y reintenta después.
+    void verificar();
     const id = setInterval(verificar, INTERVALO_POLL_CONFIRMACION_MS);
     return () => {
       cancelado = true;

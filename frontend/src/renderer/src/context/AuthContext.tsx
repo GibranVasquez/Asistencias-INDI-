@@ -57,6 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSesion(parsearSesion(resultado?.valor ?? null));
         setSesionPersistida(resultado ? resultado.persistida : null);
       })
+      .catch(() => {
+        if (cancelado) return;
+        // Una falla de IPC/safeStorage durante la restauración nunca debe
+        // convertirse en sesión autenticada ni quedar como rechazo global.
+        setSesion(null);
+        setSesionPersistida(null);
+      })
       .finally(() => {
         if (!cancelado) setCargando(false);
       });

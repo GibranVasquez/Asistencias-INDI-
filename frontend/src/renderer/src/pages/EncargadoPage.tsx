@@ -43,13 +43,24 @@ export default function EncargadoPage() {
   const { sesion } = useAuth();
   const token = sesion!.token;
   const rol = sesion!.usuario.rol;
+  const [resumen, setResumen] = useState<ResumenSeccionHoy | null>(null);
+  const [errorResumen, setErrorResumen] = useState<string | null>(null);
+  const [cargandoResumen, setCargandoResumen] = useState(true);
+  const [modoCarga, setModoCarga] = useState(false);
+  const [avisoMovidos, setAvisoMovidos] = useState<TrabajadorMovido[] | null>(null);
 
   // rh puede ver cualquier seccion (GET /secciones); encargado_seccion solo
   // las suyas, ya traidas en la sesion (ver auth.service.ts en el backend).
   const [seccionesRh, setSeccionesRh] = useState<Seccion[] | null>(null);
   useEffect(() => {
     if (rol === "rh") {
-      listarSecciones(token).then((r) => setSeccionesRh(r.secciones));
+      listarSecciones(token)
+        .then((r) => setSeccionesRh(r.secciones))
+        .catch((err) => {
+          setSeccionesRh([]);
+          setErrorResumen(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+          setCargandoResumen(false);
+        });
     }
   }, [rol, token]);
 
@@ -73,12 +84,6 @@ export default function EncargadoPage() {
     const id = setInterval(() => setAhora(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  const [resumen, setResumen] = useState<ResumenSeccionHoy | null>(null);
-  const [errorResumen, setErrorResumen] = useState<string | null>(null);
-  const [cargandoResumen, setCargandoResumen] = useState(true);
-  const [modoCarga, setModoCarga] = useState(false);
-  const [avisoMovidos, setAvisoMovidos] = useState<TrabajadorMovido[] | null>(null);
 
   const cargarResumen = useCallback(() => {
     if (!seccionId) return;
@@ -358,12 +363,22 @@ function PanelCargarAsignacion({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelado = false;
     const hoy = aFechaISO(new Date());
-    obtenerSugerencia(token, seccionId, hoy).then((r) => {
-      setLista(r.trabajadores);
-      setFechaSugerida(r.fechaSugerida);
-    });
-    listarTrabajadoresBasico(token).then((r) => setCatalogo(r.trabajadores));
+    Promise.all([obtenerSugerencia(token, seccionId, hoy), listarTrabajadoresBasico(token)])
+      .then(([sugerencia, trabajadores]) => {
+        if (cancelado) return;
+        setLista(sugerencia.trabajadores);
+        setFechaSugerida(sugerencia.fechaSugerida);
+        setCatalogo(trabajadores.trabajadores);
+      })
+      .catch((err) => {
+        if (cancelado) return;
+        setLista([]);
+        setCatalogo([]);
+        setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+      });
+    return () => { cancelado = true; };
   }, [token, seccionId]);
 
   const idsEnLista = useMemo(() => new Set((lista ?? []).map((t) => t.id)), [lista]);

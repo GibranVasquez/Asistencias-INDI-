@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { asset } from "../assets";
 import { useAuth } from "../context/AuthContext";
@@ -127,7 +127,19 @@ const ITEMS_NAV: ItemNav[] = [
 export default function AdminLayout() {
   const { sesion, sesionPersistida, cerrarSesion } = useAuth();
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const [errorCerrarSesion, setErrorCerrarSesion] = useState<string | null>(null);
   const location = useLocation();
+
+  const manejarCerrarSesion = useCallback(async () => {
+    setErrorCerrarSesion(null);
+    try {
+      await cerrarSesion();
+    } catch {
+      // Si no se pudo borrar el token seguro, no fingimos un logout: el
+      // contexto conserva la sesión y la UI explica que debe reintentarse.
+      setErrorCerrarSesion("No se pudo cerrar la sesión de forma segura. Intenta nuevamente.");
+    }
+  }, [cerrarSesion]);
 
   // Antes del "if (!sesion) return null" de abajo: los hooks siempre deben
   // correr, sin importar el valor de sesion (reglas de hooks de React) - el
@@ -135,7 +147,7 @@ export default function AdminLayout() {
   // que ese caso no ocurre en la práctica (App.tsx nunca monta AdminLayout
   // sin sesión, ver la ruta "/panel" en App.tsx).
   useTimeoutInactividad(MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION, () => {
-    cerrarSesion();
+    void manejarCerrarSesion();
   });
 
   // Guarda la ruta actual en cada navegación dentro de /panel — App.tsx la
@@ -309,7 +321,7 @@ export default function AdminLayout() {
           </div>
           <ThemeToggle oscuroPorDefecto />
           <button
-            onClick={cerrarSesion}
+            onClick={manejarCerrarSesion}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
             style={{ background: "none", border: "none", color: "var(--pastel)", cursor: "pointer", padding: 4 }}
@@ -340,6 +352,11 @@ export default function AdminLayout() {
           >
             Sesión no guardada de forma segura en este equipo — se perderá al cerrar la app. No es un estado
             normal de "Recordarme".
+          </div>
+        )}
+        {errorCerrarSesion && (
+          <div role="alert" style={{ padding: "8px 22px", color: "var(--err)", textAlign: "center", fontSize: 12.5 }}>
+            {errorCerrarSesion}
           </div>
         )}
         <div style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 1 }}>

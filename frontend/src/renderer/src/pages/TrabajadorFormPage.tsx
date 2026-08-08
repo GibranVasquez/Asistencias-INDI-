@@ -172,7 +172,7 @@ export default function TrabajadorFormPage() {
       } else {
         await crearTrabajador(token, datos);
       }
-      navegar("/panel/trabajadores");
+      await navegar("/panel/trabajadores");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
     } finally {

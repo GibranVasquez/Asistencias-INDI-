@@ -14,7 +14,10 @@ const EVENTOS_ACTIVIDAD: (keyof WindowEventMap)[] = ["mousemove", "mousedown", "
  */
 export function useTimeoutInactividad(minutos: number, alCumplirse: () => void): void {
   const alCumplirseRef = useRef(alCumplirse);
-  alCumplirseRef.current = alCumplirse;
+
+  useEffect(() => {
+    alCumplirseRef.current = alCumplirse;
+  }, [alCumplirse]);
 
   useEffect(() => {
     let temporizador: ReturnType<typeof setTimeout>;

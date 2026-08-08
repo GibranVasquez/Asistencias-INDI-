@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import {
@@ -30,7 +30,7 @@ export default function TrabajadoresPage() {
   const [errorAplicar, setErrorAplicar] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
-  async function cargar(): Promise<void> {
+  const cargar = useCallback(async (): Promise<void> => {
     setCargando(true);
     setError(null);
     try {
@@ -43,11 +43,11 @@ export default function TrabajadoresPage() {
     } finally {
       setCargando(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     void cargar();
-  }, [token]);
+  }, [cargar]);
 
   const categorias = useMemo(() => {
     if (!trabajadores) return [];

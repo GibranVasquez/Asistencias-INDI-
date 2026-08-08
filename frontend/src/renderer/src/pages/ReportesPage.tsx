@@ -114,12 +114,20 @@ function PanelReporteAsistencia() {
   }, [token]);
 
   useEffect(() => {
+    let cancelado = false;
     setCargando(true);
     setError(null);
     obtenerReporteAsistencia(token, desde, hasta, seccionId || undefined)
-      .then(setReporte)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
-      .finally(() => setCargando(false));
+      .then((resultado) => {
+        if (!cancelado) setReporte(resultado);
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => { cancelado = true; };
   }, [token, desde, hasta, seccionId]);
 
   useEffect(() => {
@@ -127,11 +135,19 @@ function PanelReporteAsistencia() {
       setHistorico(null);
       return;
     }
+    let cancelado = false;
     setCargandoHistorico(true);
     obtenerHistoricoTrabajador(token, trabajadorId, desde, hasta)
-      .then(setHistorico)
-      .catch(() => setHistorico(null))
-      .finally(() => setCargandoHistorico(false));
+      .then((resultado) => {
+        if (!cancelado) setHistorico(resultado);
+      })
+      .catch(() => {
+        if (!cancelado) setHistorico(null);
+      })
+      .finally(() => {
+        if (!cancelado) setCargandoHistorico(false);
+      });
+    return () => { cancelado = true; };
   }, [token, trabajadorId, desde, hasta]);
 
   const trabajadoresFiltrados = useMemo(() => {
@@ -329,12 +345,20 @@ function PanelReporteNomina() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelado = false;
     setCargando(true);
     setError(null);
     obtenerReporteNomina(token, desde, hasta)
-      .then(setReporte)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
-      .finally(() => setCargando(false));
+      .then((resultado) => {
+        if (!cancelado) setReporte(resultado);
+      })
+      .catch((err) => {
+        if (!cancelado) setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => { cancelado = true; };
   }, [token, desde, hasta]);
 
   async function exportar(formato: "pdf" | "excel") {

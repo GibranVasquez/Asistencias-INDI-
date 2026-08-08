@@ -27,7 +27,7 @@ export default function LoginPage() {
       // (sesionPersistida del contexto) — persistente en toda la sesión,
       // no un aviso de una sola vez que desaparece al navegar.
       await iniciarSesion({ token, usuario }, recordar);
-      navegar("/panel/dashboard", { replace: true });
+      await navegar("/panel/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
     } finally {

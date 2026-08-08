@@ -242,6 +242,9 @@ export default function NominaPage() {
         nuevasEdiciones[t.id] = edicionDesdeExistente(t);
       });
       setEdiciones(nuevasEdiciones);
+    }).catch((err) => {
+      if (idPeticionRef.current !== idPeticion) return;
+      setError(err instanceof ApiError ? err.message : "La nómina se generó, pero no se pudo refrescar la vista.");
     });
   }
 
@@ -474,4 +477,3 @@ export default function NominaPage() {
     </div>
   );
 }
-
