@@ -248,7 +248,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
           </button>
         </div>
         <p style={{ color: "var(--pastel)", fontSize: 13.5, marginTop: 6 }}>
-          Se guarda una sola vez en este dispositivo. La lista de secciones/horarios se trae en vivo de la API, no
+          Se guarda una sola vez en este dispositivo. La lista de frentes/horarios se trae en vivo de la API, no
           queda un valor fijo desactualizado.
         </p>
         <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -293,7 +293,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
             {modo === "confirmacion" && (
               <p style={{ color: "var(--pastel)", fontSize: 12.5, marginTop: 2, lineHeight: 1.5 }}>
                 Esta pantalla no marca nada — solo muestra en vivo lo que el lector ADMS de oficina (ZKTeco MB10-VL)
-                ya registró. No necesita sección ni turno (el backend los fija automáticamente para ese equipo).
+                ya registró. No necesita frente ni turno (el backend los fija automáticamente para ese equipo).
               </p>
             )}
           </div>
@@ -301,7 +301,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
           {modo === "marcacion" && (
             <>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, color: "var(--white)", fontSize: 13 }}>
-                Sección
+                Frente
             <select
               value={seccionId}
               onChange={(e) => setSeccionId(e.target.value)}
@@ -310,7 +310,7 @@ function ConfigForm({ token, onGuardar }: { token: string; onGuardar: (config: C
               style={{ padding: "12px 14px", borderRadius: 9, border: "none", fontSize: 14 }}
             >
               {!secciones && <option value="">Cargando…</option>}
-              {secciones?.length === 0 && <option value="">No hay secciones dadas de alta</option>}
+              {secciones?.length === 0 && <option value="">No hay frentes dados de alta</option>}
               {secciones?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre}
@@ -712,7 +712,7 @@ function PantallaKiosco({
         }}
       >
         <button onClick={onReconfigurar} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
-          Reconfigurar sección
+          Reconfigurar frente
         </button>
         <button onClick={onCerrarSesion} style={{ background: "none", border: "none", color: "inherit", fontSize: "inherit" }}>
           Cerrar sesión del terminal

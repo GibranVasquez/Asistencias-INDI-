@@ -160,7 +160,7 @@ function PanelReporteAsistencia() {
           <CampoFecha value={hasta} onChange={(e) => setHasta(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
-          Sección
+          Frente
           <select value={seccionId} onChange={(e) => setSeccionId(e.target.value)} style={{ ...estilosCampo, minWidth: 160 }}>
             <option value="">Todas</option>
             {secciones?.map((s) => (
@@ -188,12 +188,12 @@ function PanelReporteAsistencia() {
           </div>
 
           <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por sección</div>
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Desglose por frente</div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
-                    <th style={{ padding: "10px 20px" }}>Sección</th>
+                    <th style={{ padding: "10px 20px" }}>Frente</th>
                     <th style={{ padding: "10px 12px" }}>Presentes</th>
                     <th style={{ padding: "10px 12px" }}>A tiempo</th>
                     <th style={{ padding: "10px 12px" }}>Tardanzas</th>
@@ -287,7 +287,7 @@ function PanelReporteAsistencia() {
                   <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase" }}>
                     <th style={{ padding: "8px 12px" }}>Fecha</th>
                     <th style={{ padding: "8px 12px" }}>Hora</th>
-                    <th style={{ padding: "8px 12px" }}>Sección</th>
+                    <th style={{ padding: "8px 12px" }}>Frente</th>
                     <th style={{ padding: "8px 12px" }}>Estatus</th>
                   </tr>
                 </thead>

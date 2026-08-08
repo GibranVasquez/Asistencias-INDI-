@@ -100,7 +100,7 @@ export default function AsistenciasPage() {
           <CampoFecha value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
-          Sección
+          Frente
           <select
             value={seccionFiltro}
             onChange={(e) => setSeccionFiltro(e.target.value)}
@@ -147,7 +147,7 @@ export default function AsistenciasPage() {
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
                   <th style={{ padding: "10px 20px" }}>Trabajador</th>
-                  <th style={{ padding: "10px 12px" }}>Sección</th>
+                  <th style={{ padding: "10px 12px" }}>Frente</th>
                   <th style={{ padding: "10px 12px" }}>Fecha</th>
                   <th style={{ padding: "10px 12px" }}>Hora</th>
                   <th style={{ padding: "10px 12px" }}>Turno</th>

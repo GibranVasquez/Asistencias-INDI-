@@ -145,7 +145,7 @@ export default function EncargadoPage() {
       <div style={{ padding: 40, textAlign: "center", color: "var(--muted)" }}>
         {rol === "rh" && seccionesRh === null
           ? "Cargando…"
-          : "No tienes ninguna sección asignada todavía. Contacta a RH."}
+          : "No tienes ningún frente asignado todavía. Contacta a RH."}
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function EncargadoPage() {
     <div style={{ padding: "26px 30px 36px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Mi sección · hoy</h1>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Mi frente · hoy</h1>
           {seccionesDisponibles.length > 1 ? (
             <select
               value={seccionId ?? ""}
@@ -252,7 +252,7 @@ function EstadoSinAsignacion({ onCargar }: { onCargar: () => void }) {
       <div style={{ fontSize: 40 }}>📋</div>
       <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", marginTop: 12 }}>Sin asignación cargada hoy</h2>
       <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 6, maxWidth: 380, marginInline: "auto" }}>
-        Todavía no se ha cargado la lista de trabajadores esperados hoy en esta sección. Las marcaciones reales de
+        Todavía no se ha cargado la lista de trabajadores esperados hoy en este frente. Las marcaciones reales de
         hoy no se pierden — se pueden ver en cuanto cargues la asignación.
       </p>
       <Boton onClick={onCargar} style={{ marginTop: 18 }}>

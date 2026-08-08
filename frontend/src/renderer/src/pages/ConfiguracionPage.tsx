@@ -39,7 +39,7 @@ type Tab = "horarios" | "secciones" | "tiposMovimiento" | "tarifas" | "categoria
 
 const TABS: { id: Tab; etiqueta: string }[] = [
   { id: "horarios", etiqueta: "Horarios" },
-  { id: "secciones", etiqueta: "Secciones" },
+  { id: "secciones", etiqueta: "Frentes" },
   { id: "tiposMovimiento", etiqueta: "Tipos de movimiento" },
   { id: "tarifas", etiqueta: "Tarifa hora extra" },
   { id: "categorias", etiqueta: "Categorías" },
@@ -260,7 +260,7 @@ function PanelHorarios() {
                 <th style={{ padding: "10px 12px" }}>Salida</th>
                 <th style={{ padding: "10px 12px" }}>Receso</th>
                 <th style={{ padding: "10px 12px" }}>Tolerancia</th>
-                <th style={{ padding: "10px 12px" }}>Secciones que lo usan</th>
+                <th style={{ padding: "10px 12px" }}>Frentes que lo usan</th>
                 <th style={{ padding: "10px 20px" }}>Acciones</th>
               </tr>
             </thead>
@@ -431,7 +431,7 @@ function PanelSecciones() {
         // ya existente en vez de construir un endpoint nuevo para esto.
         const obraId = secciones?.[0]?.obraId;
         if (!obraId) {
-          throw new Error("No se pudo determinar la obra: crea la primera sección directamente en la base o contacta soporte.");
+          throw new Error("No se pudo determinar la obra: crea el primer frente directamente en la base o contacta soporte.");
         }
         const datos: DatosAltaSeccion = { obraId, nombre, horarioId: horarioId || null, encargadoIds };
         await crearSeccion(token, datos);
@@ -464,9 +464,9 @@ function PanelSecciones() {
   return (
     <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{secciones ? `${secciones.length} sección${secciones.length === 1 ? "" : "es"}` : "Cargando…"}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{secciones ? `${secciones.length} frente${secciones.length === 1 ? "" : "s"}` : "Cargando…"}</span>
         <Boton tamano="pequeno" onClick={abrirAlta}>
-          + Nueva sección
+          + Nuevo frente
         </Boton>
       </div>
 
@@ -516,7 +516,7 @@ function PanelSecciones() {
       {modal && (
         <Modal onClose={() => setModal(null)}>
           <form onSubmit={enviar}>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", marginBottom: 16 }}>{modal.editando ? "Editar sección" : "Nueva sección"}</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", marginBottom: 16 }}>{modal.editando ? "Editar frente" : "Nuevo frente"}</h2>
             <ErrorInline mensaje={errorModal} />
             <Campo etiqueta="Nombre">
               <input type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} style={estilosCampo} />
@@ -541,17 +541,17 @@ function PanelSecciones() {
                 ))}
               </select>
             </Campo>
-            <BotonesModal guardando={guardando} onCancelar={() => setModal(null)} etiqueta={modal.editando ? "Guardar cambios" : "Crear sección"} />
+            <BotonesModal guardando={guardando} onCancelar={() => setModal(null)} etiqueta={modal.editando ? "Guardar cambios" : "Crear frente"} />
           </form>
         </Modal>
       )}
 
       {confirmandoBorrar && (
         <ModalConfirmacion
-          titulo="Borrar sección"
+          titulo="Borrar frente"
           mensaje={
             <>
-              Se borrará la sección <strong>{confirmandoBorrar.nombre}</strong>. Esta acción no se puede deshacer.
+              Se borrará el frente <strong>{confirmandoBorrar.nombre}</strong>. Esta acción no se puede deshacer.
             </>
           }
           etiquetaConfirmar="Borrar"

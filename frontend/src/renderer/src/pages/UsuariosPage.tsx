@@ -20,7 +20,7 @@ import ModalConfirmacion from "../components/ModalConfirmacion";
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
   recepcion: "Recepción",
-  encargado_seccion: "Encargado de sección",
+  encargado_seccion: "Encargado de frente",
   rh: "Recursos Humanos",
   administrador: "Administrador",
 };
@@ -362,7 +362,7 @@ export default function UsuariosPage() {
 
             {formulario.rol === "encargado_seccion" && (
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
-                Secciones asignadas
+                Frentes asignados
                 <select
                   multiple
                   required

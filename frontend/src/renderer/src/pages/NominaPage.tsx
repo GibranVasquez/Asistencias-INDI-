@@ -249,7 +249,7 @@ export default function NominaPage() {
     const encabezados = [
       "Nombre",
       "Categoría",
-      "Secciones trabajadas",
+      "Frentes trabajados",
       "Días laborados",
       "Horas extra",
       "Viáticos semanal",
@@ -339,7 +339,7 @@ export default function NominaPage() {
           <input type="text" placeholder="Nombre…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={estilosCampo} />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
-          Sección
+          Frente
           <select value={seccionFiltro} onChange={(e) => setSeccionFiltro(e.target.value)} style={{ ...estilosCampo, minWidth: 160 }}>
             <option value="">Todas</option>
             {seccionesDisponibles.map((s) => (
@@ -384,7 +384,7 @@ export default function NominaPage() {
                 <tr style={{ textAlign: "left", fontSize: 11.5, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
                   <th style={{ padding: "10px 16px", position: "sticky", left: 0, background: "var(--surface)" }}>Trabajador</th>
                   <th style={{ padding: "10px 10px" }}>Categoría</th>
-                  <th style={{ padding: "10px 10px" }}>Sección(es)</th>
+                  <th style={{ padding: "10px 10px" }}>Frente(s)</th>
                   <th style={{ padding: "10px 10px" }}>Días</th>
                   <th style={{ padding: "10px 10px" }}>Hrs. extra</th>
                   <th style={{ padding: "10px 10px" }}>Viát. semanal</th>
