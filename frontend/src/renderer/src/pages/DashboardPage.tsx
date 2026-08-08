@@ -8,6 +8,7 @@ import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import ChipEstado from "../components/ChipEstado";
+import { bucketsPorSemanaDelMes } from "../utils/dashboardBuckets";
 
 type Rango = "dia" | "semana" | "mes";
 
@@ -450,27 +451,6 @@ function bucketsPorDia(asistencias: AsistenciaListada[], inicio: Date, fin: Date
     });
   }
   return dias;
-}
-
-function bucketsPorSemanaDelMes(asistencias: AsistenciaListada[], inicioMes: Date, hoy: Date): { etiqueta: string; valor: number; esFuturo: boolean }[] {
-  const conteos: number[] = [];
-  const hoyISO = aFechaISO(hoy);
-  let cursor = new Date(inicioMes);
-  let numeroSemana = 1;
-  while (cursor.getMonth() === inicioMes.getMonth()) {
-    const finSemana = sumarDias(cursor, 6);
-    let cuenta = 0;
-    let futura = true;
-    for (const a of asistencias) {
-      const claveA = a.fecha.slice(0, 10);
-      if (claveA >= aFechaISO(cursor) && claveA <= aFechaISO(finSemana)) cuenta++;
-    }
-    futura = aFechaISO(cursor) > hoyISO;
-    conteos.push(cuenta);
-    cursor = sumarDias(finSemana, 1);
-    numeroSemana++;
-  }
-  return conteos.map((valor, i) => ({ etiqueta: `Sem ${i + 1}`, valor, esFuturo: false }));
 }
 
 function GraficaBarras({ barras }: { barras: { etiqueta: string; valor: number; esFuturo: boolean }[] }) {
