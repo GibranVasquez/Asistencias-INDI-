@@ -15,12 +15,16 @@ describe("Content Security Policy de Electron", () => {
     expect(csp).not.toContain("script-src *");
     expect(csp).not.toContain("connect-src *");
     expect(csp).not.toContain("localhost");
+    expect(csp).not.toContain("sha256-");
   });
 
   it("permite HMR local únicamente en desarrollo", () => {
     const csp = construirContentSecurityPolicy({ apiBaseUrl: "http://localhost:4000", desarrollo: true });
     expect(csp).toContain("http://localhost:*");
     expect(csp).toContain("ws://localhost:*");
+    expect(csp).toContain("script-src 'self' 'sha256-Z2/iFzh9VMlVkEOar1f/oSHWwQk3ve1qk/C2WdsC4Xk='");
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+    expect(csp).not.toContain("unsafe-eval");
   });
 });
 

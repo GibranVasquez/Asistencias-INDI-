@@ -4,6 +4,14 @@ import { resolverApiBaseUrl } from "./apiConfig";
 import { construirContentSecurityPolicy, esNavegacionAlMismoDocumento } from "./contentSecurityPolicy";
 import { registrarHandlersSecureStore } from "./secureStore";
 
+// Electron 43 + NVIDIA bajo Wayland pierde el contexto EGL de forma repetida
+// (eglCreateImage 0x3009) hasta terminar el proceso GPU. En esa combinación
+// concreta se usa composición por software; Windows, X11 y otros entornos
+// conservan aceleración de hardware.
+if (process.platform === "linux" && Boolean(process.env.WAYLAND_DISPLAY)) {
+  app.disableHardwareAcceleration();
+}
+
 // El kiosco fisico se lanza con --kiosk (o INDI_KIOSK=1): pantalla completa,
 // bloqueado, y entra directo a /kiosco. Sin esa bandera es el panel
 // administrativo normal (login, ventana con marco, redimensionable) — asi
