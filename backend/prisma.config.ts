@@ -18,6 +18,14 @@ import { config as cargarDotenv } from "dotenv";
 cargarDotenv({ quiet: true });
 import { defineConfig } from "prisma/config";
 
+const URL_BASE_INTEGRACION = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test";
+if (
+  process.env.INTEGRATION_TEST_DB === "1" &&
+  (process.env.DATABASE_URL !== URL_BASE_INTEGRACION || process.env.DIRECT_URL !== URL_BASE_INTEGRACION)
+) {
+  throw new Error("Prisma test abortado: DATABASE_URL y DIRECT_URL deben apuntar exactamente a PostgreSQL local indi_test.");
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {

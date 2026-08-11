@@ -1,5 +1,5 @@
 import { app, BrowserWindow, session } from "electron";
-import { join } from "path";
+import { isAbsolute, join, resolve } from "path";
 import { resolverApiBaseUrl } from "./apiConfig";
 import { construirContentSecurityPolicy, esNavegacionAlMismoDocumento } from "./contentSecurityPolicy";
 import { registrarHandlersSecureStore } from "./secureStore";
@@ -31,6 +31,20 @@ if (process.platform === "linux") {
   if (!escritorioReconocido) {
     app.commandLine.appendSwitch("password-store", "gnome-libsecret");
   }
+}
+
+// Los E2E deben arrancar con un perfil desechable y nunca leer la sesión real
+// del desarrollador. La variable solo se acepta en NODE_ENV=test y dentro del
+// directorio temporal del sistema; cualquier otra combinación aborta.
+const directorioUsuarioE2E = process.env.INDI_E2E_USER_DATA_DIR;
+if (directorioUsuarioE2E) {
+  const temporal = resolve(app.getPath("temp"));
+  const destino = resolve(directorioUsuarioE2E);
+  const dentroDeTemporal = destino.startsWith(`${temporal}/`) && isAbsolute(directorioUsuarioE2E);
+  if (process.env.NODE_ENV !== "test" || !dentroDeTemporal || !destino.split("/").at(-1)?.startsWith("indi-e2e-")) {
+    throw new Error("INDI_E2E_USER_DATA_DIR solo admite un perfil indi-e2e-* dentro del directorio temporal.");
+  }
+  app.setPath("userData", destino);
 }
 
 function crearVentanaPrincipal(apiBaseUrl: string): void {
