@@ -125,7 +125,7 @@ const ITEMS_NAV: ItemNav[] = [
 ];
 
 export default function AdminLayout() {
-  const { sesion, sesionPersistida, cerrarSesion } = useAuth();
+  const { sesion, persistenciaDegradada, cerrarSesion } = useAuth();
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
   const [errorCerrarSesion, setErrorCerrarSesion] = useState<string | null>(null);
   const location = useLocation();
@@ -159,7 +159,7 @@ export default function AdminLayout() {
 
   if (!sesion) return null;
 
-  const sesionDegradada = sesionPersistida === false;
+  const sesionDegradada = persistenciaDegradada;
 
   const iniciales = sesion.usuario.username.slice(0, 2).toUpperCase();
 

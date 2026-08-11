@@ -19,6 +19,10 @@ interface AuthContextValor {
   // no disponible, keyring bloqueado, etc.); null = sin sesion.
   // La UI debe consultar esto en vez de asumir que "Recordarme" == recordado.
   sesionPersistida: boolean | null;
+  // Solo es true cuando el usuario pidió "Recordarme" y safeStorage no
+  // pudo persistir la sesión. Una sesión deliberadamente efímera no es una
+  // degradación y no debe mostrar una advertencia de seguridad.
+  persistenciaDegradada: boolean;
   // recordar=false guarda solo en memoria del proceso principal (se pierde
   // al cerrar la app); true la cifra con safeStorage y sobrevive reinicios.
   // Devuelve si realmente quedó persistida — puede pedirse recordar=true y
@@ -34,6 +38,10 @@ interface AuthContextValor {
 
 const AuthContext = createContext<AuthContextValor | null>(null);
 
+export function esPersistenciaDegradada(recordar: boolean, persistida: boolean): boolean {
+  return recordar && !persistida;
+}
+
 function parsearSesion(crudo: string | null): SesionAuth | null {
   if (!crudo) return null;
   try {
@@ -46,6 +54,7 @@ function parsearSesion(crudo: string | null): SesionAuth | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionAuth | null>(null);
   const [sesionPersistida, setSesionPersistida] = useState<boolean | null>(null);
+  const [persistenciaDegradada, setPersistenciaDegradada] = useState(false);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -56,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelado) return;
         setSesion(parsearSesion(resultado?.valor ?? null));
         setSesionPersistida(resultado ? resultado.persistida : null);
+        setPersistenciaDegradada(false);
       })
       .catch(() => {
         if (cancelado) return;
@@ -63,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // convertirse en sesión autenticada ni quedar como rechazo global.
         setSesion(null);
         setSesionPersistida(null);
+        setPersistenciaDegradada(false);
       })
       .finally(() => {
         if (!cancelado) setCargando(false);
@@ -77,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sesion,
       cargando,
       sesionPersistida,
+      persistenciaDegradada,
       iniciarSesion: async (nuevaSesion, recordar) => {
         const cuerpo = JSON.stringify(nuevaSesion);
         let persistida = recordar;
@@ -91,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setSesion(nuevaSesion);
         setSesionPersistida(persistida);
+        setPersistenciaDegradada(esPersistenciaDegradada(recordar, persistida));
         return { persistida };
       },
       cerrarSesion: async () => {
@@ -101,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         limpiarEstadoUI();
         setSesion(null);
         setSesionPersistida(null);
+        setPersistenciaDegradada(false);
       },
       actualizarUsuario: async (cambios) => {
         setSesion((actual) => {
@@ -111,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       },
     }),
-    [sesion, cargando, sesionPersistida]
+    [sesion, cargando, sesionPersistida, persistenciaDegradada]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;

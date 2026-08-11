@@ -67,7 +67,9 @@ describe("integración del flujo de sueldo masivo", () => {
     await user.click(screen.getByRole("button", { name: "Aplicar sueldo" }));
     const modal = screen.getByText("Aplicar sueldo a trabajadores seleccionados").parentElement!;
     expect(within(modal).getByText(/2 trabajadores/)).toBeTruthy();
-    await user.click(within(modal).getByRole("button", { name: "Aplicar a 2" }));
+    const confirmar = within(modal).getByRole("button", { name: "Aplicar a 2" });
+    expect(document.activeElement).toBe(confirmar);
+    await user.keyboard("{Enter}");
 
     await waitFor(() => expect(aplicarSueldoATrabajadores).toHaveBeenCalledWith("token-prueba", ["a", "b"], 900.5));
     await screen.findByText("Sueldo aplicado correctamente a 2 trabajadores.");
