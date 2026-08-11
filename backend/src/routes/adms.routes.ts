@@ -8,7 +8,7 @@ export const admsRouter = Router();
 // ADMS): el protocolo no tiene autenticación propia, así que esto corre
 // ANTES que cualquier otra cosa — ni siquiera llega a resolverTerminalPorSN
 // si la IP no está en la lista blanca.
-admsRouter.use(restringirPorIP);
+admsRouter.use("/iclock", restringirPorIP);
 
 // El equipo ADMS no manda Content-Type: application/json (manda texto
 // plano o nada), así que express.json() global (app.ts) no lo toca —
