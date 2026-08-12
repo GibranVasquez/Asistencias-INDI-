@@ -30,7 +30,7 @@ bytes, SHA-256
 | Logout humano | PASS | Logout regresó a Login; cerrar/reabrir no restauró la sesión. |
 | Terminal: activar y persistir | PASS | Terminal ficticia activada contra backend test; al cerrar/reabrir omitió activación y restauró la sesión segura. |
 | Terminal: desvincular | PASS | “Cerrar sesión del terminal” regresó a Activar Terminal; al reabrir permaneció desvinculada. |
-| JWT ausente de localStorage/sessionStorage en disco Windows | NO EJECUTADO | La inspección interactiva de DevTools no obtuvo foco de consola y no produjo salida verificable. No se mostraron valores. El E2E Electron verifica ausencia de JWT Terminal en ambos storages (9/9), pero no se presenta como evidencia Windows. |
+| Web Storage Windows / JWT Terminal | PASS | Playwright se ejecutó nativamente dentro de Windows usando el runtime Node del Electron empaquetado. En instalación limpia y con Terminal activa, `indi_terminal_sesion` y nombres de clave con `jwt`/`token` estuvieron ausentes en Local Storage y Session Storage. Solo se imprimieron booleanos; ningún valor o token. `terminal-sesion.enc` existió durante la sesión, la Terminal siguió funcional y el archivo desapareció tras desvincular. |
 | Storage Windows / metadatos de sesión | PASS | Tras el uninstall nuevo y antes de reinstalar, `C:\Users\vboxuser\AppData\Roaming\indi-asistencia-frontend` no existía. Por tanto estaban ausentes `sesion.enc`, `terminal-sesion.enc`, Local Storage, Session Storage, Cookies y el resto del perfil propio. |
 | Administrador en Windows | PASS | Login ficticio abrió Dashboard; el menú empaquetado mostró Dashboard, Usuarios, Terminales y Ayuda, sin Nómina ni otras rutas financieras. |
 | Recepción en Windows | PASS | Login ficticio abrió Control de asistencias; el menú mostró únicamente Asistencias y Ayuda, sin rutas financieras. |
@@ -66,9 +66,11 @@ bytes, SHA-256
 Ambos fixes requieren que cualquier repetición manual use un instalador
 generado después de esos cambios; no debe validarse con un `.exe` anterior.
 
-## Checklist pendiente para cerrar QA Windows
+## Cierre de QA Windows
 
-1. Completar la inspección booleana de nombres de claves de Local Storage y
-   Session Storage en Windows; los intentos no produjeron salida verificable.
+La última comprobación pendiente se ejecutó nativamente en Windows. Los ocho
+indicadores de claves heredadas y nombres `jwt`/`token` fueron `false`, tanto
+antes como después de activar una Terminal ficticia. La sesión permaneció
+funcional mediante `safeStorage`, sin imprimir datos sensibles.
 
-Hasta completar esos puntos, el estado global es **QA WINDOWS PENDIENTE**.
+El estado global es **QA WINDOWS LISTO**.
