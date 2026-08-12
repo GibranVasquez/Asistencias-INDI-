@@ -12,9 +12,9 @@ Build evaluado: Electron 43.1.1, NSIS x64, aplicación instalada en
 Windows muestra por ello editor desconocido/UAC. No se desactivaron UAC,
 SmartScreen ni Defender.
 
-Instalador final evaluado: `INDI Asistencia Setup 0.1.0.exe`, 105,788,476
+Instalador final evaluado: `INDI Asistencia Setup 0.1.0.exe`, 105,788,332
 bytes, SHA-256
-`8c932cad260b45205198aff81581e7e05dde0aeff9d6c4f16533bb3ca6ce3ab3`.
+`26f5de504279d065b33ea613770dd4b3a5cb032ca4301e2f8aabf18cba488b03`.
 
 ## Resultado de la ejecución
 
@@ -30,15 +30,15 @@ bytes, SHA-256
 | Logout humano | PASS | Logout regresó a Login; cerrar/reabrir no restauró la sesión. |
 | Terminal: activar y persistir | PASS | Terminal ficticia activada contra backend test; al cerrar/reabrir omitió activación y restauró la sesión segura. |
 | Terminal: desvincular | PASS | “Cerrar sesión del terminal” regresó a Activar Terminal; al reabrir permaneció desvinculada. |
-| JWT ausente de localStorage/sessionStorage en disco Windows | NO EJECUTADO | Se intentó una inspección que solo devolvía cuatro booleanos, pero PowerShell no generó el archivo de resultados. No se leyeron ni imprimieron valores, JWT, cookies o contenido descifrado; no se infiere PASS del código/E2E. |
-| Storage Windows / metadatos de sesión | PASS | Inspección posdesinstalación sin leer contenido: `sesion.enc` presente (642 bytes), `terminal-sesion.enc` ausente (0 bytes), Local Storage, Session Storage, Preferences y Cookies presentes; IndexedDB ausente. |
+| JWT ausente de localStorage/sessionStorage en disco Windows | NO EJECUTADO | La inspección interactiva de DevTools no obtuvo foco de consola y no produjo salida verificable. No se mostraron valores. El E2E Electron verifica ausencia de JWT Terminal en ambos storages (9/9), pero no se presenta como evidencia Windows. |
+| Storage Windows / metadatos de sesión | PASS | Tras el uninstall nuevo y antes de reinstalar, `C:\Users\vboxuser\AppData\Roaming\indi-asistencia-frontend` no existía. Por tanto estaban ausentes `sesion.enc`, `terminal-sesion.enc`, Local Storage, Session Storage, Cookies y el resto del perfil propio. |
 | Administrador en Windows | PASS | Login ficticio abrió Dashboard; el menú empaquetado mostró Dashboard, Usuarios, Terminales y Ayuda, sin Nómina ni otras rutas financieras. |
 | Recepción en Windows | PASS | Login ficticio abrió Control de asistencias; el menú mostró únicamente Asistencias y Ayuda, sin rutas financieras. |
 | Encargado en Windows | PASS | Login ficticio abrió `Mi frente · hoy` / `Frente ficticio E2E`; el menú mostró únicamente Encargado y Ayuda, sin Nómina. |
 | Sueldo masivo en Windows, build final | PASS | RH seleccionó exactamente Ana y Bruno ficticios; contador 2, monto `$1,234.56`, foco inicial en `Aplicar a 2` y ciclo Tab Confirmar/Cancelar verificados. La UI confirmó éxito, limpió selección y sueldo. PostgreSQL mostró Ana/Bruno en 1234.56, Control sin cambio en 800.00, nómina histórica intacta en 500.00/500.00 y 2 auditorías distintas sin el monto. |
-| Desinstalación NSIS | PASS | El asistente terminó con “INDI Asistencia ha sido desinstalado de su sistema”; el acceso directo de escritorio desapareció y la instalación previa dejó de estar disponible antes de reinstalar. |
-| Estado de `userData` tras desinstalar | VERIFICADO — CONSERVADO | Ruta `C:\Users\vboxuser\AppData\Roaming\indi-asistencia-frontend`: 59 archivos. Permanecieron `sesion.enc` (642 bytes), `config.json` (40 bytes), `DIPS` (36,864 bytes), `DIPS-wal` (32 bytes), `Local State` (490 bytes), Local Storage, Session Storage, Preferences y Cookies. `terminal-sesion.enc` e IndexedDB estaban ausentes. |
-| Reinstalación limpia tras desinstalar | PASS CON HALLAZGO | Se reinstaló exactamente el mismo NSIS y la app abrió sin depender del repo. En el primer inicio, sin login, restauró la sesión humana ficticia del encargado desde el `sesion.enc` conservado; no restauró Terminal. |
+| Desinstalación NSIS | PASS | Con `deleteAppDataOnUninstall: true`, el asistente nuevo llegó a “INDI Asistencia ha sido desinstalado de su sistema”; se completó cada pantalla y desapareció la instalación. |
+| Estado de `userData` tras desinstalar | VERIFICADO — ELIMINADO | Antes de reinstalar se comprobó por presencia, sin leer contenido, que `C:\Users\vboxuser\AppData\Roaming\indi-asistencia-frontend` no existía. |
+| Reinstalación limpia tras desinstalar | PASS | Tras reiniciar Windows y reinstalar exactamente el mismo SHA-256, el primer inicio mostró Login. Sesión humana restaurada: no. Sesión Terminal restaurada: no. |
 | Falla forzada de DPAPI | NO EJECUTADO | Caso opcional; no se debilitó ni manipuló el perfil Windows para provocarlo. |
 
 ## Bugs encontrados durante QA
@@ -52,23 +52,23 @@ bytes, SHA-256
    selección y el modal pasó a “Aplicar a 0”). Se añadió semántica de
    diálogo modal, foco inicial en Confirmar, Escape y ciclo de Tab, más una
    regresión que confirma por teclado.
-3. El NSIS conserva `userData` y una reinstalación restaura automáticamente
+3. El NSIS anterior conservaba `userData` y una reinstalación restauraba automáticamente
    la sesión humana cifrada que estaba en `sesion.enc`. En esta prueba la UI
    abrió la ruta privada del encargado sin pedir login; el backend de test
    estaba detenido, por lo que la API mostró “No se pudo conectar con el
    servidor” y no se verificó si el JWT seguía vigente. Es un riesgo de
    privacidad en equipos transferidos o reinstalados. No se cambió el
    desinstalador: borrar `userData`/invalidar sesiones requiere una decisión
-   explícita de producto y seguridad.
+   explícita de producto y seguridad. La política fue aprobada y el instalador
+   ahora usa `deleteAppDataOnUninstall: true`; el nuevo QA confirmó eliminación
+   del perfil y reinstalación sin sesión residual.
 
 Ambos fixes requieren que cualquier repetición manual use un instalador
 generado después de esos cambios; no debe validarse con un `.exe` anterior.
 
 ## Checklist pendiente para cerrar QA Windows
 
-1. Decidir explícitamente si uninstall debe ofrecer borrar `userData`, cerrar
-   sesiones antes de desinstalar o conservar la persistencia actual.
-2. Completar la inspección booleana de nombres de claves de Local Storage y
+1. Completar la inspección booleana de nombres de claves de Local Storage y
    Session Storage en Windows; los intentos no produjeron salida verificable.
 
 Hasta completar esos puntos, el estado global es **QA WINDOWS PENDIENTE**.
