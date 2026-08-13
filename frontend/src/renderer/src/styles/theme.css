@@ -149,6 +149,43 @@ textarea:focus-visible {
   to { opacity: 1; }
 }
 
+/* Chromium/Electron puede interpolar estas propiedades tipadas sin timers
+   ni renders React. El arco revela la dona final y el contador central
+   avanza en el mismo timeline. */
+@property --dona-revelado {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 0%;
+}
+
+@property --dona-valor {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@keyframes donaDraw {
+  from {
+    --dona-revelado: 0%;
+    --dona-valor: 0;
+  }
+  to {
+    --dona-revelado: 100%;
+    --dona-valor: var(--dona-valor-final);
+  }
+}
+
+@keyframes donaCenterEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .page-transition {
   min-height: 100%;
   animation: pageEnter var(--motion-normal) var(--ease-emphasized) both;
@@ -265,6 +302,52 @@ textarea:focus-visible {
 
 .kiosco-state {
   animation: fadeEnter var(--motion-fast) var(--ease-standard) both;
+}
+
+.dona-puntualidad {
+  --dona-revelado: 0%;
+  --dona-valor: 0;
+  position: relative;
+  isolation: isolate;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+  animation: donaDraw 820ms var(--ease-emphasized) both;
+}
+
+.dona-puntualidad::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    var(--ok) 0 var(--dona-porcentaje),
+    var(--warn) var(--dona-porcentaje) 100%
+  );
+  -webkit-mask: conic-gradient(#000 0 var(--dona-revelado), transparent var(--dona-revelado) 100%);
+  mask: conic-gradient(#000 0 var(--dona-revelado), transparent var(--dona-revelado) 100%);
+}
+
+.dona-centro {
+  position: relative;
+  z-index: 1;
+  animation: donaCenterEnter var(--motion-slow) var(--ease-emphasized) 420ms both;
+}
+
+.dona-valor::before {
+  content: counter(dona-porcentaje) "%";
+  counter-reset: dona-porcentaje var(--dona-valor);
+}
+
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 input {
@@ -500,7 +583,8 @@ input {
   .boton-ui,
   .theme-toggle,
   .modal-panel,
-  .fila-trabajador {
+  .fila-trabajador,
+  .dona-centro {
     transform: none !important;
   }
 }

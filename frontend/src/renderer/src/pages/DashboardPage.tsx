@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useState } from "react";
 import { AsistenciaListada, listarAsistencias } from "../api/asistencias";
 import { ApiError } from "../api/client";
 import { Horario, listarHorarios } from "../api/horarios";
@@ -346,7 +346,7 @@ export default function DashboardPage() {
 
         <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", alignSelf: "flex-start" }}>Puntualidad</h3>
-          <DonaPuntualidad aTiempo={aTiempo} tarde={tarde} error={errorPuntualidad ?? asistenciasPeriodo.error} />
+          <DonaPuntualidad key={rango} aTiempo={aTiempo} tarde={tarde} error={errorPuntualidad ?? asistenciasPeriodo.error} />
         </div>
       </div>
 
@@ -490,20 +490,25 @@ function DonaPuntualidad({ aTiempo, tarde, error }: { aTiempo: number | null; ta
   return (
     <>
       <div
+        className="dona-puntualidad"
+        role="img"
+        aria-label={`${porcentaje}% a tiempo: ${aTiempo} a tiempo y ${tarde} con tardanza`}
         style={{
+          "--dona-porcentaje": `${porcentaje}%`,
+          "--dona-valor-final": porcentaje,
           position: "relative",
           width: 150,
           height: 150,
           margin: "18px 0 6px",
           borderRadius: "50%",
-          background: `conic-gradient(var(--ok) 0 ${porcentaje}%, var(--warn) ${porcentaje}% 100%)`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-        }}
+        } as CSSProperties}
       >
-        <div style={{ width: 104, height: 104, borderRadius: "50%", background: "var(--surface)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 30, color: "var(--ink)" }}>{porcentaje}%</span>
+        <div className="dona-centro" style={{ width: 104, height: 104, borderRadius: "50%", background: "var(--surface)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span className="dona-valor" aria-hidden="true" style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 30, color: "var(--ink)" }} />
+          <span className="solo-lectores">{porcentaje}%</span>
           <span style={{ fontSize: 11, color: "var(--muted)" }}>a tiempo</span>
         </div>
       </div>

@@ -21,4 +21,11 @@ describe("política de movimiento accesible", () => {
     expect(politicaReducida).toContain("transition-duration: 0.01ms !important");
     expect(politicaReducida).toContain("transform: none !important");
   });
+
+  it("anima la dona y su contador sin timers de JavaScript", () => {
+    expect(estilos).toContain("@property --dona-revelado");
+    expect(estilos).toContain("@property --dona-valor");
+    expect(estilos).toContain("animation: donaDraw 820ms");
+    expect(estilos).toContain("counter-reset: dona-porcentaje var(--dona-valor)");
+  });
 });

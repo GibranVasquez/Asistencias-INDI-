@@ -52,6 +52,14 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     await login(app.page, "rh");
     await expect(app.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     expect(await app.page.locator(".page-transition").evaluate((elemento) => getComputedStyle(elemento).animationName)).toBe("pageEnter");
+    const dona = app.page.locator(".dona-puntualidad");
+    await expect(dona).toBeVisible();
+    expect(await dona.evaluate((elemento) => getComputedStyle(elemento).animationName)).toBe("donaDraw");
+    expect(await dona.getAttribute("aria-label")).toMatch(/% a tiempo:/);
+    await dona.evaluate(async (elemento) => {
+      await Promise.all(elemento.getAnimations({ subtree: true }).map((animacion) => animacion.finished));
+    });
+    expect(await dona.evaluate((elemento) => getComputedStyle(elemento).getPropertyValue("--dona-revelado").trim())).toBe("100%");
     await expect(app.page.getByRole("link", { name: "Trabajadores" })).toBeVisible();
     await expect(app.page.getByRole("link", { name: "Nómina RH" })).toBeVisible();
     await app.page.getByRole("link", { name: "Trabajadores" }).click();
