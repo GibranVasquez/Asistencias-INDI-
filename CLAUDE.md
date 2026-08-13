@@ -49,6 +49,12 @@ Copy `backend/.env.example` to `backend/.env`. Required at boot (validated in
 `ADMIN_SEED_PASSWORD` are required only by `prisma/seed.ts` (first-run admin
 account; the seed never overwrites an existing user's password).
 
+`MAINTENANCE_MODE` controla el congelamiento global previo a auth/routes:
+ausente/`false`/`0` = normal; `true`/`1` = solo `/health` y `OPTIONS`, todo lo
+demás responde 503 `MAINTENANCE_MODE`. Valores ambiguos impiden el arranque.
+En ECS requiere reemplazar todas las tasks y verificar que no haya mezcla de
+configuraciones antes de un dump; ver `infra/AWS_MIGRATION.md`.
+
 **Postgres vive en Supabase solo para desarrollo local** (proyecto
 administrado) — desde 2026-07-24. Dos variables de conexión, no una:
 `DATABASE_URL` (pooled, pgbouncer, puerto 6543 — la usa la app en runtime

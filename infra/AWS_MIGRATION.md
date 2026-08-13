@@ -320,8 +320,8 @@ destino se asignan por el canal autorizado de RDS.
       aprobadas. La retención legal queda **POR CONFIRMAR DURANTE CORTE REAL**.
 - [ ] Snapshot/backup automático del RDS origen confirmado. No crear ni borrar
       snapshots desde este runbook sin autorización específica.
-- [ ] Mecanismo de congelamiento de escrituras acordado. Hoy no existe un modo
-      mantenimiento de aplicación: es un riesgo operativo pendiente, no debe
+- [ ] Confirmar que la imagen incluye el guard global `MAINTENANCE_MODE` y que
+      el procedimiento de cambio de configuración ECS fue revisado. No debe
       reemplazarse con doble escritura improvisada.
 
 ### Fase 1 — Preflight (solo durante el corte autorizado)
@@ -348,12 +348,30 @@ destino se asignan por el canal autorizado de RDS.
 ### Fase 2 — Congelar escrituras
 
 1. Anunciar inicio de mantenimiento y registrar hora UTC/México.
-2. Impedir escrituras humanas, kiosco y ADMS en el origen. Como no existe modo
-   mantenimiento, el mecanismo operativo exacto es **POR CONFIRMAR DURANTE
-   CORTE REAL** y debe bloquear también `/iclock/*`, no solo el frontend.
-3. Confirmar que no quedan requests en vuelo ni jobs que escriban.
-4. Registrar conteos/checksums de referencia. No continuar si no puede
+2. Establecer `MAINTENANCE_MODE=true` en la definición/configuración de **todas**
+   las tasks origen y desplegarlas por el procedimiento ECS autorizado. La
+   variable se lee del entorno; cambiarla requiere nuevas tasks, no cambia una
+   task ya iniciada. No ejecutar un comando AWS genérico desde este documento.
+3. Esperar deployment estable y confirmar que no conviven tasks nuevas con
+   `true` y antiguas con `false`. Con múltiples tasks, una sola sin congelar
+   invalida la garantía.
+4. Verificar `GET /health` = 200 y ejecutar una escritura ficticia/controlada
+   que deba responder 503 con `error=MAINTENANCE_MODE`. Confirmar también ADMS.
+5. Revisar logs y métricas. El middleware detiene requests nuevas, pero no puede
+   cancelar una transacción que ya entró al controller antes del deployment:
+   esperar drenado y confirmar ausencia de requests/transacciones de escritura
+   activas antes de iniciar el dump.
+6. Registrar conteos/checksums de referencia. No continuar si no puede
    demostrarse el congelamiento: dos orígenes escribibles invalidan el dump.
+
+El guard está antes de rate limits, auth y routers. Durante congelamiento solo
+permite `/health` y preflight HTTP `OPTIONS`; login, lecturas funcionales,
+exports, kiosco y todas las rutas `/iclock/*` responden JSON 503 estable. Esta
+política total evita escrituras escondidas en GET: el handshake ADMS actualiza
+la Terminal y exportar nómina registra auditoría. No se envía `Retry-After`
+porque la duración no es conocida. La respuesta 503 puede hacer que un reloj
+ADMS reintente; se acepta ese comportamiento antes que reconocer falsamente un
+lote que no fue persistido. Validar con hardware real continúa pendiente.
 
 ### Fase 3 — Backup final
 
@@ -421,6 +439,16 @@ un periodo aprobado **POR CONFIRMAR DURANTE CORTE REAL**. Vigilar errores,
 latencia, salud de tasks/targets, conexiones RDS, WAF, login, marcaciones,
 nómina y auditoría. No destruir recursos durante esta fase.
 
+### Descongelamiento del destino
+
+Solo después de restore, integridad, smoke y DNS aprobados: establecer
+`MAINTENANCE_MODE=false` en todas las tasks México, esperar deployment estable
+sin mezcla de configuraciones, validar `/health` y login, ejecutar una escritura
+controlada y comprobar asistencia/nómina/auditoría. No desbloquear antes de
+terminar las verificaciones. Variable ausente, vacía, `false` o `0` significa
+operación normal; `true` o `1`, mantenimiento. Otro valor hace fallar el
+arranque para evitar configuración ambigua.
+
 ### Fase 8 — Retiro de origen (cambio separado)
 
 Solo después de estabilidad México, autorización nueva, backup conservado,
@@ -430,9 +458,11 @@ automática del cutover.
 
 ### Rollback
 
-- **Antes de DNS:** abortar, retirar el congelamiento y continuar en origen.
+- **Antes de DNS:** abortar, restaurar `MAINTENANCE_MODE=false` en todas las
+  tasks origen, esperar deployment estable, validar y continuar en origen.
 - **Después de DNS, antes de nuevas escrituras en México:** devolver el alias al
-  ALB origen, validar origen y retirar mantenimiento con autorización.
+  ALB origen mientras ambos lados siguen congelados, validar origen y solo
+  entonces desactivar mantenimiento en todas las tasks origen.
 - **Después de nuevas escrituras en México:** alto riesgo. Cambiar DNS de vuelta
   perdería/dividiría datos nuevos. Congelar ambos lados, conservar ambos estados
   y escalar a decisión técnica/RH. Reconciliar asistencia, nómina y auditoría
@@ -494,9 +524,11 @@ test. Rechazan RDS, Supabase, el dominio público, IP pública, host o base no
 permitidos. Las URLs deben pasarse explícitamente si se sobreescriben; el script
 no lee `.env`.
 
-Evidencia local del 2026-08-13 (no extrapolable a downtime productivo): dos
-ciclos desde cero finalizaron en PASS. En ambos: seed 1 s, dump <1 s, restore
-1 s, verify <1 s, smoke 4 s, total 6 s; 137 trabajadores, 12 migraciones,
-33 constraints, 45 índices, 17 etiquetas enum y cero secuencias. Todos los
-conteos y checksums coincidieron. La versión exacta de RDS, extensiones,
+Evidencia local del 2026-08-13 (no extrapolable a downtime productivo): el
+ensayo original y dos ciclos con congelamiento desde cero finalizaron en PASS.
+Los últimos dos incluyeron escritura normal de control, reinicio con
+`MAINTENANCE_MODE=true`, cinco flujos bloqueados, DB inmutable, dump/restore y
+smoke; totales 9 s y 8 s. Ambos conservaron 137 trabajadores, 41 asignaciones,
+2 auditorías, 12 migraciones, 33 constraints, 45 índices, 17 etiquetas enum y
+cero secuencias, con todos los conteos/checksums coincidentes. La versión exacta de RDS, extensiones,
 collation, endpoints/alias DNS y duración productiva quedan para preflight real.

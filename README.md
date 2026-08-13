@@ -113,6 +113,10 @@ cp frontend/.env.example frontend/.env
 Los archivos `.env` reales no deben commitearse. Los ejemplos documentan la
 forma esperada de cada variable sin contener credenciales válidas.
 
+`MAINTENANCE_MODE=false` mantiene la operación normal. `true` congela la API
+completa salvo `/health` para cortes controlados; no es un secreto y requiere
+reiniciar/desplegar todas las instancias con la misma configuración.
+
 ## Roles
 
 El modelo actual define estos roles:
