@@ -10,4 +10,9 @@ export function validarVariablesDeEntorno(): void {
     );
     process.exit(1);
   }
+  const mantenimiento = process.env.MAINTENANCE_MODE;
+  if (mantenimiento && !["true", "false", "1", "0"].includes(mantenimiento.toLowerCase())) {
+    console.error("MAINTENANCE_MODE debe ser true, false, 1 o 0.");
+    process.exit(1);
+  }
 }

@@ -7,12 +7,22 @@ const API_BASE_URL = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE
 
 export class ApiError extends Error {
   status: number;
+  code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
+
+type EscuchaMantenimiento = (activo: boolean) => void;
+const escuchasMantenimiento = new Set<EscuchaMantenimiento>();
+export function escucharMantenimiento(escucha: EscuchaMantenimiento): () => void {
+  escuchasMantenimiento.add(escucha);
+  return () => escuchasMantenimiento.delete(escucha);
+}
+function notificarMantenimiento(): void { for (const escucha of escuchasMantenimiento) escucha(true); }
 
 interface Opciones {
   method: "GET" | "POST" | "PATCH" | "DELETE";
@@ -33,7 +43,11 @@ async function solicitud<T>(ruta: string, opciones: Opciones): Promise<T> {
   const datos = await respuesta.json().catch(() => ({}));
 
   if (!respuesta.ok) {
-    throw new ApiError(respuesta.status, datos?.error ?? "Error inesperado del servidor.");
+    if (respuesta.status === 503 && datos?.error === "MAINTENANCE_MODE") {
+      notificarMantenimiento();
+      throw new ApiError(respuesta.status, datos?.message ?? "El sistema se encuentra temporalmente en mantenimiento.", datos.error);
+    }
+    throw new ApiError(respuesta.status, datos?.error ?? "Error inesperado del servidor.", datos?.error);
   }
 
   return datos as T;

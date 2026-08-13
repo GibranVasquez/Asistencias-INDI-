@@ -19,6 +19,8 @@ import ConfiguracionPage from "./pages/ConfiguracionPage";
 import ReportesPage from "./pages/ReportesPage";
 import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
 import KioscoPage from "./pages/KioscoPage";
+import MaintenanceScreen from "./components/MaintenanceScreen";
+import { useMaintenance } from "./context/MaintenanceContext";
 
 // Guard genérico: reemplaza los ternarios esRecepcion/esAdministrador/esRh
 // repetidos por ruta (uno por cada <Route>, cada uno con su propia lógica
@@ -49,6 +51,9 @@ function rutaAlAbrir(rol: RolUsuario): RutaPanel {
 
 export default function App() {
   const { sesion, cargando } = useAuth();
+  const mantenimiento = useMaintenance();
+
+  if (mantenimiento) return <MaintenanceScreen />;
 
   // Mientras se lee la sesion persistida via safeStorage/IPC (asincrono) no
   // se puede decidir todavia si "/" va a Login o al panel — evita un
