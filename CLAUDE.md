@@ -890,10 +890,9 @@ decisión, ejecución o insumo externo del usuario/cliente:
 
 - **Integración de hardware biométrico real** — pendiente decisión final
   entre S922+hotspot 4G vs. lector Horus E1-FP.
-- **Verificación de safeStorage en Windows real** — ver
-  `frontend/QA_SAFESTORAGE_WINDOWS.md`; requiere que el usuario lo corra
-  en una máquina Windows real (Wine no cuenta). No cerrar este punto
-  hasta que el usuario marque esa lista.
+- **QA Windows de safeStorage/NSIS** — cerrado en Windows real; ver evidencia
+  en `frontend/QA_SAFESTORAGE_WINDOWS.md`. Repetir smoke del artefacto cuando
+  cambie la versión o el empaquetado, sin asumir que Wine sustituye Windows.
 - **Lector ADMS de oficina (ZKTeco MB10-VL) — protocolo implementado y
   probado con datos simulados, pendiente de verificación contra el equipo
   físico real.** Ver sección "ADMS" arriba para el detalle técnico
