@@ -165,6 +165,7 @@ export default function TrabajadoresPage() {
       </div>
 
       <div
+        className={`contador-seleccion${seleccionados.size > 0 ? " contador-seleccion-activo" : ""}`}
         style={{
           marginTop: 14,
           padding: "12px 16px",
@@ -247,6 +248,7 @@ export default function TrabajadoresPage() {
               <tbody>
                 {filtrados.map((t) => (
                   <tr
+                    className="fila-trabajador"
                     key={t.id}
                     onClick={() => navegar(`/panel/trabajadores/${t.id}`)}
                     style={{

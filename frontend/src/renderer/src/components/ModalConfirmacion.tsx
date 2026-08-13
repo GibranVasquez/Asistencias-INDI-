@@ -65,10 +65,12 @@ export default function ModalConfirmacion({
 
   return (
     <div
+      className="modal-backdrop"
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
       onClick={procesando ? undefined : onCancelar}
     >
       <div
+        className="modal-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby={tituloId}

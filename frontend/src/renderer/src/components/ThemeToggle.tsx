@@ -6,6 +6,7 @@ export default function ThemeToggle({ oscuroPorDefecto = false }: { oscuroPorDef
 
   return (
     <button
+      className="theme-toggle"
       type="button"
       onClick={() => cambiarTema(esOscuro ? "claro" : "oscuro")}
       title={esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}

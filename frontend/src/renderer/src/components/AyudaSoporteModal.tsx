@@ -14,6 +14,7 @@ interface AyudaSoporteModalProps {
 export default function AyudaSoporteModal({ onCerrar }: AyudaSoporteModalProps) {
   return (
     <div
+      className="modal-backdrop"
       style={{
         position: "fixed",
         inset: 0,
@@ -26,6 +27,7 @@ export default function AyudaSoporteModal({ onCerrar }: AyudaSoporteModalProps) 
       onClick={onCerrar}
     >
       <div
+        className="modal-panel"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: "var(--surface)",

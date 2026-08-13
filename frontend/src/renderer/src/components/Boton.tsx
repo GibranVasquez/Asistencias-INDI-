@@ -23,7 +23,6 @@ const ESTILO_BASE: CSSProperties = {
   borderRadius: 999,
   fontWeight: 700,
   fontFamily: "inherit",
-  transition: "background .15s ease, color .15s ease, opacity .15s ease",
 };
 
 const ESTILO_TAMANO: Record<TamanoBoton, CSSProperties> = {
@@ -49,6 +48,7 @@ export default function Boton({
   onClick,
   textoEnProceso,
   children,
+  className,
   ...resto
 }: BotonProps) {
   const [enProceso, setEnProceso] = useState(false);
@@ -76,8 +76,10 @@ export default function Boton({
   return (
     <button
       {...resto}
+      className={`boton-ui${className ? ` ${className}` : ""}`}
       onClick={manejarClick}
       disabled={deshabilitado}
+      aria-busy={enProceso || undefined}
       style={{
         ...ESTILO_BASE,
         ...ESTILO_TAMANO[tamano],

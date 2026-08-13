@@ -22,7 +22,7 @@ export default function TarjetaKPI({ etiqueta, valor, color, fondo, nota, delta 
   const valorEsLargo = typeof valor === "string" && valor.length > 4;
 
   return (
-    <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
+    <div className="tarjeta-admin tarjeta-kpi" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {color && fondo && (
           <span style={{ width: 10, height: 10, borderRadius: "50%", background: fondo, border: `2px solid ${color}` }} />

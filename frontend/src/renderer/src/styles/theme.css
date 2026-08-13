@@ -36,6 +36,14 @@
   --chip-ok-bg: #24864f;
   --chip-warn-bg: #9b6c26;
   --chip-err-bg: #d34247;
+
+  /* Sistema central de motion: interacciones rápidas, entradas discretas y
+     una curva común para que la interfaz se sienta consistente. */
+  --motion-fast: 120ms;
+  --motion-normal: 190ms;
+  --motion-slow: 260ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-theme="dark"] {
@@ -67,6 +75,9 @@ body {
   color: var(--ink);
   font-family: "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    color var(--motion-normal) var(--ease-standard);
 }
 
 h1,
@@ -89,6 +100,171 @@ a:hover {
 button {
   font-family: inherit;
   cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--indi3) 55%, transparent);
+  outline-offset: 2px;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes surfaceEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-transition {
+  min-height: 100%;
+  animation: pageEnter var(--motion-normal) var(--ease-emphasized) both;
+}
+
+.sidebar-link {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.sidebar-link:hover {
+  transform: translateX(2px);
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--sidebar-ink) !important;
+}
+
+.sidebar-link.active,
+.sidebar-link.active:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+.sidebar-link:active {
+  transform: translateX(2px) scale(0.985);
+}
+
+.boton-ui {
+  transform: translateY(0) scale(1);
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.boton-ui:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(11, 30, 61, 0.14);
+}
+
+.boton-ui:not(:disabled):active {
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.boton-ui:disabled {
+  transform: none;
+  box-shadow: none;
+}
+
+.theme-toggle {
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    color var(--motion-normal) var(--ease-standard);
+}
+
+.theme-toggle:hover { transform: rotate(8deg); }
+.theme-toggle:active { transform: rotate(8deg) scale(0.94); }
+
+.kpi-grid > .tarjeta-kpi {
+  animation: surfaceEnter var(--motion-slow) var(--ease-emphasized) both;
+}
+
+.kpi-grid > .tarjeta-kpi:nth-child(2) { animation-delay: 40ms; }
+.kpi-grid > .tarjeta-kpi:nth-child(3) { animation-delay: 80ms; }
+.kpi-grid > .tarjeta-kpi:nth-child(4) { animation-delay: 120ms; }
+.kpi-grid > .tarjeta-kpi:nth-child(5) { animation-delay: 160ms; }
+
+.modal-backdrop {
+  animation: fadeEnter var(--motion-fast) var(--ease-standard) both;
+}
+
+.modal-panel {
+  animation: modalEnter var(--motion-normal) var(--ease-emphasized) both;
+}
+
+.fila-trabajador {
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.fila-trabajador:hover {
+  box-shadow: inset 3px 0 var(--indi3);
+}
+
+.contador-seleccion {
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.contador-seleccion-activo {
+  background: color-mix(in srgb, var(--indi2) 5%, var(--surface)) !important;
+  border-color: color-mix(in srgb, var(--indi2) 38%, var(--line)) !important;
+}
+
+.mensaje-estado {
+  animation: surfaceEnter var(--motion-normal) var(--ease-emphasized) both;
+}
+
+.login-panel {
+  animation: surfaceEnter var(--motion-slow) var(--ease-emphasized) both;
+}
+
+.maintenance-content {
+  animation: surfaceEnter var(--motion-slow) var(--ease-emphasized) both;
+}
+
+.kiosco-state {
+  animation: fadeEnter var(--motion-fast) var(--ease-standard) both;
 }
 
 input {
@@ -163,6 +339,10 @@ input {
 
 .tarjeta-admin {
   border-radius: 18px;
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard);
 }
 
 [data-theme="dark"] .tarjeta-admin {
@@ -298,5 +478,29 @@ input {
 @keyframes veilBg {
   to {
     background-color: transparent;
+  }
+}
+
+/* La animación nunca es la única señal de estado. Quien solicite movimiento
+   reducido conserva toda la funcionalidad, foco y contenido sin stagger ni
+   desplazamientos decorativos. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .page-transition,
+  .sidebar-link,
+  .boton-ui,
+  .theme-toggle,
+  .modal-panel,
+  .fila-trabajador {
+    transform: none !important;
   }
 }

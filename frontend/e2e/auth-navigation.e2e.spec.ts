@@ -18,6 +18,13 @@ test("Electron conserva sandbox, aislamiento, preload, CSP y navegación hash", 
     expect(app.csp).not.toContain("'unsafe-eval'");
     await app.page.evaluate(() => { window.location.hash = "#/login"; });
     await expect(app.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+    expect(await app.page.locator(".login-panel").evaluate((elemento) => getComputedStyle(elemento).animationName)).toBe("surfaceEnter");
+    await app.page.emulateMedia({ reducedMotion: "reduce" });
+    const duracionReducida = await app.page.locator(".login-panel").evaluate((elemento) =>
+      Number.parseFloat(getComputedStyle(elemento).animationDuration)
+    );
+    expect(duracionReducida).toBeLessThanOrEqual(0.001);
+    await app.page.emulateMedia({ reducedMotion: "no-preference" });
   } finally {
     await cerrar(app);
   }
@@ -44,6 +51,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
   try {
     await login(app.page, "rh");
     await expect(app.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    expect(await app.page.locator(".page-transition").evaluate((elemento) => getComputedStyle(elemento).animationName)).toBe("pageEnter");
     await expect(app.page.getByRole("link", { name: "Trabajadores" })).toBeVisible();
     await expect(app.page.getByRole("link", { name: "Nómina RH" })).toBeVisible();
     await app.page.getByRole("link", { name: "Trabajadores" }).click();

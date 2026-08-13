@@ -170,6 +170,7 @@ export default function AdminLayout() {
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)" }}>
       <nav
+        className="admin-sidebar"
         style={{
           width: 238,
           flexShrink: 0,
@@ -205,6 +206,7 @@ export default function AdminLayout() {
           <NavLink
             key={item.ruta}
             to={`/panel/${item.ruta}`}
+            className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
             style={({ isActive }) => ({
               display: "flex",
               alignItems: "center",
@@ -227,6 +229,7 @@ export default function AdminLayout() {
         ))}
 
         <button
+          className="sidebar-link"
           type="button"
           onClick={() => setMostrarAyuda(true)}
           style={{
@@ -360,7 +363,9 @@ export default function AdminLayout() {
           </div>
         )}
         <div style={{ flex: 1, overflow: "auto", position: "relative", zIndex: 1 }}>
-          <Outlet />
+          <div key={location.pathname} className="page-transition">
+            <Outlet />
+          </div>
         </div>
       </main>
 

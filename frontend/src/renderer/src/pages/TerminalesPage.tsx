@@ -240,10 +240,12 @@ export default function TerminalesPage() {
 
       {mostrarAlta && (
         <div
+          className="modal-backdrop"
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
           onClick={() => setMostrarAlta(false)}
         >
           <form
+            className="modal-panel"
             onSubmit={enviarAlta}
             onClick={(e) => e.stopPropagation()}
             style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 380, display: "flex", flexDirection: "column", gap: 14 }}
@@ -329,10 +331,12 @@ export default function TerminalesPage() {
 
       {editando && (
         <div
+          className="modal-backdrop"
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
           onClick={() => setEditando(null)}
         >
           <form
+            className="modal-panel"
             onSubmit={enviarEdicion}
             onClick={(e) => e.stopPropagation()}
             style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 380, display: "flex", flexDirection: "column", gap: 14 }}

@@ -498,7 +498,7 @@ function PantallaKiosco({
         }}
       >
         {estado === "idle" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
+          <div className="kiosco-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
             <button
               onClick={MODO_PRUEBA_HABILITADO ? () => setModoPrueba((v) => !v) : undefined}
               disabled={!MODO_PRUEBA_HABILITADO}
@@ -599,7 +599,7 @@ function PantallaKiosco({
         )}
 
         {estado === "scanning" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
+          <div className="kiosco-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 26 }}>
             <div
               style={{
                 position: "relative",
@@ -634,7 +634,7 @@ function PantallaKiosco({
         )}
 
         {estado === "success" && mensaje && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+          <div className="kiosco-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
             <div
               style={{
                 width: 150,
@@ -689,7 +689,7 @@ function PantallaKiosco({
         )}
 
         {estado === "error" && mensaje && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+          <div className="kiosco-state" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
             <div
               style={{
                 width: 150,

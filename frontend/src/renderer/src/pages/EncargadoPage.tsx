@@ -245,6 +245,7 @@ function agruparAvisoMovidos(movidos: TrabajadorMovido[]): string {
 function EstadoSinAsignacion({ onCargar }: { onCargar: () => void }) {
   return (
     <div
+      className="modal-backdrop"
       style={{
         marginTop: 30,
         background: "var(--surface)",
@@ -422,7 +423,7 @@ function PanelCargarAsignacion({
         zIndex: 20,
       }}
     >
-      <div style={{ background: "var(--surface)", borderRadius: 16, padding: 26, width: 480, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+      <div className="modal-panel" style={{ background: "var(--surface)", borderRadius: 16, padding: 26, width: 480, maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)" }}>Cargar asignación de hoy</h2>
         <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 4 }}>
           {lista === null

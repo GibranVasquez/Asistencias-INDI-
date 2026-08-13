@@ -82,7 +82,7 @@ export default function LoginPage() {
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
-        <form onSubmit={manejarEnvio} style={{ width: "100%", maxWidth: 360 }}>
+        <form className="login-panel" onSubmit={manejarEnvio} style={{ width: "100%", maxWidth: 360 }}>
           <h2 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Iniciar sesión</h2>
           <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 6 }}>Acceso para personal administrativo</p>
 
@@ -141,6 +141,7 @@ export default function LoginPage() {
 
             {error && (
               <div
+                className="mensaje-estado"
                 style={{
                   fontSize: 13,
                   color: "var(--err)",

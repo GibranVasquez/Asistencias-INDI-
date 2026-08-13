@@ -66,10 +66,11 @@ function hoyISO(): string {
 function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
   return (
     <div
+      className="modal-backdrop"
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
       onClick={onClose}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420, maxHeight: "85vh", overflowY: "auto" }}>
+      <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420, maxHeight: "85vh", overflowY: "auto" }}>
         {children}
       </div>
     </div>
