@@ -25,6 +25,11 @@ docker run --rm --network host -v "$ROOT_DIR/scripts/migration:/migration:ro" po
 echo "timing.seed=$((SECONDS-start))s"
 
 start=$SECONDS
+(cd "$ROOT_DIR" && npm run build >/dev/null)
+node "$ROOT_DIR/scripts/migration/maintenance-freeze-smoke.mjs"
+echo "timing.freeze=$((SECONDS-start))s"
+
+start=$SECONDS
 docker run --rm --network host -v "$TEMP_DIR:/work" postgres:16-alpine pg_dump "$SOURCE_DATABASE_URL" --format=custom --no-owner --no-acl --file=/work/indi-test.dump
 echo "timing.dump=$((SECONDS-start))s"
 
@@ -37,7 +42,6 @@ node "$ROOT_DIR/scripts/migration/verify-migration.mjs"
 echo "timing.verify=$((SECONDS-start))s"
 
 start=$SECONDS
-(cd "$ROOT_DIR" && npm run build >/dev/null)
 node "$ROOT_DIR/scripts/migration/backend-smoke.mjs"
 echo "timing.smoke=$((SECONDS-start))s"
 echo "timing.total=$((SECONDS-start_total))s"

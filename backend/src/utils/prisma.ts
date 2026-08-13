@@ -54,6 +54,7 @@ function resolverArchivoCA(): string {
 const URL_INTEGRACION_LOCAL = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test";
 const esIntegracionLocal = process.env.INTEGRATION_TEST_DB === "1";
 const URL_MIGRACION_LOCAL = "postgresql://indi_migration_test:migration_test_only@127.0.0.1:55433/indi_mexico_test";
+const URL_MIGRACION_SOURCE_LOCAL = "postgresql://indi_migration_test:migration_test_only@127.0.0.1:55432/indi_source_test";
 const esEnsayoMigracionLocal = process.env.MIGRATION_TEST_DB === "1";
 
 if (esIntegracionLocal && process.env.DATABASE_URL !== URL_INTEGRACION_LOCAL) {
@@ -61,9 +62,9 @@ if (esIntegracionLocal && process.env.DATABASE_URL !== URL_INTEGRACION_LOCAL) {
     "INTEGRATION_TEST_DB=1 solo admite la base efímera exacta en 127.0.0.1:55432/indi_test. Operación abortada."
   );
 }
-if (esEnsayoMigracionLocal && process.env.DATABASE_URL !== URL_MIGRACION_LOCAL) {
+if (esEnsayoMigracionLocal && ![URL_MIGRACION_LOCAL, URL_MIGRACION_SOURCE_LOCAL].includes(process.env.DATABASE_URL ?? "")) {
   throw new Error(
-    "MIGRATION_TEST_DB=1 solo admite el destino efímero exacto en 127.0.0.1:55433/indi_mexico_test. Operación abortada."
+    "MIGRATION_TEST_DB=1 solo admite source/destination efímeros exactos del ensayo. Operación abortada."
   );
 }
 
@@ -71,7 +72,7 @@ if (esEnsayoMigracionLocal && process.env.DATABASE_URL !== URL_MIGRACION_LOCAL) 
 // la guardia exacta anterior. Cualquier ejecución normal conserva la CA y
 // verificación TLS estricta existente; no hay fallback inseguro.
 const adapter = esIntegracionLocal || esEnsayoMigracionLocal
-  ? new PrismaPg({ connectionString: esIntegracionLocal ? URL_INTEGRACION_LOCAL : URL_MIGRACION_LOCAL })
+  ? new PrismaPg({ connectionString: esIntegracionLocal ? URL_INTEGRACION_LOCAL : process.env.DATABASE_URL! })
   : (() => {
       const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
       return new PrismaPg({

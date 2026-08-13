@@ -191,6 +191,46 @@ describe("HTTP real: autenticación, roles y sueldo masivo", () => {
   });
 });
 
+describe("PostgreSQL real: congelamiento central de escrituras", () => {
+  it("bloquea flujos humanos, Terminal y ADMS sin cambiar datos ni auditoría", async () => {
+    const { seccion, terminal, trabajadores } = await escenarioBase();
+    const [tokenRh, tokenKiosco] = await Promise.all([tokenHumano(RolUsuario.rh), tokenTerminal()]);
+    const snapshot = async () => ({
+      trabajadores: await prisma.trabajador.findMany({ orderBy: { id: "asc" } }),
+      usuarios: await prisma.usuario.findMany({ orderBy: { id: "asc" } }),
+      asistencias: await prisma.asistenciaDiaria.findMany({ orderBy: { id: "asc" } }),
+      nominas: await prisma.nominaSemanal.findMany({ orderBy: { id: "asc" } }),
+      eventos: await prisma.eventoNoReconciliado.findMany({ orderBy: { id: "asc" } }),
+      auditoria: await prisma.auditLog.findMany({ orderBy: { id: "asc" } }),
+      terminales: await prisma.terminal.findMany({ orderBy: { id: "asc" } }),
+    });
+    const antes = await snapshot();
+    process.env.MAINTENANCE_MODE = "true";
+    try {
+      const intentos = await Promise.all([
+        request(app).post("/asistencias").set("Authorization", `Bearer ${tokenKiosco}`).send({ trabajadorId: trabajadores[0].id, fecha: "2026-08-03", hora: "08:00:00", seccionId: seccion.id, turno: "Día", metodoUsado: "huella" }),
+        request(app).post("/trabajadores/aplicar-sueldo").set("Authorization", `Bearer ${tokenRh}`).send({ ids: trabajadores.map(t=>t.id), nuevoSueldoBase: 999 }),
+        request(app).post("/usuarios").set("Authorization", `Bearer ${tokenRh}`).send({ username:"bloqueado", password:"Ficticia-123", rol:"rh" }),
+        request(app).post("/nominas").set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id, periodoInicio:"2026-08-03", periodoFin:"2026-08-09", horasExtra:0, viaticosSemanal:0, viaticosMensual:0, descuentosVarios:0 }),
+        request(app).get("/iclock/cdata?SN=SN-INTEGRATION-1&options=all"),
+        request(app).post("/iclock/cdata?SN=SN-INTEGRATION-1&table=ATTLOG").type("text/plain").send("101\t2026-08-03 08:00:00\t0\t1"),
+      ]);
+      for (const respuesta of intentos) {
+        expect(respuesta.status).toBe(503);
+        expect(respuesta.body).toEqual({ error:"MAINTENANCE_MODE", message:"El sistema se encuentra temporalmente en mantenimiento." });
+      }
+      expect((await request(app).get("/health")).status).toBe(200);
+      expect((await request(app).post("/auth/login").send({ username:"test-rh", password:PASSWORD })).status).toBe(503);
+      expect(await snapshot()).toEqual(antes);
+      expect(antes.terminales.find(t=>t.id===terminal.id)?.ultimaSincronizacion).toBeNull();
+    } finally { delete process.env.MAINTENANCE_MODE; }
+
+    const normal = await request(app).post("/asistencias").set("Authorization", `Bearer ${tokenKiosco}`).send({ trabajadorId: trabajadores[0].id, fecha: "2026-08-03", hora: "08:00:00", seccionId: seccion.id, turno: "Día", metodoUsado: "huella" });
+    expect(normal.status).toBe(201);
+    expect(await prisma.asistenciaDiaria.count()).toBe(1);
+  });
+});
+
 describe("PostgreSQL/HTTP real: asistencia y ADMS", () => {
   it("hace idempotente el duplicado exacto pero conserva entrada y salida", async () => {
     const { seccion, trabajadores } = await escenarioBase();
