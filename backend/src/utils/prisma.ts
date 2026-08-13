@@ -53,18 +53,25 @@ function resolverArchivoCA(): string {
 
 const URL_INTEGRACION_LOCAL = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test";
 const esIntegracionLocal = process.env.INTEGRATION_TEST_DB === "1";
+const URL_MIGRACION_LOCAL = "postgresql://indi_migration_test:migration_test_only@127.0.0.1:55433/indi_mexico_test";
+const esEnsayoMigracionLocal = process.env.MIGRATION_TEST_DB === "1";
 
 if (esIntegracionLocal && process.env.DATABASE_URL !== URL_INTEGRACION_LOCAL) {
   throw new Error(
     "INTEGRATION_TEST_DB=1 solo admite la base efímera exacta en 127.0.0.1:55432/indi_test. Operación abortada."
   );
 }
+if (esEnsayoMigracionLocal && process.env.DATABASE_URL !== URL_MIGRACION_LOCAL) {
+  throw new Error(
+    "MIGRATION_TEST_DB=1 solo admite el destino efímero exacto en 127.0.0.1:55433/indi_mexico_test. Operación abortada."
+  );
+}
 
 // PostgreSQL efímero de integración no usa TLS y solo se admite detrás de
 // la guardia exacta anterior. Cualquier ejecución normal conserva la CA y
 // verificación TLS estricta existente; no hay fallback inseguro.
-const adapter = esIntegracionLocal
-  ? new PrismaPg({ connectionString: URL_INTEGRACION_LOCAL })
+const adapter = esIntegracionLocal || esEnsayoMigracionLocal
+  ? new PrismaPg({ connectionString: esIntegracionLocal ? URL_INTEGRACION_LOCAL : URL_MIGRACION_LOCAL })
   : (() => {
       const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
       return new PrismaPg({

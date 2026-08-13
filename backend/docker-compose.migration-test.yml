@@ -1,0 +1,32 @@
+services:
+  postgres-source-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: indi_source_test
+      POSTGRES_USER: indi_migration_test
+      POSTGRES_PASSWORD: migration_test_only
+    ports:
+      - "127.0.0.1:55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indi_migration_test -d indi_source_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  postgres-mexico-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: indi_mexico_test
+      POSTGRES_USER: indi_migration_test
+      POSTGRES_PASSWORD: migration_test_only
+    ports:
+      - "127.0.0.1:55433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indi_migration_test -d indi_mexico_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data

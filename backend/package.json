@@ -12,6 +12,8 @@
     "test:db:up": "docker compose -p indi-integration-test -f docker-compose.test.yml up -d --wait",
     "test:db:down": "docker compose -p indi-integration-test -f docker-compose.test.yml down --remove-orphans",
     "test:integration": "node scripts/run-integration-tests.mjs",
+    "migration:test": "bash scripts/migration/run-local-rehearsal.sh",
+    "migration:test:guards": "node --test scripts/migration/url-guard.test.mjs",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck:prisma": "tsc --noEmit -p tsconfig.prisma.json",
