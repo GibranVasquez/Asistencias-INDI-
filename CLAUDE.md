@@ -28,8 +28,9 @@ npm run prisma:studio     # Prisma Studio GUI
 npm run seed               # ts-node prisma/seed.ts
 ```
 
-There is no test suite or lint config yet. `tsc` (via `npm run build`) is the
-main form of static verification, pero solo cubre `src/**/*.ts`: `rootDir`
+La calidad automatizada actual incluye Vitest, integración HTTP/PostgreSQL,
+ESLint y CI; Electron tiene además Playwright E2E local/pre-release. `tsc`
+(via `npm run build`) cubre `src/**/*.ts`: `rootDir`
 en `tsconfig.json` es `"src"` (no `"."`) para que `dist/` espeje `src/` 1:1
 y `dist/index.js` exista donde `"start"` lo espera — antes, con
 `rootDir: "."`, `tsc` compilaba a `dist/src/index.js` y `npm start` fallaba
@@ -506,8 +507,8 @@ window for developing the admin panel.
   (required — production loads `file://`, where a normal `BrowserRouter`
   doesn't work). `context/AuthContext.tsx` (human `Usuario` sessions,
   safeStorage-backed) and `context/TerminalContext.tsx` (kiosk `Terminal`
-  sessions + local `seccionId`/`turno` config, plain `localStorage` — not
-  sensitive the way payroll-adjacent admin sessions are) are separate,
+  session safeStorage-backed; only `seccionId`/`turno` non-sensitive remain
+  in `localStorage`) are separate,
   because a kiosk terminal and a human admin account are unrelated
   credentials against unrelated backend auth flows (`/auth/login` vs
   `/auth/login-terminal`).

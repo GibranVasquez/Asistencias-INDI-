@@ -1,6 +1,6 @@
 # QA de `safeStorage` y empaquetado en Windows
 
-Última ejecución: 12 de agosto de 2026.
+Última ejecución: 13 de agosto de 2026.
 
 Entorno usado: Windows 11 Enterprise LTSC Evaluation 64-bit (build 26100),
 VM VirtualBox 7.2, x64, usuario ficticio `vboxuser`, backend local de test y
@@ -12,9 +12,12 @@ Build evaluado: Electron 43.1.1, NSIS x64, aplicación instalada en
 Windows muestra por ello editor desconocido/UAC. No se desactivaron UAC,
 SmartScreen ni Defender.
 
-Instalador final evaluado: `INDI Asistencia Setup 0.1.0.exe`, 105,788,332
-bytes, SHA-256
-`26f5de504279d065b33ea613770dd4b3a5cb032ca4301e2f8aabf18cba488b03`.
+El pase profundo de DPAPI se realizó inicialmente con
+`INDI Asistencia Setup 0.1.0.exe`. El artefacto final RC auditado después fue
+`INDI Asistencia Setup 0.9.0-rc.2.exe`, 105,788,574 bytes, SHA-256
+`ccea844a993506ecbac724e88752634f75af2fda1644b397de8c6d37fa3afe7d`.
+RC2 conserva el mismo hardening y añadió el modo mantenimiento; su smoke
+específico se registra en la tabla.
 
 ## Resultado de la ejecución
 
@@ -39,6 +42,9 @@ bytes, SHA-256
 | Desinstalación NSIS | PASS | Con `deleteAppDataOnUninstall: true`, el asistente nuevo llegó a “INDI Asistencia ha sido desinstalado de su sistema”; se completó cada pantalla y desapareció la instalación. |
 | Estado de `userData` tras desinstalar | VERIFICADO — ELIMINADO | Antes de reinstalar se comprobó por presencia, sin leer contenido, que `C:\Users\vboxuser\AppData\Roaming\indi-asistencia-frontend` no existía. |
 | Reinstalación limpia tras desinstalar | PASS | Tras reiniciar Windows y reinstalar exactamente el mismo SHA-256, el primer inicio mostró Login. Sesión humana restaurada: no. Sesión Terminal restaurada: no. |
+| RC2: pantalla de mantenimiento | PASS | Con backend/PostgreSQL exclusivamente de test y `MAINTENANCE_MODE=true`, el instalador RC2 mostró la pantalla global de mantenimiento, sin error de contraseña/red, logout falso ni toasts duplicados. `/health` permaneció en 200. |
+| RC2: recuperación a modo normal | PASS | Al reiniciar solo el backend test con `MAINTENANCE_MODE=false`, cerrar/reabrir la misma instalación y reutilizar su `userData`, el login ficticio RH abrió el Dashboard sin reinstalar ni limpiar estado. |
+| RC2: uninstall y `userData` | PASS | NSIS 0.9.0-rc.2 llegó al mensaje final de desinstalación; una comprobación de presencia devolvió `USERDATA_PRESENT=False` y `APP_PROCESS_PRESENT=False`. |
 | Falla forzada de DPAPI | NO EJECUTADO | Caso opcional; no se debilitó ni manipuló el perfil Windows para provocarlo. |
 
 ## Bugs encontrados durante QA
@@ -63,7 +69,7 @@ bytes, SHA-256
    ahora usa `deleteAppDataOnUninstall: true`; el nuevo QA confirmó eliminación
    del perfil y reinstalación sin sesión residual.
 
-Ambos fixes requieren que cualquier repetición manual use un instalador
+Los tres fixes requieren que cualquier repetición manual use un instalador
 generado después de esos cambios; no debe validarse con un `.exe` anterior.
 
 ## Cierre de QA Windows

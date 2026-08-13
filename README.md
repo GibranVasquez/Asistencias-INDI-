@@ -89,6 +89,11 @@ Verificaciones y tareas disponibles:
 # backend/
 npm run build
 npm run typecheck:prisma
+npm test
+npm run test:integration
+npm run lint
+npm run migration:test:guards
+npm run migration:test
 npm run prisma:generate
 npm run prisma:migrate
 npm run seed
@@ -96,6 +101,9 @@ npm run seed
 # frontend/
 npm run typecheck
 npm run build
+npm test
+npm run lint
+npm run test:e2e
 ```
 
 `npm run prisma:migrate` ejecuta `prisma migrate dev`; debe usarse contra el
@@ -159,10 +167,16 @@ documentación.
 - [Notas del historial Git](NOTES.md)
 - [Migración regional de AWS](infra/AWS_MIGRATION.md)
 - [QA de safeStorage en Windows](frontend/QA_SAFESTORAGE_WINDOWS.md)
+- [Manual de instalación](docs/MANUAL_INSTALACION.md)
+- [Manual de usuario](docs/MANUAL_USUARIO.md)
+- [Arquitectura técnica](docs/ARQUITECTURA.md)
+- [Checklist de entrega](docs/CHECKLIST_ENTREGA.md)
+- [Auditoría técnica de RC2](AUDITORIA_PROYECTO.md)
 
 ## Estado del proyecto
 
-El backend está desplegado en producción sobre AWS. La migración regional de
+La release candidate local actual es `v0.9.0-rc.2`. El backend está desplegado
+en producción sobre AWS. La migración regional de
 `us-east-1` a `mx-central-1` continúa en curso: México dispone de un stack
 paralelo, pero faltan la migración final de datos, validación y corte DNS. La
 integración ADMS física aún requiere validación completa y el sistema sigue en
