@@ -270,11 +270,233 @@ Lo único que el usuario sigue teniendo que decidir/llenar a mano es lo del
 paso 3 (`aws_region`, `vpc_id`, `private_subnet_ids`, `public_subnet_ids`,
 `root_domain_name`, `adms_ips_permitidas`) — el resto sale del `apply`.
 
-## 9. Migración de datos real (el último paso, no el primero)
+## 9. Runbook de corte regional `us-east-1` → `mx-central-1`
 
-Cuando ECS + RDS estén desplegados, probados, y con las migraciones
-de schema aplicadas — **recién ahí** se planea el corte de datos real
-desde Supabase (dump/restore o alguna estrategia de doble-escritura
-temporal). No está planeado en detalle todavía a propósito: no tiene
-sentido diseñar esa parte hasta confirmar que la infraestructura nueva
-funciona de punta a punta con datos de prueba.
+> **No ejecutar por inferencia.** Esta sección prepara un corte futuro. Requiere
+> autorización explícita, responsables presentes y valores confirmados en el
+> preflight. El ensayo local reproducible está en
+> `backend/scripts/migration/` y se ejecuta con `npm run migration:test`.
+
+### Arquitectura y compatibilidad
+
+El origen productivo actual es RDS PostgreSQL en `us-east-1`, consumido por
+ECS/Fargate detrás de ALB, WAF y `api.sistemasindi.com`. El destino es el stack
+paralelo del workspace Terraform `mexico`: RDS + ECS/Fargate + ALB + WAF + ACM
+en `mx-central-1`, expuesto durante la preparación como
+`api-mx.sistemasindi.com`. Route 53 y la zona son compartidos entre workspaces.
+
+Terraform declara PostgreSQL **17.6** para RDS. Antes del corte hay que confirmar
+en ambos RDS `server_version`, `server_encoding`, `lc_collate`, `lc_ctype`,
+`TimeZone` y extensiones instaladas. El schema actual usa UUID
+`gen_random_uuid()` (nativo desde PostgreSQL 13), 6 tipos enum, claves foráneas,
+índices y constraints; no usa columnas `serial`/`identity` ni secuencias de la
+aplicación. Prisma registra 12 migraciones en `_prisma_migrations` a fecha de
+este runbook. Repetir estos conteos durante el corte: pueden cambiar después.
+
+La herramienta `pg_dump` debe ser de la misma versión mayor del servidor origen
+o una posterior compatible; un `pg_dump` 16 no puede respaldar un servidor 17.
+Para el corte real se fija una imagen oficial `postgres:17` por digest
+**POR CONFIRMAR DURANTE CORTE REAL**. No usar `latest`. El ensayo local usa
+PostgreSQL 16 porque es la versión ya establecida para tests del proyecto; esto
+valida el procedimiento, no la compatibilidad exacta de RDS 17.6.
+
+Riesgos a revisar: extensiones no presentes en destino, ownership/roles del
+origen, collations diferentes, zona horaria del servidor, grants, objetos fuera
+de `public` y cambios de schema posteriores al ensayo. `--no-owner --no-acl`
+evita transportar propietarios y grants del origen; los permisos del rol de
+destino se asignan por el canal autorizado de RDS.
+
+### Fase 0 — Preconditions
+
+- [ ] Autorización formal y ventana de mantenimiento aprobadas.
+- [ ] Responsables de infraestructura, backend y RH disponibles; canal de
+      decisión de rollback definido.
+- [ ] Release/imagen exacta a desplegar identificada y ya validada.
+- [ ] Acceso separado y probado a ambos RDS mediante bastión/SSM, sin mostrar
+      URLs ni passwords.
+- [ ] PostgreSQL client fijado a versión compatible; espacio local temporal y
+      capacidad del RDS destino suficientes.
+- [ ] Ubicación autorizada y cifrada para dump; retención y eliminación
+      aprobadas. La retención legal queda **POR CONFIRMAR DURANTE CORTE REAL**.
+- [ ] Snapshot/backup automático del RDS origen confirmado. No crear ni borrar
+      snapshots desde este runbook sin autorización específica.
+- [ ] Mecanismo de congelamiento de escrituras acordado. Hoy no existe un modo
+      mantenimiento de aplicación: es un riesgo operativo pendiente, no debe
+      reemplazarse con doble escritura improvisada.
+
+### Fase 1 — Preflight (solo durante el corte autorizado)
+
+- [ ] Confirmar workspace `mexico`, región `mx-central-1` y outputs correctos,
+      sin aplicar Terraform durante la ventana.
+- [ ] RDS México disponible, cifrado, versión/collation/timezone/extensiones
+      compatibles y sin datos productivos previos.
+- [ ] ECS México estable, tasks deseadas en ejecución, ALB targets saludables y
+      `/health` correcto en el endpoint paralelo.
+- [ ] Certificado ACM válido, WAF asociado, logging disponible, security groups,
+      endpoints VPC y Secrets Manager correctos.
+- [ ] Confirmar que `admsRouter.use("/iclock", restringirPorIP)` permanece y que
+      WAF/`ADMS_IPS_PERMITIDAS` limitan exclusivamente `/iclock/*`; el hardware
+      físico continúa como validación externa pendiente.
+- [ ] Obtener el registro efectivo `api.sistemasindi.com` y su alias/TTL. En
+      Terraform es un registro Route 53 `A` alias (`aws_route53_record.api`) y
+      los alias no declaran TTL configurable. Destino ALB actual y México:
+      **CONFIRMAR EN PREFLIGHT REAL**.
+- [ ] Comparar las 12+ filas efectivas de `_prisma_migrations`; no ejecutar
+      `migrate reset`. Si la release incorpora migraciones posteriores al dump,
+      definir y ensayar previamente el orden exacto de `migrate deploy`.
+
+### Fase 2 — Congelar escrituras
+
+1. Anunciar inicio de mantenimiento y registrar hora UTC/México.
+2. Impedir escrituras humanas, kiosco y ADMS en el origen. Como no existe modo
+   mantenimiento, el mecanismo operativo exacto es **POR CONFIRMAR DURANTE
+   CORTE REAL** y debe bloquear también `/iclock/*`, no solo el frontend.
+3. Confirmar que no quedan requests en vuelo ni jobs que escriban.
+4. Registrar conteos/checksums de referencia. No continuar si no puede
+   demostrarse el congelamiento: dos orígenes escribibles invalidan el dump.
+
+### Fase 3 — Backup final
+
+Usar variables de entorno introducidas por un mecanismo seguro; nunca colocar
+passwords en el comando, historial o logs. Plantilla (valores y digest por
+confirmar):
+
+```bash
+docker run --rm --network host \
+  -e PGPASSFILE=/run/secrets/pgpass \
+  -v <pgpass-autorizado>:/run/secrets/pgpass:ro \
+  -v <directorio-cifrado>:/backup \
+  postgres:17@sha256:<digest-confirmado> \
+  pg_dump --dbname='<URL-SIN-PASSWORD-CON-TLS>' --format=custom \
+    --no-owner --no-acl --file=/backup/indi-final.dump
+```
+
+Calcular SHA-256 del dump, registrar tamaño/versión de `pg_dump` y restringir
+permisos del archivo. No imprimir la URL completa. El backup no termina hasta
+que `pg_restore --list` pueda leerlo.
+
+### Fase 4 — Restore México
+
+1. Confirmar nuevamente que el destino es el RDS México correcto y está vacío.
+2. Restaurar con cliente fijado, `--no-owner --no-acl --exit-on-error`, conexión
+   TLS validada y rol autorizado. No sustituir el restore con Prisma.
+3. Si hay migraciones de aplicación posteriores al schema respaldado, ejecutar
+   `prisma migrate deploy` solo en el orden ensayado y después del restore.
+4. Ante cualquier error, detenerse; no aceptar restore parcial ni reutilizar la
+   base sin limpiarla por un procedimiento autorizado.
+
+### Fase 5 — Integridad y smoke
+
+- [ ] Conteos source/destination de todas las tablas, incluida
+      `_prisma_migrations` y `audit_log`.
+- [ ] Checksums lógicos deterministas por PK; campos sensibles se hashean y no
+      se imprimen. Orden físico nunca forma parte del checksum.
+- [ ] Definiciones y conteos de PK, FK, unique constraints, índices y enums.
+- [ ] Secuencias/identities y próximo insert sin colisión; hoy se esperan cero,
+      pero comprobar en el schema efectivo.
+- [ ] Consulta Prisma real contra destino.
+- [ ] Backend apuntando exclusivamente a México: `/health`, login ficticio
+      autorizado, trabajadores, asistencia, nómina, roles, terminal y reporte.
+- [ ] Logs sin errores DB/TLS, ALB target healthy y latencia básica registrada.
+- [ ] Verificar snapshot de `NominaSemanal` y que `AuditLog` llegó completo.
+
+Todo debe ser `MATCH/PASS`. Un mismatch bloquea DNS.
+
+### Fase 6 — DNS cutover
+
+El registro lógico es `aws_route53_record.api`, tipo `A` alias para
+`api.sistemasindi.com`. El valor efectivo actual y el ALB México se confirman
+en preflight. Preparar cambio revisable y aprobación de dos personas; no usar
+un `terraform apply` general para un cambio de DNS de emergencia. Tras cambiar:
+
+- resolver desde más de un resolvedor;
+- validar certificado/hostname, `/health`, login, asistencia, nómina y terminal;
+- observar ALB/ECS/WAF/logs y confirmar que el tráfico llega a México;
+- mantener origen intacto y no aceptar escrituras allí.
+
+### Fase 7 — Observación
+
+Mantener `us-east-1`, el dump final y la evidencia sin modificaciones durante
+un periodo aprobado **POR CONFIRMAR DURANTE CORTE REAL**. Vigilar errores,
+latencia, salud de tasks/targets, conexiones RDS, WAF, login, marcaciones,
+nómina y auditoría. No destruir recursos durante esta fase.
+
+### Fase 8 — Retiro de origen (cambio separado)
+
+Solo después de estabilidad México, autorización nueva, backup conservado,
+métricas aceptadas y declaración de que rollback ya no es necesario. Retirar
+DNS/servicios/datos en un plan y revisión separados; nunca como consecuencia
+automática del cutover.
+
+### Rollback
+
+- **Antes de DNS:** abortar, retirar el congelamiento y continuar en origen.
+- **Después de DNS, antes de nuevas escrituras en México:** devolver el alias al
+  ALB origen, validar origen y retirar mantenimiento con autorización.
+- **Después de nuevas escrituras en México:** alto riesgo. Cambiar DNS de vuelta
+  perdería/dividiría datos nuevos. Congelar ambos lados, conservar ambos estados
+  y escalar a decisión técnica/RH. Reconciliar asistencia, nómina y auditoría
+  requiere un procedimiento específico; no existe ni se autoriza un merge
+  automático. La defensa es validar antes del corte y ejecutar rollback temprano.
+
+### TLS, secretos y backups
+
+Runtime ECS obtiene `DATABASE_URL` de Secrets Manager y
+`src/utils/prisma.ts` selecciona `rds-global-bundle.pem` para hosts RDS con
+`rejectUnauthorized: true`. El CA está incluido en la imagen en
+`/app/certs`; una ruta local del operador no sirve dentro de ECS. Para Prisma
+CLI/pg tools usar `sslmode=verify-full` contra hostname RDS y CA explícita;
+por túnel `localhost`, `verify-ca` evita el mismatch de hostname sin desactivar
+la validación de cadena. No usar `sslmode=require` como sustituto.
+
+El dump viaja cifrado por TLS y descansa solo en ubicación autorizada/cifrada.
+Registrar acceso, checksum y destrucción segura posterior conforme a una
+política de retención aún por aprobar. El state Terraform y Secrets Manager no
+son canales para transportar dumps.
+
+### Checklist temporal compacta
+
+**T-24h (o anticipación aprobada):** responsables, autorización, herramientas,
+backup/snapshot, capacidad, salud México, DNS/TTL efectivo y congelamiento.
+
+**T-30min:** smoke México, secrets/TLS/WAF, usuarios ficticios, comunicación de
+mantenimiento y criterio de abortar.
+
+**T0:** congelar todas las escrituras → drenar → dump final → checksum → restore
+→ integridad completa → smoke. DNS solo si todo es PASS.
+
+**T+<duración observada>:** DNS, health, login, asistencia, nómina, terminal,
+reportes, logs y auditoría.
+
+**T+<periodo de observación aprobado>:** mantener origen intacto; decidir retiro
+en una fase autorizada independiente.
+
+## 10. Ensayo local reproducible
+
+Desde `backend/`, con Docker disponible:
+
+```bash
+npm run migration:test:guards
+npm run migration:test
+```
+
+El script crea PostgreSQL 16 efímeros en `127.0.0.1:55432` y `:55433`, aplica
+Prisma y genera datos completamente ficticios (137 trabajadores, cinco roles,
+activos/bajas, asistencia, movimientos, nómina, tarifas, terminales y
+auditoría). Usa `pg_dump --format=custom --no-owner --no-acl`, restaura con
+`pg_restore --exit-on-error`, compara conteos/checksums/schema y arranca el
+backend contra el destino para smoke HTTP. Un `trap` elimina dump, contenedores,
+volúmenes y red aun ante fallo.
+
+Las guardas aceptan solo `localhost`, `127.0.0.1`,
+`postgres-source-test`/`postgres-mexico-test` y bases con nombre explícito de
+test. Rechazan RDS, Supabase, el dominio público, IP pública, host o base no
+permitidos. Las URLs deben pasarse explícitamente si se sobreescriben; el script
+no lee `.env`.
+
+Evidencia local del 2026-08-13 (no extrapolable a downtime productivo): dos
+ciclos desde cero finalizaron en PASS. En ambos: seed 1 s, dump <1 s, restore
+1 s, verify <1 s, smoke 4 s, total 6 s; 137 trabajadores, 12 migraciones,
+33 constraints, 45 índices, 17 etiquetas enum y cero secuencias. Todos los
+conteos y checksums coincidieron. La versión exacta de RDS, extensiones,
+collation, endpoints/alias DNS y duración productiva quedan para preflight real.
