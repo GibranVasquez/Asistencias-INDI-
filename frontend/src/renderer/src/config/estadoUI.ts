@@ -1,4 +1,5 @@
 const CLAVE_ESTADO_UI = "indi_ultimo_estado_ui";
+const CLAVE_SIDEBAR = "indi_sidebar_estado";
 
 // Whitelist explícita — solo {ruta} se lee/escribe aquí, nunca estado de
 // formulario (ver TrabajadorFormPage/ConfiguracionPage/UsuariosPage: ninguno
@@ -35,6 +36,17 @@ export function guardarRutaPersistida(ruta: string): void {
   escribirEstado({ ruta });
 }
 
+export function leerSidebarContraido(): boolean {
+  return localStorage.getItem(CLAVE_SIDEBAR) === "contraido";
+}
+
+export function guardarSidebarContraido(contraido: boolean): void {
+  localStorage.setItem(CLAVE_SIDEBAR, contraido ? "contraido" : "expandido");
+}
+
 export function limpiarEstadoUI(): void {
+  // La preferencia del sidebar queda fuera deliberadamente: no es parte de
+  // la sesión y debe sobrevivir logout/reinicio como cualquier preferencia
+  // visual local. Solo se elimina la última ruta asociada al usuario.
   localStorage.removeItem(CLAVE_ESTADO_UI);
 }

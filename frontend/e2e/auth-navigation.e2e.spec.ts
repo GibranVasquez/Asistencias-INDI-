@@ -62,8 +62,21 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     expect(await dona.evaluate((elemento) => getComputedStyle(elemento).getPropertyValue("--dona-revelado").trim())).toBe("100%");
     await expect(app.page.getByRole("link", { name: "Trabajadores" })).toBeVisible();
     await expect(app.page.getByRole("link", { name: "Nómina RH" })).toBeVisible();
+    const sidebar = app.page.getByRole("navigation", { name: "Navegación principal" });
+    const anchoPrincipalExpandido = (await app.page.locator("main").boundingBox())!.width;
+    await app.page.getByRole("button", { name: "Contraer menú" }).click();
+    await expect(sidebar).toHaveClass(/contraido/);
+    await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeLessThan(80);
+    await expect(app.page.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    await expect(app.page.getByRole("link", { name: "Trabajadores" })).toHaveAttribute("data-tooltip", "Trabajadores");
+    await expect(app.page.locator(".sidebar-label").first()).toBeHidden();
+    expect((await app.page.locator("main").boundingBox())!.width).toBeGreaterThan(anchoPrincipalExpandido);
+    await app.page.getByRole("link", { name: "Trabajadores" }).hover();
     await app.page.getByRole("link", { name: "Trabajadores" }).click();
     await expect(app.page.getByRole("heading", { name: "Trabajadores" })).toBeVisible();
+    await app.page.getByRole("button", { name: "Expandir menú" }).click();
+    await expect(sidebar).not.toHaveClass(/contraido/);
+    await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(230);
     await app.page.evaluate(() => { window.location.hash = "#/panel/usuarios"; });
     await expect(app.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     await app.page.getByRole("button", { name: "Cerrar sesión" }).click();
@@ -111,10 +124,13 @@ test("Recordarme restaura la sesión humana y logout elimina la persistencia", a
   }
   await login(primerArranque.page, "rh");
   await expect(primerArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await primerArranque.page.getByRole("button", { name: "Contraer menú" }).click();
+  await expect(primerArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveClass(/contraido/);
   await cerrar(primerArranque);
 
   const segundoArranque = await lanzarElectron("persistencia-humana");
   await expect(segundoArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(segundoArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveClass(/contraido/);
   await segundoArranque.page.getByRole("button", { name: "Cerrar sesión" }).click();
   await expect(segundoArranque.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
   await cerrar(segundoArranque);
@@ -124,6 +140,8 @@ test("Recordarme restaura la sesión humana y logout elimina la persistencia", a
     await expect(tercerArranque.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
     await tercerArranque.page.getByLabel("Usuario").fill("e2e-rh");
     await tercerArranque.page.locator('input[type="password"]').fill(PASSWORD_E2E);
+    await tercerArranque.page.getByRole("button", { name: "Ingresar al panel" }).click();
+    await expect(tercerArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveClass(/contraido/);
   } finally {
     await cerrar(tercerArranque);
   }

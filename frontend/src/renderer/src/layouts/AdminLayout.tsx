@@ -6,7 +6,7 @@ import { useTimeoutInactividad } from "../hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "../components/AyudaSoporteModal";
 import ThemeToggle from "../components/ThemeToggle";
 import { menuPorRol, RutaPanel } from "../config/menuPorRol";
-import { guardarRutaPersistida } from "../config/estadoUI";
+import { guardarRutaPersistida, guardarSidebarContraido, leerSidebarContraido } from "../config/estadoUI";
 
 const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
@@ -128,6 +128,7 @@ export default function AdminLayout() {
   const { sesion, persistenciaDegradada, cerrarSesion } = useAuth();
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
   const [errorCerrarSesion, setErrorCerrarSesion] = useState<string | null>(null);
+  const [sidebarContraido, setSidebarContraido] = useState(leerSidebarContraido);
   const location = useLocation();
 
   const manejarCerrarSesion = useCallback(async () => {
@@ -167,12 +168,20 @@ export default function AdminLayout() {
   const rutasPermitidas = menuPorRol[sesion.usuario.rol];
   const itemsNav = ITEMS_NAV.filter((i) => rutasPermitidas.includes(i.ruta));
 
+  function alternarSidebar() {
+    setSidebarContraido((actual) => {
+      const siguiente = !actual;
+      guardarSidebarContraido(siguiente);
+      return siguiente;
+    });
+  }
+
   return (
     <div style={{ height: "100vh", display: "flex", background: "var(--bg)" }}>
       <nav
-        className="admin-sidebar"
+        className={`admin-sidebar${sidebarContraido ? " contraido" : ""}`}
+        aria-label="Navegación principal"
         style={{
-          width: 238,
           flexShrink: 0,
           background: "var(--indi)",
           color: "var(--sidebar-ink)",
@@ -182,6 +191,7 @@ export default function AdminLayout() {
         }}
       >
         <div
+          className="sidebar-brand"
           style={{
             padding: "0 22px 22px",
             borderBottom: "1px solid rgba(255,255,255,.12)",
@@ -196,10 +206,22 @@ export default function AdminLayout() {
             alt="INDI"
             style={{ width: 40, height: 40, borderRadius: 9, objectFit: "cover" }}
           />
-          <div>
+          <div className="sidebar-brand-text">
             <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 17, letterSpacing: ".06em" }}>INDI</div>
             <div style={{ fontSize: 11, color: "var(--pastel)" }}>Asistencia</div>
           </div>
+          <button
+            className="sidebar-toggle"
+            type="button"
+            onClick={alternarSidebar}
+            aria-label={sidebarContraido ? "Expandir menú" : "Contraer menú"}
+            aria-expanded={!sidebarContraido}
+            title={sidebarContraido ? "Expandir menú" : "Contraer menú"}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points={sidebarContraido ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
+            </svg>
+          </button>
         </div>
 
         {itemsNav.map((item) => (
@@ -207,6 +229,8 @@ export default function AdminLayout() {
             key={item.ruta}
             to={`/panel/${item.ruta}`}
             className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
+            aria-label={item.etiqueta}
+            data-tooltip={sidebarContraido ? item.etiqueta : undefined}
             style={({ isActive }) => ({
               display: "flex",
               alignItems: "center",
@@ -223,8 +247,8 @@ export default function AdminLayout() {
               textDecoration: "none",
             })}
           >
-            {item.icono}
-            {item.etiqueta}
+            <span className="sidebar-icon" aria-hidden="true">{item.icono}</span>
+            <span className="sidebar-label">{item.etiqueta}</span>
           </NavLink>
         ))}
 
@@ -232,6 +256,8 @@ export default function AdminLayout() {
           className="sidebar-link"
           type="button"
           onClick={() => setMostrarAyuda(true)}
+          aria-label="Ayuda y soporte"
+          data-tooltip={sidebarContraido ? "Ayuda y soporte" : undefined}
           style={{
             display: "flex",
             alignItems: "center",
@@ -248,25 +274,29 @@ export default function AdminLayout() {
             cursor: "pointer",
           }}
         >
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-          Ayuda y soporte
+          <span className="sidebar-icon" aria-hidden="true">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </span>
+          <span className="sidebar-label">Ayuda y soporte</span>
         </button>
 
         <div
+          className="sidebar-footer"
           style={{
             marginTop: "auto",
-            padding: "16px 22px 0",
+            padding: "16px 14px 0",
             borderTop: "1px solid rgba(255,255,255,.12)",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 8,
           }}
         >
           <div
+            className="sidebar-avatar"
             style={{
               width: 36,
               height: 36,
@@ -282,7 +312,7 @@ export default function AdminLayout() {
           >
             {iniciales}
           </div>
-          <div style={{ lineHeight: 1.3, flex: 1, minWidth: 0 }}>
+          <div className="sidebar-user-info" style={{ lineHeight: 1.3, flex: 1, minWidth: 0 }}>
             <div
               style={{
                 fontSize: 13,
@@ -324,6 +354,7 @@ export default function AdminLayout() {
           </div>
           <ThemeToggle oscuroPorDefecto />
           <button
+            className="sidebar-logout"
             onClick={manejarCerrarSesion}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
@@ -338,7 +369,7 @@ export default function AdminLayout() {
         </div>
       </nav>
 
-      <main style={{ flex: 1, overflow: "auto", position: "relative", display: "flex", flexDirection: "column" }}>
+      <main style={{ flex: 1, minWidth: 0, overflow: "auto", position: "relative", display: "flex", flexDirection: "column" }}>
         <div className="om-ambient" />
         {sesionDegradada && (
           <div
