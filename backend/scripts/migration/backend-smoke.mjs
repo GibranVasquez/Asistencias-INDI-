@@ -15,13 +15,13 @@ try {
   const login = await fetch(`${base}/auth/login`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ username:"migration-rh", password:"Migration-test-123!" }) });
   if (!login.ok) throw new Error(`login falló: ${login.status}`);
   const { token } = await login.json();
-  for (const path of ["/trabajadores", "/asistencias", "/nominas"]) {
+  for (const path of ["/trabajadores", "/asistencias", "/nominas", "/reportes/nomina?desde=2026-08-03&hasta=2026-08-09"]) {
     const r=await fetch(`${base}${path}`, { headers:{ authorization:`Bearer ${token}` } });
     if(!r.ok) throw new Error(`${path} falló: ${r.status}`);
   }
   const terminal = await fetch(`${base}/auth/login-terminal`, { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ username:"migration-kiosco", password:"Migration-test-123!" }) });
   if(!terminal.ok) throw new Error(`terminal falló: ${terminal.status}`);
-  console.log("backend smoke: PASS (health, login RH, trabajadores, asistencias, nómina, terminal)");
+  console.log("backend smoke: PASS (health, login RH, trabajadores, asistencias, nómina, reporte, terminal)");
 } finally {
   server.kill("SIGTERM");
   await Promise.race([once(server,"exit"), new Promise(r=>setTimeout(r,2000))]);
