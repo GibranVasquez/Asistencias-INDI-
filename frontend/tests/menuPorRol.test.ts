@@ -8,10 +8,14 @@ describe("guards de navegación por rol", () => {
   it("RH puede acceder a nómina y trabajadores", () => {
     expect(puedeAcceder("rh", "nomina")).toBe(true);
     expect(puedeAcceder("rh", "trabajadores")).toBe(true);
+    expect(puedeAcceder("rh", "incidencias")).toBe(true);
+    expect(puedeAcceder("rh", "auditoria")).toBe(false);
   });
   it("administrador no accede a nómina ni trabajadores", () => {
     expect(puedeAcceder("administrador", "nomina")).toBe(false);
     expect(puedeAcceder("administrador", "trabajadores")).toBe(false);
+    expect(puedeAcceder("administrador", "incidencias")).toBe(true);
+    expect(puedeAcceder("administrador", "auditoria")).toBe(true);
   });
   it("elige la primera ruta permitida como inicio", () => {
     expect(rutaInicialPara("recepcion")).toBe("asistencias");

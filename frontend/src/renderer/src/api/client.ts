@@ -24,6 +24,17 @@ export function escucharMantenimiento(escucha: EscuchaMantenimiento): () => void
 }
 function notificarMantenimiento(): void { for (const escucha of escuchasMantenimiento) escucha(true); }
 
+export async function comprobarSalud(): Promise<boolean> {
+  try {
+    const respuesta = await fetch(`${API_BASE_URL}/health`, { method: "GET" });
+    if (!respuesta.ok) return false;
+    const datos = await respuesta.json().catch(() => null);
+    return datos?.status === "ok";
+  } catch {
+    return false;
+  }
+}
+
 interface Opciones {
   method: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;

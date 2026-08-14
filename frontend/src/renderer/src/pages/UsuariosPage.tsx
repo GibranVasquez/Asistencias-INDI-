@@ -1,6 +1,5 @@
 import { Fragment, FormEvent, useEffect, useMemo, useState } from "react";
 import { RolUsuario } from "../api/auth";
-import { listarAuditoria, RegistroAuditoria } from "../api/auditoria";
 import { ApiError } from "../api/client";
 import { listarSecciones, Seccion } from "../api/secciones";
 import {
@@ -26,14 +25,6 @@ const ETIQUETA_ROL: Record<RolUsuario, string> = {
   encargado_seccion: "Encargado de frente",
   rh: "Recursos Humanos",
   administrador: "Administrador",
-};
-
-const ETIQUETA_ACCION: Record<string, string> = {
-  crear_usuario: "Creó la cuenta",
-  dar_de_baja_usuario: "Dio de baja",
-  reactivar_usuario: "Reactivó",
-  resetear_password: "Reseteó la contraseña",
-  cambiar_propia_password: "Cambió su propia contraseña",
 };
 
 const estilosCampo = { padding: "10px 12px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" };
@@ -65,9 +56,6 @@ export default function UsuariosPage() {
   const [errorReseteo, setErrorReseteo] = useState<string | null>(null);
   const [guardandoReseteo, setGuardandoReseteo] = useState(false);
 
-  const [mostrarAuditoria, setMostrarAuditoria] = useState(false);
-  const [auditoria, setAuditoria] = useState<RegistroAuditoria[] | null>(null);
-  const [cargandoAuditoria, setCargandoAuditoria] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -87,20 +75,6 @@ export default function UsuariosPage() {
 
   useEffect(cargar, [token]);
 
-  function cargarAuditoria() {
-    setCargandoAuditoria(true);
-    listarAuditoria(token, { entidad: "Usuario" })
-      .then((r) => setAuditoria(r.registros))
-      .catch(() => setAuditoria(null))
-      .finally(() => setCargandoAuditoria(false));
-  }
-
-  function alternarAuditoria() {
-    const próximo = !mostrarAuditoria;
-    setMostrarAuditoria(próximo);
-    if (próximo) cargarAuditoria();
-  }
-
   async function enviarAlta(e: FormEvent) {
     e.preventDefault();
     setErrorAlta(null);
@@ -115,7 +89,6 @@ export default function UsuariosPage() {
       setMostrarAlta(false);
       setFormulario(formularioVacio());
       cargar();
-      if (mostrarAuditoria) cargarAuditoria();
     } catch (err) {
       setErrorAlta(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
     } finally {
@@ -129,7 +102,6 @@ export default function UsuariosPage() {
     try {
       await cambiarEstadoUsuario(token, u.id, !u.activo);
       cargar();
-      if (mostrarAuditoria) cargarAuditoria();
     } catch (err) {
       const mensaje = err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.";
       setErroresFila((prev) => ({ ...prev, [u.id]: mensaje }));
@@ -151,7 +123,6 @@ export default function UsuariosPage() {
       await resetearPasswordUsuario(token, reseteando.id, passwordTemporal);
       setReseteando(null);
       setPasswordTemporal("");
-      if (mostrarAuditoria) cargarAuditoria();
     } catch (err) {
       setErrorReseteo(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
     } finally {
@@ -174,11 +145,7 @@ export default function UsuariosPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Usuarios y accesos" descripcion="Administra cuentas, roles y acceso al sistema." metadata="Centro de accesos" accion={<div style={{ display: "flex", gap: 8 }}>
-          <Boton variante="outline" onClick={alternarAuditoria}>
-            {mostrarAuditoria ? "Ocultar historial" : "Historial de auditoría"}
-          </Boton>
-          <Boton
+      <PageHeader titulo="Usuarios y accesos" descripcion="Administra cuentas, roles y acceso al sistema." metadata="Centro de accesos" accion={<Boton
             onClick={() => {
               setFormulario(formularioVacio());
               setErrorAlta(null);
@@ -187,7 +154,7 @@ export default function UsuariosPage() {
           >
             + Nueva cuenta
           </Boton>
-        </div>} />
+        } />
 
       {usuarios && (
         <ModuleSummary
@@ -200,44 +167,6 @@ export default function UsuariosPage() {
             { etiqueta: "Roles en uso", valor: rolesEnUso },
           ]}
         />
-      )}
-
-      {mostrarAuditoria && (
-        <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-          <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
-            Historial de auditoría · cuentas de usuario
-          </div>
-          {cargandoAuditoria ? (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
-          ) : !auditoria || auditoria.length === 0 ? (
-            <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Sin acciones registradas todavía.</div>
-          ) : (
-            <div style={{ maxHeight: 260, overflowY: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left", fontSize: 11.5, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em", position: "sticky", top: 0, background: "var(--surface)" }}>
-                    <th style={{ padding: "8px 20px" }}>Fecha</th>
-                    <th style={{ padding: "8px 12px" }}>Quién</th>
-                    <th style={{ padding: "8px 12px" }}>Acción</th>
-                    <th style={{ padding: "8px 20px" }}>Detalle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditoria.map((r) => (
-                    <tr key={r.id} style={{ borderTop: "1px solid var(--line)", fontSize: 13 }}>
-                      <td style={{ padding: "8px 20px", color: "var(--muted)", whiteSpace: "nowrap" }}>{new Date(r.fecha).toLocaleString("es-MX")}</td>
-                      <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--ink)" }}>{r.actorUsername}</td>
-                      <td style={{ padding: "8px 12px", color: "var(--ink)" }}>{ETIQUETA_ACCION[r.accion] ?? r.accion}</td>
-                      <td style={{ padding: "8px 20px", color: "var(--muted)", fontSize: 12 }}>
-                        {r.detalle && typeof r.detalle === "object" ? JSON.stringify(r.detalle) : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       )}
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>

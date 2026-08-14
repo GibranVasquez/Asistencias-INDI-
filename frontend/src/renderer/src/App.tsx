@@ -17,6 +17,8 @@ import UsuariosPage from "./pages/UsuariosPage";
 import TerminalesPage from "./pages/TerminalesPage";
 import ConfiguracionPage from "./pages/ConfiguracionPage";
 import ReportesPage from "./pages/ReportesPage";
+import IncidenciasPage from "./pages/IncidenciasPage";
+import AuditoriaPage from "./pages/AuditoriaPage";
 import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
 import KioscoPage from "./pages/KioscoPage";
 import MaintenanceScreen from "./components/MaintenanceScreen";
@@ -93,6 +95,8 @@ export default function App() {
               <Route path="terminales" element={<RutaProtegida rol={rol} ruta="terminales"><TerminalesPage /></RutaProtegida>} />
               <Route path="configuracion" element={<RutaProtegida rol={rol} ruta="configuracion"><ConfiguracionPage /></RutaProtegida>} />
               <Route path="reportes" element={<RutaProtegida rol={rol} ruta="reportes"><ReportesPage /></RutaProtegida>} />
+              <Route path="incidencias" element={<RutaProtegida rol={rol} ruta="incidencias"><IncidenciasPage /></RutaProtegida>} />
+              <Route path="auditoria" element={<RutaProtegida rol={rol} ruta="auditoria"><AuditoriaPage /></RutaProtegida>} />
             </>
           )}
         </Route>

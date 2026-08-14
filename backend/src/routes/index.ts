@@ -15,6 +15,7 @@ import { terminalRouter } from "./terminal.routes";
 import { tipoMovimientoRouter } from "./tipoMovimiento.routes";
 import { trabajadorRouter } from "./trabajador.routes";
 import { usuarioRouter } from "./usuario.routes";
+import { incidenciaRouter } from "./incidencia.routes";
 
 export const router = Router();
 
@@ -28,6 +29,7 @@ router.use(admsRouter);
 
 router.use("/auth", authRouter);
 router.use("/auditoria", auditoriaRouter);
+router.use("/incidencias", incidenciaRouter);
 router.use("/asistencias", asistenciaRouter);
 router.use("/nominas", nominaRouter);
 router.use("/usuarios", usuarioRouter);

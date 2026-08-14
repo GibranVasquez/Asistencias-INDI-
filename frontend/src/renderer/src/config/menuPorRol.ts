@@ -26,7 +26,9 @@ export type RutaPanel =
   | "usuarios"
   | "terminales"
   | "configuracion"
-  | "reportes";
+  | "reportes"
+  | "incidencias"
+  | "auditoria";
 
 export const menuPorRol: Record<RolUsuario, RutaPanel[]> = {
   // trabajador nunca entra a /panel (login normal no aplica a ese rol, ver
@@ -37,8 +39,8 @@ export const menuPorRol: Record<RolUsuario, RutaPanel[]> = {
   // secciones tenga asignadas, eso es scoping de datos DENTRO de
   // EncargadoPage (verificarAccesoSeccion), no un ítem de sidebar distinto.
   encargado_seccion: ["encargado"],
-  rh: ["dashboard", "asistencias", "trabajadores", "encargado", "nomina", "reportes", "configuracion"],
-  administrador: ["dashboard", "usuarios", "terminales"],
+  rh: ["dashboard", "incidencias", "asistencias", "trabajadores", "encargado", "nomina", "reportes", "configuracion"],
+  administrador: ["dashboard", "incidencias", "auditoria", "usuarios", "terminales"],
 };
 
 // "Home" del rol = primer ítem que tiene permitido ver. Reemplaza el

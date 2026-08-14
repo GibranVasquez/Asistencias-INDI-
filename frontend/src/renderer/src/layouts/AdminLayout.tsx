@@ -7,6 +7,7 @@ import AyudaSoporteModal from "../components/AyudaSoporteModal";
 import ThemeToggle from "../components/ThemeToggle";
 import { menuPorRol, RutaPanel } from "../config/menuPorRol";
 import { guardarRutaPersistida, guardarSidebarContraido, leerSidebarContraido } from "../config/estadoUI";
+import SystemStatusIndicator from "../components/SystemStatusIndicator";
 
 const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
@@ -36,6 +37,16 @@ const ITEMS_NAV: ItemNav[] = [
         <rect x="3" y="16" width="7" height="5" />
       </svg>
     ),
+  },
+  {
+    ruta: "incidencias",
+    etiqueta: "Incidencias",
+    icono: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>,
+  },
+  {
+    ruta: "auditoria",
+    etiqueta: "Auditoría",
+    icono: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5"/><path d="M3.1 13a9 9 0 1 0 2.1-6.2L3 8"/><path d="M12 7v5l3 2"/></svg>,
   },
   {
     ruta: "asistencias",
@@ -284,10 +295,13 @@ export default function AdminLayout() {
           <span className="sidebar-label">Ayuda y soporte</span>
         </button>
 
+        <div className="sidebar-system-status" style={{ padding: "10px 14px 0", marginTop: "auto" }}>
+          <SystemStatusIndicator compacto={sidebarContraido} />
+        </div>
+
         <div
           className="sidebar-footer"
           style={{
-            marginTop: "auto",
             padding: "16px 14px 0",
             borderTop: "1px solid rgba(255,255,255,.12)",
             display: "flex",

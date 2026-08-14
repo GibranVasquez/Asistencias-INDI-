@@ -104,6 +104,11 @@ for (const caso of [
       await app.page.evaluate(() => { window.location.hash = "#/panel/nomina"; });
       await expect(app.page.getByRole("heading", { name: caso.destino, exact: true })).toBeVisible();
       if (caso.rol === "administrador") {
+        await expect(app.page.getByRole("button", { name: /Sistema conectado/ })).toBeVisible();
+        await app.page.getByRole("link", { name: "Incidencias" }).click();
+        await expect(app.page.getByRole("heading", { name: "Centro de incidencias" })).toBeVisible();
+        await app.page.getByRole("link", { name: "Auditoría" }).click();
+        await expect(app.page.getByRole("heading", { name: "Auditoría", exact: true })).toBeVisible();
         await app.page.getByRole("button", { name: "Cerrar sesión" }).click();
         await expect(app.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
       }

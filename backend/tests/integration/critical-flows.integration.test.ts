@@ -291,3 +291,30 @@ describe("exportaciones integradas desde PostgreSQL", () => {
     expect(pdf.length).toBeGreaterThan(500);
   });
 });
+
+describe("PostgreSQL/HTTP real: supervisión empresarial", () => {
+  it("expone incidencias reales solo a roles autorizados", async () => {
+    const { adms } = await escenarioBase();
+    await prisma.eventoNoReconciliado.create({ data: { terminalId: adms.id, pinDispositivo: "PIN-FICTICIO", marcadoEn: new Date("2026-08-14T10:00:00Z"), metodoCrudo: "1" } });
+    const [tokenRh, tokenAdmin, tokenRecepcion] = await Promise.all([tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.recepcion)]);
+    for (const token of [tokenRh, tokenAdmin]) {
+      const respuesta = await request(app).get("/incidencias?limite=10").set("Authorization", `Bearer ${token}`);
+      expect(respuesta.status).toBe(200); expect(respuesta.body.total).toBe(1);
+      expect(respuesta.body.items[0]).toMatchObject({ tipo: "ADMS_NO_RECONCILIADO", identificadorDispositivo: "PIN-FICTICIO" });
+      expect(JSON.stringify(respuesta.body)).not.toMatch(/password|token|hash/i);
+    }
+    expect((await request(app).get("/incidencias").set("Authorization", `Bearer ${tokenRecepcion}`)).status).toBe(403);
+  });
+
+  it("pagina auditoría, restringe acceso y sanitiza metadata", async () => {
+    const { usuarios } = await escenarioBase(); const admin = usuarios.get(RolUsuario.administrador)!;
+    await prisma.auditLog.create({ data: { usuarioId: admin.id, accion: "resetear_password", entidad: "Usuario", entidadId: admin.id, detalle: { username: "test-administrador", password: "NO-MOSTRAR", token: "NO-MOSTRAR" } } });
+    const [tokenAdmin, tokenRh] = await Promise.all([tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.rh)]);
+    const respuesta = await request(app).get("/auditoria?pagina=1&limite=10").set("Authorization", `Bearer ${tokenAdmin}`);
+    expect(respuesta.status).toBe(200); expect(respuesta.body).toMatchObject({ total: 1, pagina: 1, limite: 10 });
+    expect(respuesta.body.registros[0].detalle).toEqual(["username: test-administrador"]);
+    expect(JSON.stringify(respuesta.body)).not.toContain("NO-MOSTRAR");
+    expect((await request(app).get("/auditoria").set("Authorization", `Bearer ${tokenRh}`)).status).toBe(403);
+    expect((await request(app).get("/auditoria?limite=500").set("Authorization", `Bearer ${tokenAdmin}`)).status).toBe(400);
+  });
+});
