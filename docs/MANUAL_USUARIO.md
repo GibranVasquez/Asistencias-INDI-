@@ -15,7 +15,7 @@ reseteada, la aplicación exige cambiarla antes de navegar. No compartir cuentas
 
 ## Recursos Humanos (RH)
 
-RH dispone de Dashboard, Asistencias, Trabajadores, Encargado, Nómina,
+RH dispone de Dashboard, Incidencias, Asistencias, Trabajadores, Encargado, Nómina,
 Reportes y Configuración.
 
 - **Trabajadores:** consultar, alta/edición/baja y datos de enrolamiento.
@@ -29,13 +29,30 @@ Reportes y Configuración.
 - **Reportes:** consultar asistencia/nómina y generar XLSX/PDF.
 - **Configuración:** categorías, frentes, horarios, movimientos y tarifas
   conforme a los permisos actuales.
+- **Incidencias:** consulta eventos ADMS pendientes de conciliación y navega a
+  Trabajadores para revisar la asignación del identificador. La bandeja es de
+  solo lectura; no modifica asistencias ni resuelve eventos por sí misma.
 
 ## Administrador
 
-Dispone de Dashboard, Usuarios y Terminales. Puede administrar cuentas,
+Dispone de Dashboard, Incidencias, Auditoría, Usuarios y Terminales. Puede administrar cuentas,
 restablecer contraseñas, crear/editar/activar/desactivar Terminales y consultar
 la bitácora disponible. No tiene acceso a Trabajadores ni Nómina; esa separación
 financiera es deliberada.
+
+## Supervisión y diagnóstico
+
+- **Centro de incidencias:** Administrador y RH ven exclusivamente eventos
+  ADMS no reconciliados que existen en PostgreSQL. No se calculan faltas,
+  retardos, severidades ni anomalías de nómina en esta vista.
+- **Auditoría:** solo Administrador consulta acciones registradas, ordenadas de
+  la más reciente a la más antigua y paginadas. El detalle visible está
+  sanitizado; no presenta contraseñas, tokens, hashes, importes ni JSON crudo.
+- **Estado del sistema:** el indicador del panel significa que la API respondió
+  a una comprobación de salud. **Sin conexión** no cierra la sesión y vuelve a
+  comprobar automáticamente. **Mantenimiento** conserva la pantalla global
+  existente. El indicador no afirma el estado individual de PostgreSQL, AWS o
+  dispositivos físicos.
 
 ## Recepción
 

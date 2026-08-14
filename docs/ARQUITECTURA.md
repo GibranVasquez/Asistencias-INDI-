@@ -24,6 +24,15 @@ El guard global de mantenimiento se ejecuta antes de rate limiting,
 autenticación y routers. Cuando está activo solo permite `GET /health` y
 preflight `OPTIONS`; el resto responde `503 MAINTENANCE_MODE`.
 
+Las vistas empresariales de supervisión usan endpoints de solo lectura:
+
+- `/incidencias`: proyección paginada de `EventoNoReconciliado`, disponible
+  para Administrador y RH;
+- `/auditoria`: proyección paginada y sanitizada de `AuditLog`, disponible solo
+  para Administrador;
+- `/health`: señal mínima usada por el indicador de conectividad; no expone
+  infraestructura ni reemplaza el monitoreo operativo del backend o la base.
+
 ## Asistencia biométrica y ADMS
 
 ```mermaid
