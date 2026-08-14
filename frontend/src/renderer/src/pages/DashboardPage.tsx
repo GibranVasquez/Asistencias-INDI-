@@ -1,4 +1,5 @@
 import { CSSProperties, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { AsistenciaListada, listarAsistencias } from "../api/asistencias";
 import { ApiError } from "../api/client";
 import { Horario, listarHorarios } from "../api/horarios";
@@ -8,6 +9,8 @@ import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import ChipEstado from "../components/ChipEstado";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 import { bucketsPorSemanaDelMes } from "../utils/dashboardBuckets";
 
 type Rango = "dia" | "semana" | "mes";
@@ -241,17 +244,24 @@ export default function DashboardPage() {
   );
 
   const etiquetaPeriodo = rango === "dia" ? "hoy" : rango === "semana" ? "esta semana" : "este mes";
+  const accionesRapidas = sesion!.usuario.rol === "administrador"
+    ? [
+        { titulo: "Usuarios", detalle: "Administrar accesos", ruta: "/panel/usuarios", icono: "usuarios" },
+        { titulo: "Terminales", detalle: "Gestionar dispositivos", ruta: "/panel/terminales", icono: "terminal" },
+      ]
+    : [
+        { titulo: "Nuevo trabajador", detalle: "Registrar personal", ruta: "/panel/trabajadores/nuevo", icono: "agregar" },
+        { titulo: "Asistencias", detalle: "Revisar marcaciones", ruta: "/panel/asistencias", icono: "asistencia" },
+        { titulo: "Nómina", detalle: "Preparar semana", ruta: "/panel/nomina", icono: "nomina" },
+        { titulo: "Reportes", detalle: "Consultar resultados", ruta: "/panel/reportes", icono: "reporte" },
+      ];
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Dashboard</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4, textTransform: "capitalize" }}>
-            {hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4 }}>
+      <PageHeader
+        titulo="Dashboard"
+        descripcion={<span style={{ textTransform: "capitalize" }}>{hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>}
+        accion={<div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4 }}>
           {(["dia", "semana", "mes"] as const).map((r) => (
             <button
               key={r}
@@ -269,8 +279,8 @@ export default function DashboardPage() {
               {r === "dia" ? "Día" : r === "semana" ? "Semana" : "Mes"}
             </button>
           ))}
-        </div>
-      </div>
+        </div>}
+      />
 
       {terminalesAdmsInactivos.length > 0 && (
         <div
@@ -307,18 +317,21 @@ export default function DashboardPage() {
           fondo="rgba(46,99,199,.12)"
           etiqueta={`Asistencias ${etiquetaPeriodo}`}
           valor={totalPeriodo === null ? asistenciasPeriodo.error ?? "…" : totalPeriodo}
+          icono={<IconoResumen tipo="asistencia" />}
         />
         <TarjetaKPI
           color="var(--ok)"
           fondo="rgba(47,174,102,.12)"
           etiqueta="Puntualidad"
           valor={porcentajeATiempo === null ? errorPuntualidad ?? asistenciasPeriodo.error ?? "…" : `${porcentajeATiempo}%`}
+          icono={<IconoResumen tipo="puntualidad" />}
         />
         <TarjetaKPI
           color="var(--warn)"
           fondo="rgba(242,169,59,.14)"
           etiqueta="Tardanzas"
           valor={tarde === null ? errorPuntualidad ?? asistenciasPeriodo.error ?? "…" : tarde}
+          icono={<IconoResumen tipo="tardanza" />}
         />
         <TarjetaKPI
           color="var(--err)"
@@ -326,6 +339,7 @@ export default function DashboardPage() {
           etiqueta="Ausentes hoy"
           valor={ausentesHoy === null ? trabajadores.error ?? "…" : ausentesHoy}
           nota={totalActivos !== null ? `de ${totalActivos} trabajadores activos` : undefined}
+          icono={<IconoResumen tipo="ausencia" />}
         />
       </div>
 
@@ -360,9 +374,7 @@ export default function DashboardPage() {
         {asistenciasHoy.cargando ? (
           <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>Cargando…</div>
         ) : ultimasMarcaciones.length === 0 ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-            Sin marcaciones registradas hoy todavía.
-          </div>
+          <EmptyState titulo="Aún no hay marcaciones" descripcion="Las asistencias registradas hoy aparecerán aquí." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {ultimasMarcaciones.map((a, i) => {
@@ -430,8 +442,34 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      <section className="quick-actions" aria-labelledby="acciones-rapidas-titulo">
+        <h2 id="acciones-rapidas-titulo" className="section-heading">Acciones rápidas</h2>
+        <div className="quick-actions-grid">
+          {accionesRapidas.map((accion) => (
+            <Link className="quick-action" to={accion.ruta} key={accion.ruta} aria-label={`Acción rápida: ${accion.detalle}`}>
+              <span className="quick-action-icon" aria-hidden="true"><IconoResumen tipo={accion.icono} /></span>
+              <span className="quick-action-copy"><strong>{accion.titulo}</strong><span>{accion.detalle}</span></span>
+              <span className="quick-action-arrow" aria-hidden="true">›</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
+}
+
+function IconoResumen({ tipo }: { tipo: string }) {
+  const comunes = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 };
+  if (tipo === "puntualidad") return <svg {...comunes}><circle cx="12" cy="12" r="8" /><path d="m8.5 12 2.2 2.2 4.8-5" /></svg>;
+  if (tipo === "tardanza") return <svg {...comunes}><circle cx="12" cy="12" r="8" /><path d="M12 7v5l3 2" /></svg>;
+  if (tipo === "ausencia") return <svg {...comunes}><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-5 9c0-3 2-5 5-5 1.2 0 2.3.3 3.1.9M16 14l5 5m0-5-5 5" /></svg>;
+  if (tipo === "usuarios") return <svg {...comunes}><circle cx="9" cy="8" r="3" /><path d="M3 20c0-4 2.4-6 6-6s6 2 6 6M16 5a3 3 0 0 1 0 6m1 3c2.4.5 4 2.4 4 5" /></svg>;
+  if (tipo === "terminal") return <svg {...comunes}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 7h6M10 17h4" /></svg>;
+  if (tipo === "agregar") return <svg {...comunes}><circle cx="12" cy="12" r="8" /><path d="M12 8v8m-4-4h8" /></svg>;
+  if (tipo === "nomina") return <svg {...comunes}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10h18m-5 4h2" /></svg>;
+  if (tipo === "reporte") return <svg {...comunes}><path d="M5 20V10m7 10V4m7 16v-7" /></svg>;
+  return <svg {...comunes}><path d="M5 12h14M12 5v14" /><circle cx="12" cy="12" r="9" /></svg>;
 }
 
 function bucketsPorDia(asistencias: AsistenciaListada[], inicio: Date, fin: Date): { etiqueta: string; valor: number; esFuturo: boolean }[] {

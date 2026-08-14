@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 interface DeltaKPI {
   valor: number;
   direccion: "up" | "down";
@@ -11,6 +13,7 @@ interface TarjetaKPIProps {
   color?: string;
   fondo?: string;
   nota?: string;
+  icono?: ReactNode;
   // Badge ▲/▼ + % — opcional a propósito: hoy ninguna pantalla calcula un
   // delta real contra el periodo anterior, así que no se inventa un valor
   // decorativo en los call-sites actuales. Queda listo para cuando exista
@@ -18,15 +21,17 @@ interface TarjetaKPIProps {
   delta?: DeltaKPI;
 }
 
-export default function TarjetaKPI({ etiqueta, valor, color, fondo, nota, delta }: TarjetaKPIProps) {
+export default function TarjetaKPI({ etiqueta, valor, color, fondo, nota, icono, delta }: TarjetaKPIProps) {
   const valorEsLargo = typeof valor === "string" && valor.length > 4;
 
   return (
     <div className="tarjeta-admin tarjeta-kpi" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {color && fondo && (
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: fondo, border: `2px solid ${color}` }} />
-        )}
+      <div className="tarjeta-kpi-header">
+        {icono ? (
+          <span className="tarjeta-kpi-icono" style={{ color, background: fondo }}>{icono}</span>
+        ) : color && fondo ? (
+          <span className="tarjeta-kpi-punto" style={{ background: fondo, borderColor: color }} />
+        ) : null}
         <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>{etiqueta}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
