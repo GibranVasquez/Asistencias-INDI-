@@ -4,6 +4,8 @@ import { ApiError } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import ChipEstado from "../components/ChipEstado";
 import CampoFecha from "../components/CampoFecha";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 
 function hoyISO(): string {
   const ahora = new Date();
@@ -71,24 +73,16 @@ export default function AsistenciasPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Control de asistencias</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>Historial de marcaciones</p>
-        </div>
-      </div>
+      <PageHeader titulo="Control de asistencias" descripcion="Consulta el historial de marcaciones por periodo, frente y trabajador." />
 
       <div
+        className="barra-filtros"
         style={{
           display: "flex",
           gap: 12,
           flexWrap: "wrap",
           alignItems: "flex-end",
           marginTop: 20,
-          background: "var(--surface)",
-          border: "1px solid var(--line)",
-          borderRadius: 12,
-          padding: 16,
         }}
       >
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
@@ -138,9 +132,7 @@ export default function AsistenciasPage() {
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
         ) : asistenciasFiltradas.length === 0 ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>
-            Sin marcaciones en este rango/filtro.
-          </div>
+          <EmptyState titulo="No hay marcaciones en este periodo" descripcion="Prueba cambiando las fechas, el frente o la búsqueda de trabajador." />
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

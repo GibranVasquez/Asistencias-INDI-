@@ -31,6 +31,7 @@ import {
 } from "../api/categoriasTrabajador";
 import { listarTrabajadores, Trabajador } from "../api/trabajadores";
 import { useAuth } from "../context/AuthContext";
+import PageHeader from "../components/PageHeader";
 import Boton from "../components/Boton";
 import ModalConfirmacion from "../components/ModalConfirmacion";
 import CampoFecha from "../components/CampoFecha";
@@ -113,8 +114,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Configuración</h1>
-      <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>Catálogos del sistema</p>
+      <PageHeader titulo="Configuración" descripcion="Administra los catálogos operativos del sistema." />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         {TABS.map((t) => (

@@ -16,6 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import Boton from "../components/Boton";
 import CampoFecha from "../components/CampoFecha";
+import PageHeader from "../components/PageHeader";
 
 type Tab = "asistencia" | "nomina";
 
@@ -64,8 +65,7 @@ export default function ReportesPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Reportes</h1>
-      <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>Asistencia, puntualidad y financiero de nómina</p>
+      <PageHeader titulo="Reportes" descripcion="Analiza asistencia, puntualidad y resultados financieros de nómina." />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         <button

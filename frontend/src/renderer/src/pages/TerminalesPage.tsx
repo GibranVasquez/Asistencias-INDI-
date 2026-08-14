@@ -10,6 +10,8 @@ import {
 } from "../api/terminales";
 import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 import ModalConfirmacion from "../components/ModalConfirmacion";
 
 const estilosCampo = {
@@ -130,14 +132,7 @@ export default function TerminalesPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Terminales</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
-            {terminales ? `${terminales.length} dispositivo${terminales.length === 1 ? "" : "s"}` : "Cargando…"}
-          </p>
-        </div>
-        <Boton
+      <PageHeader titulo="Terminales" descripcion={terminales ? `${terminales.length} dispositivo${terminales.length === 1 ? "" : "s"} registrado${terminales.length === 1 ? "" : "s"}` : "Cargando dispositivos…"} accion={<Boton
           onClick={() => {
             setFormularioAlta(formularioAltaVacio());
             setErrorAlta(null);
@@ -145,8 +140,7 @@ export default function TerminalesPage() {
           }}
         >
           + Nuevo terminal
-        </Boton>
-      </div>
+        </Boton>} />
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
         {error ? (
@@ -154,7 +148,7 @@ export default function TerminalesPage() {
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
         ) : terminales?.length === 0 ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Sin terminales dados de alta.</div>
+          <EmptyState titulo="No hay terminales registradas" descripcion="Las terminales dadas de alta aparecerán aquí con su estado de conexión." />
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

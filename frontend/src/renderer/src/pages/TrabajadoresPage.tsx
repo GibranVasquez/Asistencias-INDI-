@@ -11,6 +11,8 @@ import { useAuth } from "../context/AuthContext";
 import Boton from "../components/Boton";
 import ChipEstado from "../components/ChipEstado";
 import ModalConfirmacion from "../components/ModalConfirmacion";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -113,20 +115,20 @@ export default function TrabajadoresPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Trabajadores</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
+      <PageHeader
+        titulo="Trabajadores"
+        descripcion={
+          <>
             {trabajadores ? `${trabajadores.length} en total` : "Cargando…"}
             {incompletos > 0 && (
               <span style={{ color: "var(--warn)", fontWeight: 600 }}> · {incompletos} con datos de nómina incompletos</span>
             )}
-          </p>
-        </div>
-        <Boton onClick={() => navegar("/panel/trabajadores/nuevo")}>+ Nuevo trabajador</Boton>
-      </div>
+          </>
+        }
+        accion={<Boton onClick={() => navegar("/panel/trabajadores/nuevo")}>+ Nuevo trabajador</Boton>}
+      />
 
-      <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="barra-filtros" style={{ marginTop: 18 }}>
         <input
           type="text"
           placeholder="Buscar por nombre o categoría…"
@@ -162,6 +164,11 @@ export default function TrabajadoresPage() {
             </option>
           ))}
         </select>
+        {(busqueda || categoriaFiltro) && (
+          <Boton tamano="pequeno" variante="outline" onClick={() => { setBusqueda(""); setCategoriaFiltro(""); }}>
+            Limpiar filtros
+          </Boton>
+        )}
       </div>
 
       <div
@@ -221,7 +228,11 @@ export default function TrabajadoresPage() {
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
         ) : filtrados.length === 0 ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Sin resultados.</div>
+          <EmptyState
+            titulo={trabajadores?.length ? "No encontramos trabajadores" : "No hay trabajadores registrados"}
+            descripcion={trabajadores?.length ? "Prueba modificando la búsqueda o la categoría seleccionada." : "Los trabajadores registrados aparecerán en esta lista."}
+            accion={trabajadores?.length ? <Boton tamano="pequeno" variante="outline" onClick={() => { setBusqueda(""); setCategoriaFiltro(""); }}>Limpiar filtros</Boton> : undefined}
+          />
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

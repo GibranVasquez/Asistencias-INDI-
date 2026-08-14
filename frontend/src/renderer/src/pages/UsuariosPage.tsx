@@ -15,6 +15,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import PasswordInput from "../components/PasswordInput";
 import Boton from "../components/Boton";
+import PageHeader from "../components/PageHeader";
 import ModalConfirmacion from "../components/ModalConfirmacion";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
@@ -169,14 +170,7 @@ export default function UsuariosPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Usuarios y accesos</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
-            {usuarios ? `${usuarios.length} cuenta${usuarios.length === 1 ? "" : "s"}` : "Cargando…"}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
+      <PageHeader titulo="Usuarios y accesos" descripcion={usuarios ? `${usuarios.length} cuenta${usuarios.length === 1 ? "" : "s"} con acceso al sistema` : "Cargando cuentas…"} accion={<div style={{ display: "flex", gap: 8 }}>
           <Boton variante="outline" onClick={alternarAuditoria}>
             {mostrarAuditoria ? "Ocultar historial" : "Historial de auditoría"}
           </Boton>
@@ -189,8 +183,7 @@ export default function UsuariosPage() {
           >
             + Nueva cuenta
           </Boton>
-        </div>
-      </div>
+        </div>} />
 
       {mostrarAuditoria && (
         <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>

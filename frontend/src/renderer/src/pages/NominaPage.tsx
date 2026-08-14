@@ -12,6 +12,8 @@ import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import Boton from "../components/Boton";
 import CampoFecha from "../components/CampoFecha";
+import EmptyState from "../components/EmptyState";
+import PageHeader from "../components/PageHeader";
 
 const CONCURRENCIA_GENERACION = 6;
 
@@ -302,14 +304,8 @@ export default function NominaPage() {
         table { font-size: 11px; }
       }`}</style>
 
-      <div className="no-imprimir" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
-        <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Nómina RH</h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
-            Captura masiva semanal · {periodoInicio} — {periodoFin}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="no-imprimir">
+        <PageHeader titulo="Nómina RH" descripcion={`Captura masiva semanal · ${periodoInicio} — ${periodoFin}`} accion={<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, -7))}>
             ← Semana anterior
           </Boton>
@@ -320,7 +316,7 @@ export default function NominaPage() {
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, 7))}>
             Semana siguiente →
           </Boton>
-        </div>
+        </div>} />
       </div>
 
       <div className="no-imprimir" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginTop: 22 }}>
@@ -336,7 +332,7 @@ export default function NominaPage() {
         </div>
       )}
 
-      <div className="no-imprimir" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginTop: 16, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 16 }}>
+      <div className="no-imprimir barra-filtros" style={{ marginTop: 16, alignItems: "flex-end" }}>
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", flex: 1, minWidth: 200 }}>
           Buscar trabajador
           <input type="text" placeholder="Nombre…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} style={estilosCampo} />
@@ -379,7 +375,7 @@ export default function NominaPage() {
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
         ) : filtrados.length === 0 ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Sin resultados.</div>
+          <EmptyState titulo="No hay resultados de nómina" descripcion="Prueba cambiando la semana o los filtros seleccionados." />
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
