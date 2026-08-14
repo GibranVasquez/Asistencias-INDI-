@@ -13,6 +13,8 @@ import ChipEstado from "../components/ChipEstado";
 import ModalConfirmacion from "../components/ModalConfirmacion";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
+import ModuleSummary from "../components/ModuleSummary";
+import SectionHeader from "../components/SectionHeader";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -67,6 +69,8 @@ export default function TrabajadoresPage() {
   }, [trabajadores, busqueda, categoriaFiltro]);
 
   const incompletos = trabajadores?.filter(tieneDatosNominaIncompletos).length ?? 0;
+  const activos = trabajadores?.filter((t) => t.estatus === "activo").length ?? 0;
+  const inactivos = (trabajadores?.length ?? 0) - activos;
   const activosFiltrados = filtrados.filter((t) => t.estatus === "activo");
   const todosActivosFiltradosSeleccionados =
     activosFiltrados.length > 0 && activosFiltrados.every((t) => seleccionados.has(t.id));
@@ -117,16 +121,23 @@ export default function TrabajadoresPage() {
     <div style={{ padding: "26px 30px 36px" }}>
       <PageHeader
         titulo="Trabajadores"
-        descripcion={
-          <>
-            {trabajadores ? `${trabajadores.length} en total` : "Cargando…"}
-            {incompletos > 0 && (
-              <span style={{ color: "var(--warn)", fontWeight: 600 }}> · {incompletos} con datos de nómina incompletos</span>
-            )}
-          </>
-        }
+        descripcion="Administra información laboral, asignaciones y estado del personal."
+        metadata="Directorio operativo"
         accion={<Boton onClick={() => navegar("/panel/trabajadores/nuevo")}>+ Nuevo trabajador</Boton>}
       />
+
+      {trabajadores && (
+        <ModuleSummary
+          etiqueta="Personal registrado"
+          icono="👥"
+          items={[
+            { etiqueta: "Total", valor: trabajadores.length },
+            { etiqueta: "Activos", valor: activos, tono: "ok" },
+            { etiqueta: "Inactivos", valor: inactivos, tono: inactivos > 0 ? "neutral" : "ok" },
+            { etiqueta: "Nómina incompleta", valor: incompletos, tono: incompletos > 0 ? "warn" : "ok" },
+          ]}
+        />
+      )}
 
       <div className="barra-filtros" style={{ marginTop: 18 }}>
         <input
@@ -223,6 +234,10 @@ export default function TrabajadoresPage() {
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <SectionHeader
+          titulo="Directorio de personal"
+          descripcion={cargando ? "Cargando trabajadores…" : `${filtrados.length} de ${trabajadores?.length ?? 0} trabajadores visibles`}
+        />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (

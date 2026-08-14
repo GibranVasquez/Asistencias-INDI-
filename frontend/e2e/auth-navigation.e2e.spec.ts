@@ -74,6 +74,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     await app.page.getByRole("link", { name: "Trabajadores" }).hover();
     await app.page.getByRole("link", { name: "Trabajadores" }).click();
     await expect(app.page.getByRole("heading", { name: "Trabajadores" })).toBeVisible();
+    await expect(app.page.getByRole("region", { name: "Personal registrado" })).toBeVisible();
     await app.page.getByRole("button", { name: "Expandir menú" }).click();
     await expect(sidebar).not.toHaveClass(/contraido/);
     await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(230);
@@ -90,18 +91,18 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
 
 for (const caso of [
   { rol: "administrador" as const, destino: "Dashboard", permitido: "Usuarios", prohibido: "Nómina RH" },
-  { rol: "recepcion" as const, destino: "Control de asistencias", permitido: "Asistencias", prohibido: "Nómina RH" },
+  { rol: "recepcion" as const, destino: "Asistencia", permitido: "Asistencias", prohibido: "Nómina RH" },
   { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Encargado", prohibido: "Nómina RH" },
 ]) {
   test(`${caso.rol} solo recibe su navegación permitida`, async () => {
     const app = await lanzarElectron(`rol-${caso.rol}`);
     try {
       await login(app.page, caso.rol);
-      await expect(app.page.getByRole("heading", { name: caso.destino })).toBeVisible();
+      await expect(app.page.getByRole("heading", { name: caso.destino, exact: true })).toBeVisible();
       await expect(app.page.getByRole("link", { name: caso.permitido })).toBeVisible();
       await expect(app.page.getByRole("link", { name: caso.prohibido })).toHaveCount(0);
       await app.page.evaluate(() => { window.location.hash = "#/panel/nomina"; });
-      await expect(app.page.getByRole("heading", { name: caso.destino })).toBeVisible();
+      await expect(app.page.getByRole("heading", { name: caso.destino, exact: true })).toBeVisible();
       if (caso.rol === "administrador") {
         await app.page.getByRole("button", { name: "Cerrar sesión" }).click();
         await expect(app.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();

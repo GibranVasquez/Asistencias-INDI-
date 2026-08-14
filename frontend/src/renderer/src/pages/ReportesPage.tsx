@@ -65,7 +65,7 @@ export default function ReportesPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Reportes" descripcion="Analiza asistencia, puntualidad y resultados financieros de nómina." />
+      <PageHeader titulo="Reportes" descripcion="Consulta información histórica y analiza la operación por periodo." metadata="Centro de análisis" />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         <button
@@ -82,7 +82,7 @@ export default function ReportesPage() {
         </button>
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      <div className="module-content" style={{ marginTop: 18 }}>
         {tab === "asistencia" ? <PanelReporteAsistencia /> : <PanelReporteNomina />}
       </div>
     </div>

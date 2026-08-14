@@ -6,6 +6,8 @@ import ChipEstado from "../components/ChipEstado";
 import CampoFecha from "../components/CampoFecha";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
+import ModuleSummary from "../components/ModuleSummary";
+import SectionHeader from "../components/SectionHeader";
 
 function hoyISO(): string {
   const ahora = new Date();
@@ -71,9 +73,30 @@ export default function AsistenciasPage() {
     });
   }, [asistencias, seccionFiltro, busquedaTrabajador]);
 
+  const trabajadoresUnicos = useMemo(
+    () => new Set(asistenciasFiltradas.map((a) => a.trabajadorNombre)).size,
+    [asistenciasFiltradas]
+  );
+  const frentesVisibles = useMemo(
+    () => new Set(asistenciasFiltradas.map((a) => a.seccionId)).size,
+    [asistenciasFiltradas]
+  );
+
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Control de asistencias" descripcion="Consulta el historial de marcaciones por periodo, frente y trabajador." />
+      <PageHeader titulo="Asistencia" descripcion="Consulta y supervisa los registros de entrada y salida del personal." metadata="Monitor de operación diaria" />
+
+      {!cargando && asistencias && (
+        <ModuleSummary
+          etiqueta={fechaDesde === fechaHasta ? `Jornada · ${fechaDesde}` : `Periodo · ${fechaDesde} — ${fechaHasta}`}
+          icono="◷"
+          items={[
+            { etiqueta: "Registros visibles", valor: asistenciasFiltradas.length },
+            { etiqueta: "Personal", valor: trabajadoresUnicos },
+            { etiqueta: "Frentes", valor: frentesVisibles },
+          ]}
+        />
+      )}
 
       <div
         className="barra-filtros"
@@ -121,6 +144,7 @@ export default function AsistenciasPage() {
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <SectionHeader titulo="Detalle de asistencia" descripcion="Marcaciones registradas para los filtros seleccionados." />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>
             {cargando ? "Cargando…" : `${asistenciasFiltradas.length} registro${asistenciasFiltradas.length === 1 ? "" : "s"}`}
@@ -130,7 +154,7 @@ export default function AsistenciasPage() {
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
+          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando asistencia…</div>
         ) : asistenciasFiltradas.length === 0 ? (
           <EmptyState titulo="No hay marcaciones en este periodo" descripcion="Prueba cambiando las fechas, el frente o la búsqueda de trabajador." />
         ) : (

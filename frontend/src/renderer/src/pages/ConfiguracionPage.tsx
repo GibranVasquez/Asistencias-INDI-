@@ -114,7 +114,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Configuración" descripcion="Administra los catálogos operativos del sistema." />
+      <PageHeader titulo="Configuración" descripcion="Administra parámetros y catálogos que definen la operación del sistema." metadata="Parámetros del sistema" />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         {TABS.map((t) => (

@@ -17,6 +17,8 @@ import PasswordInput from "../components/PasswordInput";
 import Boton from "../components/Boton";
 import PageHeader from "../components/PageHeader";
 import ModalConfirmacion from "../components/ModalConfirmacion";
+import ModuleSummary from "../components/ModuleSummary";
+import SectionHeader from "../components/SectionHeader";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
@@ -167,10 +169,12 @@ export default function UsuariosPage() {
     },
     []
   );
+  const usuariosActivos = usuarios?.filter((u) => u.activo).length ?? 0;
+  const rolesEnUso = new Set(usuarios?.map((u) => u.rol) ?? []).size;
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Usuarios y accesos" descripcion={usuarios ? `${usuarios.length} cuenta${usuarios.length === 1 ? "" : "s"} con acceso al sistema` : "Cargando cuentas…"} accion={<div style={{ display: "flex", gap: 8 }}>
+      <PageHeader titulo="Usuarios y accesos" descripcion="Administra cuentas, roles y acceso al sistema." metadata="Centro de accesos" accion={<div style={{ display: "flex", gap: 8 }}>
           <Boton variante="outline" onClick={alternarAuditoria}>
             {mostrarAuditoria ? "Ocultar historial" : "Historial de auditoría"}
           </Boton>
@@ -184,6 +188,19 @@ export default function UsuariosPage() {
             + Nueva cuenta
           </Boton>
         </div>} />
+
+      {usuarios && (
+        <ModuleSummary
+          etiqueta="Control de acceso"
+          icono="◇"
+          items={[
+            { etiqueta: "Cuentas", valor: usuarios.length },
+            { etiqueta: "Activas", valor: usuariosActivos, tono: "ok" },
+            { etiqueta: "Inactivas", valor: usuarios.length - usuariosActivos, tono: usuarios.length > usuariosActivos ? "warn" : "neutral" },
+            { etiqueta: "Roles en uso", valor: rolesEnUso },
+          ]}
+        />
+      )}
 
       {mostrarAuditoria && (
         <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
@@ -224,6 +241,7 @@ export default function UsuariosPage() {
       )}
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <SectionHeader titulo="Cuentas autorizadas" descripcion="Usuarios con acceso administrativo u operativo al sistema." />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (

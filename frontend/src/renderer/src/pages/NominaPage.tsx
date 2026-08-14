@@ -14,6 +14,7 @@ import Boton from "../components/Boton";
 import CampoFecha from "../components/CampoFecha";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
+import SectionHeader from "../components/SectionHeader";
 
 const CONCURRENCIA_GENERACION = 6;
 
@@ -305,7 +306,7 @@ export default function NominaPage() {
       }`}</style>
 
       <div className="no-imprimir">
-        <PageHeader titulo="Nómina RH" descripcion={`Captura masiva semanal · ${periodoInicio} — ${periodoFin}`} accion={<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <PageHeader titulo="Nómina RH" descripcion="Consulta y gestiona los cálculos del periodo seleccionado." metadata={`Semana · ${periodoInicio} — ${periodoFin}`} accion={<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, -7))}>
             ← Semana anterior
           </Boton>
@@ -370,10 +371,11 @@ export default function NominaPage() {
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <SectionHeader titulo="Detalle del periodo" descripcion={`${filtrados.length} trabajador${filtrados.length === 1 ? "" : "es"} en la vista actual`} />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
+          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando nómina…</div>
         ) : filtrados.length === 0 ? (
           <EmptyState titulo="No hay resultados de nómina" descripcion="Prueba cambiando la semana o los filtros seleccionados." />
         ) : (

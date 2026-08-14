@@ -13,6 +13,7 @@ import { listarTrabajadoresBasico, TrabajadorBasico } from "../api/trabajadores"
 import { useAuth } from "../context/AuthContext";
 import TarjetaKPI from "../components/TarjetaKPI";
 import Boton from "../components/Boton";
+import PageHeader from "../components/PageHeader";
 
 const INTERVALO_POLL_MS = 20_000;
 
@@ -157,9 +158,22 @@ export default function EncargadoPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 14 }}>
+      <PageHeader
+        titulo="Mi frente · hoy"
+        descripcion="Supervisa el personal y la asistencia correspondiente a tu área de responsabilidad."
+        metadata="Supervisión operativa"
+        accion={<div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 32, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>
+            {ahora.toLocaleTimeString("es-MX", { hour12: false })}
+          </div>
+          <div style={{ fontSize: 13, color: "var(--muted)", textTransform: "capitalize" }}>
+            {ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+          </div>
+        </div>}
+      />
+      <div className="module-context-control">
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--ink)" }}>Mi frente · hoy</h1>
+          <span className="module-context-label">Frente asignado</span>
           {seccionesDisponibles.length > 1 ? (
             <select
               value={seccionId ?? ""}
@@ -173,16 +187,8 @@ export default function EncargadoPage() {
               ))}
             </select>
           ) : (
-            <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>{nombreSeccion}</p>
+            <p style={{ fontSize: 15, color: "var(--ink)", fontWeight: 700, marginTop: 4 }}>{nombreSeccion}</p>
           )}
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 32, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>
-            {ahora.toLocaleTimeString("es-MX", { hour12: false })}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--muted)", textTransform: "capitalize" }}>
-            {ahora.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
-          </div>
         </div>
       </div>
 

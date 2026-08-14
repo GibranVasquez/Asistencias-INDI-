@@ -13,6 +13,8 @@ import Boton from "../components/Boton";
 import EmptyState from "../components/EmptyState";
 import PageHeader from "../components/PageHeader";
 import ModalConfirmacion from "../components/ModalConfirmacion";
+import ModuleSummary from "../components/ModuleSummary";
+import SectionHeader from "../components/SectionHeader";
 
 const estilosCampo = {
   padding: "10px 12px",
@@ -130,9 +132,12 @@ export default function TerminalesPage() {
     }
   }
 
+  const terminalesActivas = terminales?.filter((t) => t.activo).length ?? 0;
+  const terminalesAdms = terminales?.filter((t) => t.tipo === "adms").length ?? 0;
+
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Terminales" descripcion={terminales ? `${terminales.length} dispositivo${terminales.length === 1 ? "" : "s"} registrado${terminales.length === 1 ? "" : "s"}` : "Cargando dispositivos…"} accion={<Boton
+      <PageHeader titulo="Terminales" descripcion="Administra dispositivos autorizados para la operación de asistencia." metadata="Gestión de dispositivos" accion={<Boton
           onClick={() => {
             setFormularioAlta(formularioAltaVacio());
             setErrorAlta(null);
@@ -142,11 +147,25 @@ export default function TerminalesPage() {
           + Nuevo terminal
         </Boton>} />
 
+      {terminales && (
+        <ModuleSummary
+          etiqueta="Infraestructura de asistencia"
+          icono="▣"
+          items={[
+            { etiqueta: "Registradas", valor: terminales.length },
+            { etiqueta: "Activas", valor: terminalesActivas, tono: "ok" },
+            { etiqueta: "Inactivas", valor: terminales.length - terminalesActivas, tono: terminales.length > terminalesActivas ? "warn" : "neutral" },
+            { etiqueta: "Dispositivos ADMS", valor: terminalesAdms },
+          ]}
+        />
+      )}
+
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
+        <SectionHeader titulo="Dispositivos autorizados" descripcion="Vinculación, ubicación y estado de las terminales registradas." />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
-          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
+          <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando terminales…</div>
         ) : terminales?.length === 0 ? (
           <EmptyState titulo="No hay terminales registradas" descripcion="Las terminales dadas de alta aparecerán aquí con su estado de conexión." />
         ) : (
