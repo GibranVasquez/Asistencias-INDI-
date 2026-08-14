@@ -11,8 +11,10 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
 
-  const esProduccion = process.env.NODE_ENV === "production";
-  const message = !esProduccion && err instanceof Error ? err.message : MENSAJE_ERROR_GENERICO;
-
-  res.status(500).json({ error: message });
+  // Las excepciones desconocidas pueden contener consultas, rutas locales,
+  // hostnames o detalles del proveedor de base de datos. Se registran en el
+  // proceso para diagnóstico, pero nunca forman parte de la respuesta HTTP,
+  // tampoco en desarrollo: Electron presenta este campo directamente al
+  // usuario y una falla de Prisma no debe convertirse en fuga de información.
+  res.status(500).json({ error: MENSAJE_ERROR_GENERICO });
 }
