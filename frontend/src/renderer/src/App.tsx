@@ -20,6 +20,7 @@ import ReportesPage from "./pages/ReportesPage";
 import CambiarPasswordObligatorioPage from "./pages/CambiarPasswordObligatorioPage";
 import KioscoPage from "./pages/KioscoPage";
 import MaintenanceScreen from "./components/MaintenanceScreen";
+import PrecisionLoader from "./components/PrecisionLoader";
 import { useMaintenance } from "./context/MaintenanceContext";
 
 // Guard genérico: reemplaza los ternarios esRecepcion/esAdministrador/esRh
@@ -59,7 +60,7 @@ export default function App() {
   // se puede decidir todavia si "/" va a Login o al panel — evita un
   // parpadeo hacia Login seguido de un salto a /panel.
   if (cargando) {
-    return <div role="status" aria-label="Verificando sesión" data-testid="auth-bootstrap" style={{ height: "100vh", background: "var(--bg)" }} />;
+    return <PrecisionLoader pantallaCompleta />;
   }
 
   // Cuenta con contraseña temporal (reseteada por un administrador): bloquea

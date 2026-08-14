@@ -257,10 +257,11 @@ export default function DashboardPage() {
       ];
 
   return (
-    <div style={{ padding: "26px 30px 36px" }}>
+    <div className="precision-dashboard" style={{ padding: "26px 30px 36px" }}>
       <PageHeader
         titulo="Dashboard"
         descripcion={<span style={{ textTransform: "capitalize" }}>{hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>}
+        metadata="Resumen operativo"
         accion={<div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4 }}>
           {(["dia", "semana", "mes"] as const).map((r) => (
             <button

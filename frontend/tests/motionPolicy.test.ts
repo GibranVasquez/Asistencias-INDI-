@@ -20,6 +20,8 @@ describe("política de movimiento accesible", () => {
     expect(politicaReducida).toContain("animation-iteration-count: 1 !important");
     expect(politicaReducida).toContain("transition-duration: 0.01ms !important");
     expect(politicaReducida).toContain("transform: none !important");
+    expect(politicaReducida).toContain(".precision-loader::after");
+    expect(politicaReducida).toContain("animation: none !important");
   });
 
   it("anima la dona y su contador sin timers de JavaScript", () => {
