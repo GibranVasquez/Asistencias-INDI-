@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { UsuarioPublico } from "../api/auth";
+import { usuarioActual, UsuarioPublico } from "../api/auth";
+import { ApiError } from "../api/client";
 import { limpiarEstadoUI } from "../config/estadoUI";
 
 interface SesionAuth {
@@ -51,6 +52,50 @@ function parsearSesion(crudo: string | null): SesionAuth | null {
   }
 }
 
+interface PuenteSesionSegura {
+  leer: () => Promise<{ valor: string; persistida: boolean } | null>;
+  borrar: () => Promise<void>;
+}
+
+export interface ResultadoRestauracionAuth {
+  sesion: SesionAuth | null;
+  persistida: boolean | null;
+}
+
+// La identidad cifrada es solo una credencial candidata: usuario, rol,
+// estado activo y expiración se vuelven a validar con el backend antes de
+// exponer cualquier ruta protegida. Ante ausencia/corrupción/rechazo se
+// limpia también la última ruta; la preferencia visual del sidebar queda.
+export async function restaurarSesionHumana(
+  puente: PuenteSesionSegura | undefined,
+  validar: (token: string) => Promise<{ usuario: UsuarioPublico }> = usuarioActual
+): Promise<ResultadoRestauracionAuth> {
+  if (!puente) {
+    limpiarEstadoUI();
+    return { sesion: null, persistida: null };
+  }
+
+  try {
+    const almacenada = await puente.leer();
+    if (!almacenada) {
+      limpiarEstadoUI();
+      return { sesion: null, persistida: null };
+    }
+    const candidata = parsearSesion(almacenada.valor);
+    if (!candidata?.token) throw new Error("Sesión segura inválida");
+    const { usuario } = await validar(candidata.token);
+    return { sesion: { token: candidata.token, usuario }, persistida: almacenada.persistida };
+  } catch (error) {
+    // Mantenimiento es un estado operativo temporal, no evidencia de token
+    // inválido. MaintenanceProvider ya recibió el 503 desde apiClient: no
+    // destruimos una sesión cifrada válida solo porque el corte está activo.
+    if (error instanceof ApiError && error.code === "MAINTENANCE_MODE") throw error;
+    await puente.borrar().catch(() => {});
+    limpiarEstadoUI();
+    return { sesion: null, persistida: null };
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionAuth | null>(null);
   const [sesionPersistida, setSesionPersistida] = useState<boolean | null>(null);
@@ -59,12 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelado = false;
-    window.indiApp?.sesionSegura
-      .leer()
+    restaurarSesionHumana(window.indiApp?.sesionSegura)
       .then((resultado) => {
         if (cancelado) return;
-        setSesion(parsearSesion(resultado?.valor ?? null));
-        setSesionPersistida(resultado ? resultado.persistida : null);
+        setSesion(resultado.sesion);
+        setSesionPersistida(resultado.persistida);
         setPersistenciaDegradada(false);
       })
       .catch(() => {

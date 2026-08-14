@@ -54,9 +54,11 @@ export async function lanzarElectron(nombrePerfil: string, kiosco = false): Prom
   return { electronApp, page, erroresRuntime, csp };
 }
 
-export async function login(page: Page, rol: "rh" | "administrador" | "recepcion" | "encargado_seccion"): Promise<void> {
+export async function login(page: Page, rol: "rh" | "administrador" | "recepcion" | "encargado_seccion", recordar = true): Promise<void> {
   await page.getByLabel("Usuario").fill(`e2e-${rol}`);
   await page.locator('input[type="password"]').fill(PASSWORD_E2E);
+  const checkboxRecordar = page.getByRole("checkbox", { name: "Recordarme" });
+  if ((await checkboxRecordar.isChecked()) !== recordar) await checkboxRecordar.click();
   await page.getByRole("button", { name: "Ingresar al panel" }).click();
 }
 

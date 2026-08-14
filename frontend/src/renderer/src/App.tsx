@@ -59,7 +59,7 @@ export default function App() {
   // se puede decidir todavia si "/" va a Login o al panel — evita un
   // parpadeo hacia Login seguido de un salto a /panel.
   if (cargando) {
-    return <div style={{ height: "100vh", background: "var(--bg)" }} />;
+    return <div role="status" aria-label="Verificando sesión" data-testid="auth-bootstrap" style={{ height: "100vh", background: "var(--bg)" }} />;
   }
 
   // Cuenta con contraseña temporal (reseteada por un administrador): bloquea

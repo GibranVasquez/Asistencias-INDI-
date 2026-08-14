@@ -146,3 +146,22 @@ test("Recordarme restaura la sesión humana y logout elimina la persistencia", a
     await cerrar(tercerArranque);
   }
 });
+
+test("sesión humana sin Recordarme vuelve a Login tras reiniciar Electron", async () => {
+  const primerArranque = await lanzarElectron("sesion-efimera");
+  await login(primerArranque.page, "rh", false);
+  await expect(primerArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await primerArranque.page.getByRole("link", { name: "Trabajadores" }).click();
+  await expect(primerArranque.page.getByRole("heading", { name: "Trabajadores" })).toBeVisible();
+  await cerrar(primerArranque);
+
+  const segundoArranque = await lanzarElectron("sesion-efimera");
+  try {
+    await expect(segundoArranque.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+    await expect(segundoArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveCount(0);
+    await expect(segundoArranque.page.getByRole("heading", { name: "Trabajadores" })).toHaveCount(0);
+    expect(await segundoArranque.page.evaluate(() => window.location.hash)).toBe("#/");
+  } finally {
+    await cerrar(segundoArranque);
+  }
+});

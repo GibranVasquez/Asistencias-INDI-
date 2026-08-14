@@ -1,7 +1,32 @@
-import { describe, expect, it } from "vitest";
-import { esPersistenciaDegradada } from "../src/renderer/src/context/AuthContext";
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { esPersistenciaDegradada, restaurarSesionHumana } from "../src/renderer/src/context/AuthContext";
+import { guardarRutaPersistida, leerRutaPersistida } from "../src/renderer/src/config/estadoUI";
+
+function almacenamientoMemoria(): Storage {
+  const datos = new Map<string, string>();
+  return {
+    get length() { return datos.size; }, clear: () => datos.clear(),
+    getItem: (clave) => datos.get(clave) ?? null,
+    key: (indice) => [...datos.keys()][indice] ?? null,
+    removeItem: (clave) => { datos.delete(clave); },
+    setItem: (clave, valor) => { datos.set(clave, valor); },
+  };
+}
+
+const usuarioRh = {
+  id: "usuario-test",
+  username: "rh-test",
+  rol: "rh" as const,
+  activo: true,
+  trabajadorId: null,
+  requiereCambioPassword: false,
+  seccionesAsignadas: [],
+};
 
 describe("estado visible de persistencia de sesión humana", () => {
+  beforeEach(() => vi.stubGlobal("localStorage", almacenamientoMemoria()));
+
   it("no trata una sesión deliberadamente efímera como un fallo de safeStorage", () => {
     expect(esPersistenciaDegradada(false, false)).toBe(false);
   });
@@ -12,5 +37,37 @@ describe("estado visible de persistencia de sesión humana", () => {
 
   it("no advierte cuando Recordarme quedó cifrado correctamente", () => {
     expect(esPersistenciaDegradada(true, true)).toBe(false);
+  });
+
+  it("un arranque sin sesión limpia la ruta anterior y termina desautenticado", async () => {
+    guardarRutaPersistida("/panel/trabajadores");
+    const resultado = await restaurarSesionHumana({ leer: async () => null, borrar: vi.fn() });
+    expect(resultado).toEqual({ sesion: null, persistida: null });
+    expect(leerRutaPersistida()).toBeNull();
+  });
+
+  it("Recordarme restaura el usuario y rol validados por el backend", async () => {
+    const resultado = await restaurarSesionHumana(
+      {
+        leer: async () => ({ valor: JSON.stringify({ token: "token-test", usuario: { ...usuarioRh, rol: "administrador" } }), persistida: true }),
+        borrar: vi.fn(),
+      },
+      async (token) => ({ usuario: { ...usuarioRh, username: `${token}-validado` } })
+    );
+    expect(resultado.sesion?.usuario.rol).toBe("rh");
+    expect(resultado.sesion?.usuario.username).toBe("token-test-validado");
+    expect(resultado.persistida).toBe(true);
+  });
+
+  it("un token rechazado borra sesión y ruta sin conservar identidad parcial", async () => {
+    guardarRutaPersistida("/panel/usuarios");
+    const borrar = vi.fn(async () => {});
+    const resultado = await restaurarSesionHumana(
+      { leer: async () => ({ valor: JSON.stringify({ token: "expirado", usuario: usuarioRh }), persistida: true }), borrar },
+      async () => { throw new Error("401"); }
+    );
+    expect(resultado.sesion).toBeNull();
+    expect(borrar).toHaveBeenCalledOnce();
+    expect(leerRutaPersistida()).toBeNull();
   });
 });
