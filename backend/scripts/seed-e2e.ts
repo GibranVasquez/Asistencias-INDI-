@@ -6,8 +6,12 @@ const URL_E2E = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test
 export const PASSWORD_E2E = "E2E-only-Password!42";
 
 function exigirBaseE2E(): void {
-  if (process.env.INTEGRATION_TEST_DB !== "1" || process.env.DATABASE_URL !== URL_E2E) {
-    throw new Error("Seed E2E abortado: DATABASE_URL no es la base local indi_test esperada.");
+  if (
+    process.env.INTEGRATION_TEST_DB !== "1" ||
+    process.env.DATABASE_URL !== URL_E2E ||
+    process.env.DIRECT_URL !== URL_E2E
+  ) {
+    throw new Error("Seed E2E abortado: DATABASE_URL y DIRECT_URL deben identificar la base local indi_test.");
   }
 }
 
