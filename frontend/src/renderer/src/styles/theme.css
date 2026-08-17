@@ -327,6 +327,29 @@ textarea:focus-visible {
     color var(--motion-fast) var(--ease-standard);
 }
 
+.sidebar-navigation {
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.sidebar-group + .sidebar-group {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.sidebar-group-label {
+  min-height: 18px;
+  padding: 0 20px 5px;
+  color: color-mix(in srgb, var(--pastel) 72%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
 .admin-sidebar {
   position: relative;
   z-index: 2;
@@ -430,6 +453,19 @@ textarea:focus-visible {
   padding-right: 13px !important;
   gap: 0 !important;
   justify-content: center;
+}
+
+.admin-sidebar.contraido .sidebar-group-label {
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.admin-sidebar.contraido .sidebar-group + .sidebar-group {
+  margin-top: 7px;
+  padding-top: 7px;
 }
 
 .admin-sidebar.contraido .sidebar-footer {

@@ -3,7 +3,7 @@ import {
   CLAVE_SESION_TERMINAL_LEGACY,
   crearPersistenciaSesionTerminal,
   SesionTerminal,
-} from "../src/renderer/src/security/terminalSession";
+} from "@/features/kiosco/terminalSession";
 
 const sesion: SesionTerminal = {
   token: "jwt-de-prueba-no-real",

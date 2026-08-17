@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { menuPorRol, puedeAcceder, rutaInicialPara } from "../src/renderer/src/config/menuPorRol";
+import { menuPorRol, puedeAcceder, rutaInicialPara } from "@/routes/navigationConfig";
 
 describe("guards de navegación por rol", () => {
-  it("trabajador no tiene rutas del panel", () => expect(menuPorRol.trabajador).toEqual([]));
-  it("recepción solo accede a asistencias", () => expect(menuPorRol.recepcion).toEqual(["asistencias"]));
-  it("encargado solo accede a su vista operativa", () => expect(menuPorRol.encargado_seccion).toEqual(["encargado"]));
+  const rutas = (rol: Parameters<typeof menuPorRol>[0]) => menuPorRol(rol).map((item) => item.id);
+
+  it("trabajador no tiene rutas del panel", () => expect(rutas("trabajador")).toEqual([]));
+  it("recepción solo accede a asistencias", () => expect(rutas("recepcion")).toEqual(["asistencias"]));
+  it("encargado solo accede a su vista operativa", () => expect(rutas("encargado_seccion")).toEqual(["encargado"]));
   it("RH puede acceder a nómina y trabajadores", () => {
     expect(puedeAcceder("rh", "nomina")).toBe(true);
     expect(puedeAcceder("rh", "trabajadores")).toBe(true);
@@ -21,5 +23,13 @@ describe("guards de navegación por rol", () => {
     expect(rutaInicialPara("recepcion")).toBe("asistencias");
     expect(rutaInicialPara("encargado_seccion")).toBe("encargado");
     expect(rutaInicialPara("administrador")).toBe("dashboard");
+  });
+
+  it("organiza RH por operación, supervisión y administración sin ampliar permisos", () => {
+    expect(menuPorRol("rh").map(({ id, group }) => [id, group])).toEqual([
+      ["dashboard", "general"], ["trabajadores", "operacion"], ["asistencias", "operacion"],
+      ["nomina", "operacion"], ["reportes", "operacion"], ["encargado", "operacion"],
+      ["incidencias", "supervision"], ["configuracion", "administracion"],
+    ]);
   });
 });

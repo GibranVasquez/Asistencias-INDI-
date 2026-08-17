@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bucketsPorSemanaDelMes } from "../src/renderer/src/utils/dashboardBuckets";
+import { bucketsPorSemanaDelMes } from "@/features/dashboard/dashboardBuckets";
 
 describe("semanas de la gráfica mensual", () => {
   it("marca como futuras las semanas que aún no comienzan", () => {

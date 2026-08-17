@@ -5,7 +5,7 @@ import {
   leerRutaPersistida,
   leerSidebarContraido,
   limpiarEstadoUI,
-} from "../src/renderer/src/config/estadoUI";
+} from "@/core/config/estadoUI";
 
 function almacenamientoMemoria(): Storage {
   const datos = new Map<string, string>();

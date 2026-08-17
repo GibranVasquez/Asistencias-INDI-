@@ -2,10 +2,10 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import App from "../src/renderer/src/App";
-import { AuthProvider } from "../src/renderer/src/context/AuthContext";
-import { MaintenanceProvider } from "../src/renderer/src/context/MaintenanceContext";
-import { ThemeProvider } from "../src/renderer/src/context/ThemeContext";
+import App from "@/app/App";
+import { AuthProvider } from "@/features/auth/AuthContext";
+import { MaintenanceProvider } from "@/app/providers/MaintenanceProvider";
+import { ThemeProvider } from "@/app/providers/ThemeProvider";
 
 describe("bootstrap de autenticación", () => {
   beforeEach(() => {

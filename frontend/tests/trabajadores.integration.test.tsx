@@ -3,20 +3,20 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import TrabajadoresPage from "../src/renderer/src/pages/TrabajadoresPage";
-import type { Trabajador } from "../src/renderer/src/api/trabajadores";
+import TrabajadoresPage from "@/features/trabajadores/TrabajadoresPage";
+import type { Trabajador } from "@/features/trabajadores/api";
 
 const { listarTrabajadores, aplicarSueldoATrabajadores } = vi.hoisted(() => ({
   listarTrabajadores: vi.fn(),
   aplicarSueldoATrabajadores: vi.fn(),
 }));
 
-vi.mock("../src/renderer/src/api/trabajadores", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../src/renderer/src/api/trabajadores")>();
+vi.mock("@/features/trabajadores/api", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/features/trabajadores/api")>();
   return { ...original, listarTrabajadores, aplicarSueldoATrabajadores };
 });
 
-vi.mock("../src/renderer/src/context/AuthContext", () => ({
+vi.mock("@/features/auth/AuthContext", () => ({
   useAuth: () => ({ sesion: { token: "token-prueba", usuario: { id: "rh", username: "rh", rol: "rh" } } }),
 }));
 

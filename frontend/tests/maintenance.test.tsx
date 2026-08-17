@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { apiClient, ApiError } from "../src/renderer/src/api/client";
-import { MaintenanceProvider, useMaintenance } from "../src/renderer/src/context/MaintenanceContext";
-import MaintenanceScreen from "../src/renderer/src/components/MaintenanceScreen";
+import { apiClient, ApiError } from "@/core/api/client";
+import { MaintenanceProvider, useMaintenance } from "@/app/providers/MaintenanceProvider";
+import MaintenanceScreen from "@/app/components/MaintenanceScreen";
 
 function Estado() { return useMaintenance() ? <MaintenanceScreen/> : <div>Operación normal</div>; }
 afterEach(()=>vi.unstubAllGlobals());

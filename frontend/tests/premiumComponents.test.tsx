@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import EmptyState from "../src/renderer/src/components/EmptyState";
-import PageHeader from "../src/renderer/src/components/PageHeader";
+import EmptyState from "@/shared/components/EmptyState";
+import PageHeader from "@/shared/components/PageHeader";
 
 describe("componentes de jerarquía visual", () => {
   it("mantiene un encabezado semántico y su acción accesible", () => {

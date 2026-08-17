@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import SystemStatusIndicator from "../src/renderer/src/components/SystemStatusIndicator";
-import { MaintenanceProvider } from "../src/renderer/src/context/MaintenanceContext";
-import { SystemStatusProvider } from "../src/renderer/src/context/SystemStatusContext";
-import { apiClient } from "../src/renderer/src/api/client";
+import SystemStatusIndicator from "@/layouts/admin/SystemStatusIndicator";
+import { MaintenanceProvider } from "@/app/providers/MaintenanceProvider";
+import { SystemStatusProvider } from "@/app/providers/SystemStatusProvider";
+import { apiClient } from "@/core/api/client";
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("estado del sistema", () => {
   it("detecta backend disponible sin mostrar infraestructura", async () => {

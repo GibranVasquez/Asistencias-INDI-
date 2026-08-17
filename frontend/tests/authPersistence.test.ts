@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { esPersistenciaDegradada, restaurarSesionHumana } from "../src/renderer/src/context/AuthContext";
-import { guardarRutaPersistida, leerRutaPersistida } from "../src/renderer/src/config/estadoUI";
+import { esPersistenciaDegradada, restaurarSesionHumana } from "@/features/auth/AuthContext";
+import { guardarRutaPersistida, leerRutaPersistida } from "@/core/config/estadoUI";
 
 function almacenamientoMemoria(): Storage {
   const datos = new Map<string, string>();

@@ -12,6 +12,10 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/renderer/src/*"]
+    },
     "noEmit": true
   },
   "include": ["src/renderer/src/**/*"]
