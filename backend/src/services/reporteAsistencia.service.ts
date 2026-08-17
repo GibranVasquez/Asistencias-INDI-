@@ -34,7 +34,7 @@ function diasHabilesEnRango(inicio: Date, fin: Date): Date[] {
   return dias;
 }
 
-// Misma regla que llegoATiempo en DashboardPage.tsx (frontend): la hora
+// Misma regla que llegoATiempo en PanelPrincipalPage.tsx (frontend): la hora
 // marcada vs. horaEntrada + toleranciaMinutos del Horario de la Sección
 // donde se marcó esa asistencia — replicada aquí para que el reporte no
 // dependa de traer registros crudos al cliente para calcularlo.
