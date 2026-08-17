@@ -13,6 +13,7 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import { bucketsPorSemanaDelMes } from "@/features/dashboard/resumenBuckets";
 import { navegacionPorId, RutaPanel } from "@/routes/navigationConfig";
+import { obtenerObraActual } from "@/core/api/resources/obras";
 
 type Rango = "dia" | "semana" | "mes";
 
@@ -161,6 +162,10 @@ export default function PanelPrincipalPage() {
   const secciones = useCargaProtegida(() => listarSecciones(token).then((r) => r.secciones), [token]);
   const horarios = useCargaProtegida(() => listarHorarios(token).then((r) => r.horarios), [token]);
   const terminales = useCargaProtegida(() => listarTerminales(token).then((r) => r.terminales), [token]);
+  const [obraActual, setObraActual] = useState<string | null>(null);
+  useEffect(() => {
+    obtenerObraActual(token).then((respuesta) => setObraActual(respuesta.obra.nombre)).catch(() => setObraActual(null));
+  }, [token]);
 
   const terminalesAdmsInactivos = useMemo(
     () => (terminales.datos ?? []).filter((t) => terminalAdmsInactivo(t, hoy)),
@@ -284,6 +289,11 @@ export default function PanelPrincipalPage() {
           ))}
         </div>}
       />
+
+      <section className="obra-actual" aria-label="Obra actual">
+        <span className="obra-actual-etiqueta">Obra actual</span>
+        <strong>{obraActual || "Obra no configurada"}</strong>
+      </section>
 
       {terminalesAdmsInactivos.length > 0 && (
         <div

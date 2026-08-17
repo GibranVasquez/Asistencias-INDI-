@@ -56,9 +56,9 @@ function encabezadoDia(fechaISO: string): string {
 function periodoLegible(fechaInicio: string, fechaFin: string): string {
   const inicio = new Date(`${fechaInicio}T00:00:00Z`);
   const fin = new Date(`${fechaFin}T00:00:00Z`);
-  const opciones: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" };
-  const inicioTexto = inicio.toLocaleDateString("es-MX", opciones);
-  const finTexto = fin.toLocaleDateString("es-MX", opciones);
+  const opcionesInicio: Intl.DateTimeFormatOptions = inicio.getUTCMonth() === fin.getUTCMonth() ? { day: "numeric", timeZone: "UTC" } : { day: "numeric", month: "long", timeZone: "UTC" };
+  const inicioTexto = inicio.toLocaleDateString("es-MX", opcionesInicio);
+  const finTexto = fin.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   return `${inicioTexto} al ${finTexto}`;
 }
 
@@ -68,10 +68,18 @@ export function generarPdfListaSemanal(lista: ListaSemanalExportable, salida: No
   doc.font("Helvetica-Bold").fontSize(16).text("LISTA DE ASISTENCIA");
   doc.font("Helvetica").fontSize(9);
   const c = lista.contexto;
-  doc.text(`ÁREA: ${c.area}`);
-  doc.text(`FRENTE: ${c.frente}    TRAMO O UBICACIÓN DE LA OBRA: ${c.tramoUbicacion}`);
-  doc.text(`RESPONSABLE DEL TRAMO: ${c.responsableTramo}    CATEGORÍA: ${c.categoria}    TURNO: ${c.turno}`);
-  doc.text(`SEMANA: ${c.semana}    PERIODO: ${periodoLegible(c.fechaInicio, c.fechaFin)}`);
+  const campo = (etiqueta: string, valor: string) => {
+    doc.font("Helvetica-Bold").text(etiqueta);
+    doc.font("Helvetica").text(valor);
+  };
+  campo("ÁREA / OBRA", c.area);
+  campo("FRENTE", c.frente);
+  campo("TRAMO O UBICACIÓN DE LA OBRA", c.tramoUbicacion);
+  campo("RESPONSABLE DEL TRAMO", c.responsableTramo);
+  campo("CATEGORÍA", c.categoria);
+  campo("TURNO", c.turno);
+  campo("SEMANA", c.semana);
+  campo("PERIODO", periodoLegible(c.fechaInicio, c.fechaFin));
   doc.moveDown(0.8);
   const diasSemana = dias(c.fechaInicio);
   const columnas = ["ID", "NOMBRE", "PUESTO / CATEGORÍA", "MARCA", ...diasSemana.map(encabezadoDia), "HUELLA"];

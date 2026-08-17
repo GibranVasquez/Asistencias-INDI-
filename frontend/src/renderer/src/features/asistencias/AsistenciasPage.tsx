@@ -8,7 +8,7 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { agruparAsistenciasPorTrabajador, aFechaLocal, aISO, encabezadoDia, lunesDeSemana, numeroSemana, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
 import { obtenerObraActual } from "@/core/api/resources/obras";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
@@ -83,8 +83,8 @@ export default function AsistenciasPage() {
   const categoriasDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.trabajadorCategoria))].filter(Boolean).sort(), [asistencias]);
   const seccionSeleccionada = asistencias?.find((a) => a.seccionId === seccionFiltro);
   const areaVisible = seccionSeleccionada?.obraNombre || nombreObra || "No especificada";
-  const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.username).join(", ") || "No asignado";
-  const periodoLegible = `${aFechaLocal(fechaDesde).toLocaleDateString("es-MX", { day: "2-digit", month: "long" })} al ${aFechaLocal(fechaHasta).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}`;
+  const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.trabajadorNombre ?? r.username).join(", ") || "No asignado";
+  const periodoLegible = periodoSemanalLegible(fechaDesde, fechaHasta);
 
   const diasSemana = useMemo(
     () => Array.from({ length: 7 }, (_, indice) => aISO(sumarDias(inicioSemana, indice))),
@@ -129,7 +129,7 @@ export default function AsistenciasPage() {
         metadata="Control operativo de obra"
       />
 
-      <section className="tarjeta-admin" style={{ marginTop: 16, padding: "18px 20px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14 }} aria-label="Contexto operativo de la lista semanal">
+      <section className="tarjeta-admin contexto-lista-semanal" style={{ marginTop: 16, padding: "18px 20px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14 }} aria-label="Contexto operativo de la lista semanal">
         <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--accent)", textTransform: "uppercase" }}>Lista semanal de asistencia</div>
         <h2 style={{ margin: "5px 0 14px", fontSize: 18, color: "var(--ink)" }}>{areaVisible}</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px 22px", fontSize: 13 }}>

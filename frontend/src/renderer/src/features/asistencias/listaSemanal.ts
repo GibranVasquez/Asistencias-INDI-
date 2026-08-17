@@ -50,6 +50,17 @@ export function encabezadoDia(fechaISO: string): string {
   }).replace(".", "").toUpperCase();
 }
 
+export function periodoSemanalLegible(fechaInicioISO: string, fechaFinISO: string): string {
+  const inicio = aFechaLocal(fechaInicioISO);
+  const fin = aFechaLocal(fechaFinISO);
+  const opcionesInicio: Intl.DateTimeFormatOptions = inicio.getMonth() === fin.getMonth()
+    ? { day: "numeric" }
+    : { day: "numeric", month: "long" };
+  const inicioTexto = inicio.toLocaleDateString("es-MX", opcionesInicio);
+  const finTexto = fin.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+  return `${inicioTexto} al ${finTexto}`;
+}
+
 export function agruparAsistenciasPorTrabajador(asistencias: AsistenciaListada[]): FilaListaSemanal[] {
   const filas = new Map<string, FilaListaSemanal>();
   for (const asistencia of asistencias) {

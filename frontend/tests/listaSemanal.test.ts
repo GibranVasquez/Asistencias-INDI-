@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AsistenciaListada } from "@/features/asistencias/api";
-import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, numeroSemana, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
 
 function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
   return {
@@ -29,6 +29,11 @@ describe("lista semanal de asistencia", () => {
     expect(aISO(lunes)).toBe("2026-08-10");
     expect(aISO(sumarDias(lunes, 6))).toBe("2026-08-16");
     expect(numeroSemana(lunes)).toBe(33);
+  });
+
+  it("presenta el periodo semanal sin repetir el mes cuando corresponde", () => {
+    expect(periodoSemanalLegible("2026-08-17", "2026-08-23")).toBe("17 al 23 de agosto de 2026");
+    expect(periodoSemanalLegible("2026-08-31", "2026-09-06")).toBe("31 de agosto al 6 de septiembre de 2026");
   });
 
   it("agrupa por trabajador y día, ordenando sus marcaciones por hora", () => {
