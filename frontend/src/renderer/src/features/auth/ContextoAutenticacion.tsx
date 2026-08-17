@@ -8,7 +8,7 @@ interface SesionAuth {
   usuario: UsuarioPublico;
 }
 
-interface AuthContextValor {
+interface ContextoAutenticacionValor {
   sesion: SesionAuth | null;
   // cargando=true mientras se lee la sesion persistida (safeStorage via IPC
   // es asincrono) — App no puede decidir la ruta inicial hasta que termine.
@@ -37,7 +37,7 @@ interface AuthContextValor {
   actualizarUsuario: (cambios: Partial<UsuarioPublico>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValor | null>(null);
+const ContextoAutenticacion = createContext<ContextoAutenticacionValor | null>(null);
 
 export function esPersistenciaDegradada(recordar: boolean, persistida: boolean): boolean {
   return recordar && !persistida;
@@ -87,7 +87,7 @@ export async function restaurarSesionHumana(
     return { sesion: { token: candidata.token, usuario }, persistida: almacenada.persistida };
   } catch (error) {
     // Mantenimiento es un estado operativo temporal, no evidencia de token
-    // inválido. MaintenanceProvider ya recibió el 503 desde apiClient: no
+    // inválido. ProveedorMantenimiento ya recibió el 503 desde apiClient: no
     // destruimos una sesión cifrada válida solo porque el corte está activo.
     if (error instanceof ApiError && error.code === "MAINTENANCE_MODE") throw error;
     await puente.borrar().catch(() => {});
@@ -96,7 +96,7 @@ export async function restaurarSesionHumana(
   }
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionAuth | null>(null);
   const [sesionPersistida, setSesionPersistida] = useState<boolean | null>(null);
   const [persistenciaDegradada, setPersistenciaDegradada] = useState(false);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const valor = useMemo<AuthContextValor>(
+  const valor = useMemo<ContextoAutenticacionValor>(
     () => ({
       sesion,
       cargando,
@@ -172,13 +172,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [sesion, cargando, sesionPersistida, persistenciaDegradada]
   );
 
-  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
+  return <ContextoAutenticacion.Provider value={valor}>{children}</ContextoAutenticacion.Provider>;
 }
 
-export function useAuth(): AuthContextValor {
-  const contexto = useContext(AuthContext);
+export function useAutenticacion(): ContextoAutenticacionValor {
+  const contexto = useContext(ContextoAutenticacion);
   if (!contexto) {
-    throw new Error("useAuth debe usarse dentro de <AuthProvider>.");
+    throw new Error("useAutenticacion debe usarse dentro de <ProveedorAutenticacion>.");
   }
   return contexto;
 }

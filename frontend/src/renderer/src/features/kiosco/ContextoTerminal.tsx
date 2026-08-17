@@ -19,7 +19,7 @@ export interface ConfigKiosco {
   turno?: string;
 }
 
-interface TerminalContextValor {
+interface ValorContextoTerminal {
   sesion: SesionTerminal | null;
   config: ConfigKiosco | null;
   restaurandoSesion: boolean;
@@ -30,7 +30,7 @@ interface TerminalContextValor {
   limpiarConfig: () => void;
 }
 
-const TerminalContext = createContext<TerminalContextValor | null>(null);
+const ContextoTerminal = createContext<ValorContextoTerminal | null>(null);
 
 function leerJSON<T>(clave: string): T | null {
   const crudo = localStorage.getItem(clave);
@@ -42,7 +42,7 @@ function leerJSON<T>(clave: string): T | null {
   }
 }
 
-export function TerminalProvider({ children }: { children: ReactNode }) {
+export function ProveedorTerminal({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionTerminal | null>(null);
   const [config, setConfig] = useState<ConfigKiosco | null>(() => leerJSON(CLAVE_CONFIG));
   const [restaurandoSesion, setRestaurandoSesion] = useState(true);
@@ -68,7 +68,7 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     return () => { activo = false; };
   }, [persistencia]);
 
-  const valor = useMemo<TerminalContextValor>(
+  const valor = useMemo<ValorContextoTerminal>(
     () => ({
       sesion,
       config,
@@ -95,13 +95,13 @@ export function TerminalProvider({ children }: { children: ReactNode }) {
     [sesion, config, restaurandoSesion, errorAlmacenamiento, persistencia]
   );
 
-  return <TerminalContext.Provider value={valor}>{children}</TerminalContext.Provider>;
+  return <ContextoTerminal.Provider value={valor}>{children}</ContextoTerminal.Provider>;
 }
 
-export function useTerminal(): TerminalContextValor {
-  const contexto = useContext(TerminalContext);
+export function useTerminal(): ValorContextoTerminal {
+  const contexto = useContext(ContextoTerminal);
   if (!contexto) {
-    throw new Error("useTerminal debe usarse dentro de <TerminalProvider>.");
+    throw new Error("useTerminal debe usarse dentro de <ProveedorTerminal>.");
   }
   return contexto;
 }

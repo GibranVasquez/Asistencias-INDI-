@@ -10,7 +10,7 @@ import {
   TrabajadorEstatus,
   TrabajadorTipo,
 } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import { CategoriaTrabajador, listarCategoriasTrabajador } from "@/core/api/resources/categoriasTrabajador";
 import Boton from "@/shared/components/Boton";
 import CampoFecha from "@/shared/components/CampoFecha";
@@ -109,7 +109,7 @@ function Seccion({ titulo, nota, children }: { titulo: string; nota?: string; ch
 export default function TrabajadorFormPage() {
   const { id } = useParams<{ id?: string }>();
   const esEdicion = Boolean(id);
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const navegar = useNavigate();
 

@@ -6,7 +6,7 @@ import { Horario, listarHorarios } from "@/core/api/resources/horarios";
 import { listarSecciones, Seccion } from "@/core/api/resources/secciones";
 import { listarTerminales, Terminal } from "@/features/terminales/api";
 import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import ChipEstado from "@/shared/components/ChipEstado";
 import EstadoVacio from "@/shared/components/EstadoVacio";
@@ -113,7 +113,7 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[]): Estado
 }
 
 export default function PanelPrincipalPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [rango, setRango] = useState<Rango>("semana");

@@ -5,13 +5,13 @@ type TemaResuelto = "claro" | "oscuro";
 
 const CLAVE_LOCALSTORAGE = "indi-tema";
 
-interface ThemeContextValor {
+interface ContextoTemaValor {
   tema: Tema;
   temaResuelto: TemaResuelto;
   cambiarTema: (tema: Tema) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValor | null>(null);
+const ContextoTema = createContext<ContextoTemaValor | null>(null);
 
 function leerTemaGuardado(): Tema {
   const crudo = localStorage.getItem(CLAVE_LOCALSTORAGE);
@@ -22,7 +22,7 @@ function prefiereOscuroDelSistema(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ProveedorTema({ children }: { children: ReactNode }) {
   const [tema, setTema] = useState<Tema>(leerTemaGuardado);
   const [prefiereOscuro, setPrefiereOscuro] = useState(prefiereOscuroDelSistema);
 
@@ -42,7 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = temaResuelto === "oscuro" ? "dark" : "light";
   }, [temaResuelto]);
 
-  const valor = useMemo<ThemeContextValor>(
+  const valor = useMemo<ContextoTemaValor>(
     () => ({
       tema,
       temaResuelto,
@@ -54,13 +54,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [tema, temaResuelto]
   );
 
-  return <ThemeContext.Provider value={valor}>{children}</ThemeContext.Provider>;
+  return <ContextoTema.Provider value={valor}>{children}</ContextoTema.Provider>;
 }
 
-export function useTheme(): ThemeContextValor {
-  const contexto = useContext(ThemeContext);
+export function useTema(): ContextoTemaValor {
+  const contexto = useContext(ContextoTema);
   if (!contexto) {
-    throw new Error("useTheme debe usarse dentro de <ThemeProvider>.");
+    throw new Error("useTema debe usarse dentro de <ProveedorTema>.");
   }
   return contexto;
 }

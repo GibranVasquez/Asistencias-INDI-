@@ -1,14 +1,14 @@
 import IntroSplash from "./components/IntroSplash";
 import MaintenanceScreen from "./components/MaintenanceScreen";
 import PrecisionLoader from "./components/PrecisionLoader";
-import { useMaintenance } from "./providers/MaintenanceProvider";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useMantenimiento } from "./providers/ProveedorMantenimiento";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import CambiarPasswordObligatorioPage from "@/features/auth/CambiarPasswordObligatorioPage";
 import AppRoutes from "@/routes/AppRoutes";
 
 export default function App() {
-  const { sesion, cargando } = useAuth();
-  const mantenimiento = useMaintenance();
+  const { sesion, cargando } = useAutenticacion();
+  const mantenimiento = useMantenimiento();
 
   if (mantenimiento) return <MaintenanceScreen />;
   if (cargando) return <PrecisionLoader pantallaCompleta />;

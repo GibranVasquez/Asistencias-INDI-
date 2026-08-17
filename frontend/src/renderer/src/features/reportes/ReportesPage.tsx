@@ -12,7 +12,7 @@ import {
 } from "@/features/reportes/api";
 import { listarSecciones, Seccion } from "@/core/api/resources/secciones";
 import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import CampoFecha from "@/shared/components/CampoFecha";
@@ -90,7 +90,7 @@ export default function ReportesPage() {
 }
 
 function PanelReporteAsistencia() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [desde, setDesde] = useState(inicioDeMesISO());
@@ -335,7 +335,7 @@ function PanelReporteAsistencia() {
 }
 
 function PanelReporteNomina() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [desde, setDesde] = useState(`${new Date().getFullYear()}-01-01`);

@@ -16,8 +16,8 @@ vi.mock("@/features/trabajadores/api", async (importOriginal) => {
   return { ...original, listarTrabajadores, aplicarSueldoATrabajadores };
 });
 
-vi.mock("@/features/auth/AuthContext", () => ({
-  useAuth: () => ({ sesion: { token: "token-prueba", usuario: { id: "rh", username: "rh", rol: "rh" } } }),
+vi.mock("@/features/auth/ContextoAutenticacion", () => ({
+  useAutenticacion: () => ({ sesion: { token: "token-prueba", usuario: { id: "rh", username: "rh", rol: "rh" } } }),
 }));
 
 function trabajador(id: string, nombreCompleto: string, categoria: string, estatus: "activo" | "baja" = "activo"): Trabajador {

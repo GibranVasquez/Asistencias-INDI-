@@ -5,12 +5,12 @@ import Boton from "@/shared/components/Boton";
 import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 
 const ACCIONES: Record<string, string> = { crear_usuario: "Creó una cuenta", dar_de_baja_usuario: "Dio de baja una cuenta", reactivar_usuario: "Reactivó una cuenta", resetear_password: "Restableció una contraseña", crear_trabajador: "Registró un trabajador", editar_trabajador: "Actualizó un trabajador", aplicar_sueldo_masivo_seleccion: "Aplicó una actualización masiva", aplicar_sueldo_masivo_por_categoria: "Aplicó una actualización por categoría", crear_nomina: "Generó una nómina", corregir_nomina: "Corrigió una nómina", crear_terminal: "Registró una terminal", editar_terminal: "Actualizó una terminal" };
 const etiquetaAccion = (accion: string) => ACCIONES[accion] ?? accion.replaceAll("_", " ");
 export default function AuditoriaPage() {
-  const { sesion } = useAuth(); const token = sesion!.token;
+  const { sesion } = useAutenticacion(); const token = sesion!.token;
   const [registros, setRegistros] = useState<RegistroAuditoria[]>([]); const [total, setTotal] = useState(0); const [pagina, setPagina] = useState(1); const [actor, setActor] = useState(""); const [consulta, setConsulta] = useState(""); const [seleccionado, setSeleccionado] = useState<RegistroAuditoria | null>(null); const [cargando, setCargando] = useState(true); const [error, setError] = useState<string | null>(null);
   useEffect(() => { listarAuditoria(token, { actor: consulta, pagina, limite: 25 }).then((r) => { setRegistros(r.registros); setTotal(r.total); setError(null); }).catch((e) => setError(e instanceof ApiError ? e.message : "No se pudo consultar la auditoría.")).finally(() => setCargando(false)); }, [token, consulta, pagina]);
   function buscar(e: FormEvent) { e.preventDefault(); setPagina(1); setConsulta(actor.trim()); }

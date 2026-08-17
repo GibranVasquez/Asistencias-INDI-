@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AsistenciaListada, listarAsistencias } from "@/features/asistencias/api";
 import { ApiError } from "@/core/api/client";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import ChipEstado from "@/shared/components/ChipEstado";
 import Boton from "@/shared/components/Boton";
 import EstadoVacio from "@/shared/components/EstadoVacio";
@@ -13,7 +13,7 @@ import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, su
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
 
 export default function AsistenciasPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [inicioSemana, setInicioSemana] = useState(() => lunesDeSemana(new Date()));

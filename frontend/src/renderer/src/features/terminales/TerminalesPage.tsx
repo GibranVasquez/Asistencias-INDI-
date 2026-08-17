@@ -8,7 +8,7 @@ import {
   listarTerminales,
   Terminal,
 } from "@/features/terminales/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import Boton from "@/shared/components/Boton";
 import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
@@ -40,7 +40,7 @@ function formularioAltaVacio(): DatosAltaTerminal {
 }
 
 export default function TerminalesPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [terminales, setTerminales] = useState<Terminal[] | null>(null);

@@ -7,10 +7,10 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 
 export default function IncidenciasPage() {
-  const { sesion } = useAuth(); const navigate = useNavigate(); const token = sesion!.token;
+  const { sesion } = useAutenticacion(); const navigate = useNavigate(); const token = sesion!.token;
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]); const [total, setTotal] = useState(0); const [pagina, setPagina] = useState(1);
   const [busqueda, setBusqueda] = useState(""); const [consulta, setConsulta] = useState(""); const [cargando, setCargando] = useState(true); const [error, setError] = useState<string | null>(null);
   useEffect(() => { listarIncidencias(token, { busqueda: consulta, pagina, limite: 25 }).then((r) => { setIncidencias(r.items); setTotal(r.total); setError(null); }).catch((e) => setError(e instanceof ApiError ? e.message : "No se pudo consultar el centro de incidencias.")).finally(() => setCargando(false)); }, [token, consulta, pagina]);

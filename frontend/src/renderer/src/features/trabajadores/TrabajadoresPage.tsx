@@ -7,7 +7,7 @@ import {
   Trabajador,
   tieneDatosNominaIncompletos,
 } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import Boton from "@/shared/components/Boton";
 import ChipEstado from "@/shared/components/ChipEstado";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
@@ -19,7 +19,7 @@ import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
 export default function TrabajadoresPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const navegar = useNavigate();
 

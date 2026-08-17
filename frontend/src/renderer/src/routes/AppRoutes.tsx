@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { RolUsuario } from "@/features/auth/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import LoginPage from "@/features/auth/LoginPage";
 import PanelPrincipalPage from "@/features/dashboard/PanelPrincipalPage";
 import AsistenciasPage from "@/features/asistencias/AsistenciasPage";
@@ -31,7 +31,7 @@ function rutaAlAbrir(rol: RolUsuario): RutaPanel {
 }
 
 export default function AppRoutes() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const rol = sesion?.usuario.rol;
 
   return <Routes>

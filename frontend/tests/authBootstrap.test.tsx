@@ -3,9 +3,9 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/app/App";
-import { AuthProvider } from "@/features/auth/AuthContext";
-import { MaintenanceProvider } from "@/app/providers/MaintenanceProvider";
-import { ThemeProvider } from "@/app/providers/ThemeProvider";
+import { ProveedorAutenticacion } from "@/features/auth/ContextoAutenticacion";
+import { ProveedorMantenimiento } from "@/app/providers/ProveedorMantenimiento";
+import { ProveedorTema } from "@/app/providers/ProveedorTema";
 
 describe("bootstrap de autenticación", () => {
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe("bootstrap de autenticación", () => {
 
     render(
       <MemoryRouter initialEntries={["/panel/trabajadores"]}>
-        <AuthProvider><MaintenanceProvider><App /></MaintenanceProvider></AuthProvider>
+        <ProveedorAutenticacion><ProveedorMantenimiento><App /></ProveedorMantenimiento></ProveedorAutenticacion>
       </MemoryRouter>
     );
 
@@ -61,9 +61,9 @@ describe("bootstrap de autenticación", () => {
     });
 
     render(
-      <ThemeProvider><MemoryRouter initialEntries={["/"]}>
-        <AuthProvider><MaintenanceProvider><App /></MaintenanceProvider></AuthProvider>
-      </MemoryRouter></ThemeProvider>
+      <ProveedorTema><MemoryRouter initialEntries={["/"]}>
+        <ProveedorAutenticacion><ProveedorMantenimiento><App /></ProveedorMantenimiento></ProveedorAutenticacion>
+      </MemoryRouter></ProveedorTema>
     );
 
     const recordar = await screen.findByRole("checkbox", { name: "Recordarme" });

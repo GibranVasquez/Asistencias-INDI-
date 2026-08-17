@@ -1,21 +1,21 @@
 import { ReactNode } from "react";
 import { HashRouter } from "react-router-dom";
-import { AuthProvider } from "@/features/auth/AuthContext";
-import { TerminalProvider } from "@/features/kiosco/TerminalContext";
-import { MaintenanceProvider } from "./MaintenanceProvider";
-import { SystemStatusProvider } from "./SystemStatusProvider";
-import { ThemeProvider } from "./ThemeProvider";
+import { ProveedorAutenticacion } from "@/features/auth/ContextoAutenticacion";
+import { ProveedorTerminal } from "@/features/kiosco/ContextoTerminal";
+import { ProveedorMantenimiento } from "./ProveedorMantenimiento";
+import { ProveedorEstadoSistema } from "./ProveedorEstadoSistema";
+import { ProveedorTema } from "./ProveedorTema";
 
 export default function AppProviders({ children }: { children: ReactNode }) {
-  return <ThemeProvider>
+  return <ProveedorTema>
     <HashRouter>
-      <AuthProvider>
-        <MaintenanceProvider>
-          <SystemStatusProvider>
-            <TerminalProvider>{children}</TerminalProvider>
-          </SystemStatusProvider>
-        </MaintenanceProvider>
-      </AuthProvider>
+      <ProveedorAutenticacion>
+        <ProveedorMantenimiento>
+          <ProveedorEstadoSistema>
+            <ProveedorTerminal>{children}</ProveedorTerminal>
+          </ProveedorEstadoSistema>
+        </ProveedorMantenimiento>
+      </ProveedorAutenticacion>
     </HashRouter>
-  </ThemeProvider>;
+  </ProveedorTema>;
 }

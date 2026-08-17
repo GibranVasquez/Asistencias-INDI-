@@ -1,14 +1,14 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { comprobarSalud } from "@/core/api/client";
-import { useMaintenance } from "@/app/providers/MaintenanceProvider";
+import { useMantenimiento } from "@/app/providers/ProveedorMantenimiento";
 
 export type EstadoSistema = "comprobando" | "conectado" | "sin_conexion" | "mantenimiento";
 interface EstadoSistemaContexto { estado: EstadoSistema; ultimaComprobacion: Date | null; comprobarAhora: () => Promise<void> }
 const Contexto = createContext<EstadoSistemaContexto | null>(null);
 const INTERVALO_COMPROBACION_MS = 45_000;
 
-export function SystemStatusProvider({ children }: { children: ReactNode }) {
-  const mantenimiento = useMaintenance();
+export function ProveedorEstadoSistema({ children }: { children: ReactNode }) {
+  const mantenimiento = useMantenimiento();
   const [estadoRed, setEstadoRed] = useState<EstadoSistema>("comprobando");
   const [ultimaComprobacion, setUltimaComprobacion] = useState<Date | null>(null);
   const enVuelo = useRef(false);
@@ -30,4 +30,4 @@ export function SystemStatusProvider({ children }: { children: ReactNode }) {
   const estado: EstadoSistema = mantenimiento ? "mantenimiento" : estadoRed;
   return <Contexto.Provider value={{ estado, ultimaComprobacion, comprobarAhora }}>{children}</Contexto.Provider>;
 }
-export function useSystemStatus() { const valor = useContext(Contexto); if (!valor) throw new Error("useSystemStatus requiere SystemStatusProvider"); return valor; }
+export function useEstadoSistema() { const valor = useContext(Contexto); if (!valor) throw new Error("useEstadoSistema requiere ProveedorEstadoSistema"); return valor; }

@@ -5,7 +5,7 @@ import { asset } from "@/shared/assets";
 import { ApiError } from "@/core/api/client";
 import { Horario, listarHorarios } from "@/core/api/resources/horarios";
 import { listarSecciones, Seccion } from "@/core/api/resources/secciones";
-import { ConfigKiosco, useTerminal } from "@/features/kiosco/TerminalContext";
+import { ConfigKiosco, useTerminal } from "@/features/kiosco/ContextoTerminal";
 
 type EstadoKiosco = "idle" | "scanning" | "success" | "error";
 

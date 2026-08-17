@@ -30,7 +30,7 @@ import {
   listarCategoriasTrabajador,
 } from "@/core/api/resources/categoriasTrabajador";
 import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import Boton from "@/shared/components/Boton";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
@@ -157,7 +157,7 @@ function formularioHorarioVacio(): DatosHorario {
 }
 
 function PanelHorarios() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [horarios, setHorarios] = useState<Horario[] | null>(null);
@@ -370,7 +370,7 @@ function PanelHorarios() {
 // ---------------------------------------------------------------------
 
 function PanelSecciones() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [secciones, setSecciones] = useState<Seccion[] | null>(null);
@@ -594,7 +594,7 @@ function Pill({ activo, etiquetaSi = "Sí", etiquetaNo = "—" }: { activo: bool
 }
 
 function PanelTiposMovimiento() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [tipos, setTipos] = useState<TipoMovimiento[] | null>(null);
@@ -758,7 +758,7 @@ function PanelTiposMovimiento() {
 // ---------------------------------------------------------------------
 
 function PanelTarifas() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [tarifas, setTarifas] = useState<TarifaHoraExtra[] | null>(null);
@@ -890,7 +890,7 @@ function formularioCategoriaVacio(): DatosCategoriaTrabajador {
 }
 
 function PanelCategoriasTrabajador() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [categorias, setCategorias] = useState<CategoriaTrabajador[] | null>(null);

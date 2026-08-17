@@ -29,7 +29,7 @@ export function leerRutaPersistida(): string | null {
 // Se llama en cada cambio de ruta dentro de /panel (ver AdminLayout.tsx) —
 // no depende de "Recordarme": es conveniencia de UI para la ejecución
 // actual de la app, no una credencial (ver justificación en la propuesta
-// de diseño). Se limpia por completo en cerrarSesion (AuthContext.tsx) para
+// de diseño). Se limpia por completo en cerrarSesion (ContextoAutenticacion.tsx) para
 // que un cambio de usuario en la misma máquina nunca herede la ruta de la
 // sesión anterior.
 export function guardarRutaPersistida(ruta: string): void {

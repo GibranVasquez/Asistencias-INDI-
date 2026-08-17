@@ -1,7 +1,7 @@
-import { useTheme } from "@/app/providers/ThemeProvider";
+import { useTema } from "@/app/providers/ProveedorTema";
 
 export default function AlternarTema({ oscuroPorDefecto = false }: { oscuroPorDefecto?: boolean }) {
-  const { temaResuelto, cambiarTema } = useTheme();
+  const { temaResuelto, cambiarTema } = useTema();
   const esOscuro = temaResuelto === "oscuro";
 
   return (

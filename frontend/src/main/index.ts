@@ -24,7 +24,7 @@ const esLanzamientoKiosco = process.argv.includes("--kiosk") || process.env.INDI
 // haya un daemon de secretos real corriendo (gnome-keyring vía dbus, que es
 // el proveedor de facto en la mayoría de esos WMs). Forzamos gnome-libsecret
 // en ese caso; si de verdad no hay ningún daemon de secretos disponible,
-// safeStorage.encryptString sigue fallando, pero AuthContext ya degrada esa
+// safeStorage.encryptString sigue fallando, pero ContextoAutenticacion ya degrada esa
 // falla a una sesión solo-en-memoria en vez de romper el login.
 if (process.platform === "linux") {
   const escritorioReconocido = /gnome|kde|unity|xfce/i.test(process.env.XDG_CURRENT_DESKTOP ?? "");

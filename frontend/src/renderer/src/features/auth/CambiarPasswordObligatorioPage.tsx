@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { cambiarPassword } from "@/features/auth/api";
 import { ApiError } from "@/core/api/client";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import CampoContrasena from "@/shared/components/CampoContrasena";
 import Boton from "@/shared/components/Boton";
 
@@ -20,7 +20,7 @@ const estilosCampo = {
 // cuenta viene de un reseteo por administrador y no debe seguir operando
 // con la contraseña temporal.
 export default function CambiarPasswordObligatorioPage() {
-  const { sesion, actualizarUsuario } = useAuth();
+  const { sesion, actualizarUsuario } = useAutenticacion();
   const token = sesion!.token;
 
   const [passwordActual, setPasswordActual] = useState("");

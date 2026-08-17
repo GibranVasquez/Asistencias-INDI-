@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { login } from "@/features/auth/api";
 import { asset } from "@/shared/assets";
 import { ApiError } from "@/core/api/client";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import CampoContrasena from "@/shared/components/CampoContrasena";
 import AlternarTema from "@/shared/components/AlternarTema";
 import Boton from "@/shared/components/Boton";
 
 export default function LoginPage() {
-  const { iniciarSesion } = useAuth();
+  const { iniciarSesion } = useAutenticacion();
   const navegar = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

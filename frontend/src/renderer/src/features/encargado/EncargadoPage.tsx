@@ -10,7 +10,7 @@ import { AsistenciaListada, listarAsistencias } from "@/features/asistencias/api
 import { ApiError } from "@/core/api/client";
 import { listarSecciones, Seccion } from "@/core/api/resources/secciones";
 import { listarTrabajadoresBasico, TrabajadorBasico } from "@/features/trabajadores/api";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
@@ -41,7 +41,7 @@ function contarDiasHabiles(inicio: Date, fin: Date): number {
 }
 
 export default function EncargadoPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const rol = sesion!.usuario.rol;
   const [resumen, setResumen] = useState<ResumenSeccionHoy | null>(null);

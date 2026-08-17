@@ -1,8 +1,8 @@
-import { useSystemStatus } from "@/app/providers/SystemStatusProvider";
+import { useEstadoSistema } from "@/app/providers/ProveedorEstadoSistema";
 
 const ETIQUETAS = { comprobando: "Comprobando sistema", conectado: "Sistema conectado", sin_conexion: "Sin conexión", mantenimiento: "Mantenimiento" };
-export default function SystemStatusIndicator({ compacto = false }: { compacto?: boolean }) {
-  const { estado, ultimaComprobacion, comprobarAhora } = useSystemStatus();
+export default function IndicadorEstadoSistema({ compacto = false }: { compacto?: boolean }) {
+  const { estado, ultimaComprobacion, comprobarAhora } = useEstadoSistema();
   const detalle = ultimaComprobacion ? `Última comprobación: ${ultimaComprobacion.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : "Comprobación inicial pendiente";
   return <button type="button" className={`system-status ${estado}${compacto ? " compacto" : ""}`} onClick={() => void comprobarAhora()} aria-label={`${ETIQUETAS[estado]}. ${detalle}`} title={`${ETIQUETAS[estado]} · ${detalle}`}>
     <span className="system-status-dot" aria-hidden="true" />{!compacto && <span>{ETIQUETAS[estado]}</span>}

@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { asset } from "@/shared/assets";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import { useTimeoutInactividad } from "@/shared/hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "@/layouts/admin/AyudaSoporteModal";
 import AlternarTema from "@/shared/components/AlternarTema";
 import { ETIQUETAS_GRUPO, GrupoNavegacion, menuPorRol } from "@/routes/navigationConfig";
 import { guardarRutaPersistida, guardarSidebarContraido, leerSidebarContraido } from "@/core/config/estadoUI";
-import SystemStatusIndicator from "@/layouts/admin/SystemStatusIndicator";
+import IndicadorEstadoSistema from "@/layouts/admin/IndicadorEstadoSistema";
 
 const MINUTOS_INACTIVIDAD_ANTES_DE_CERRAR_SESION = 30;
 
@@ -20,7 +20,7 @@ const ETIQUETA_ROL: Record<string, string> = {
 };
 
 export default function AdminLayout() {
-  const { sesion, persistenciaDegradada, cerrarSesion } = useAuth();
+  const { sesion, persistenciaDegradada, cerrarSesion } = useAutenticacion();
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
   const [errorCerrarSesion, setErrorCerrarSesion] = useState<string | null>(null);
   const [sidebarContraido, setSidebarContraido] = useState(leerSidebarContraido);
@@ -178,7 +178,7 @@ export default function AdminLayout() {
         </button>
 
         <div className="sidebar-system-status" style={{ padding: "10px 14px 0", marginTop: "auto" }}>
-          <SystemStatusIndicator compacto={sidebarContraido} />
+          <IndicadorEstadoSistema compacto={sidebarContraido} />
         </div>
 
         <div

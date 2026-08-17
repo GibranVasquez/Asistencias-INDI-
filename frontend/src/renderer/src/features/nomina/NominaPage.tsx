@@ -8,7 +8,7 @@ import {
   VistaPreviaTrabajador,
 } from "@/features/nomina/api";
 import { ApiError } from "@/core/api/client";
-import { useAuth } from "@/features/auth/AuthContext";
+import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import CampoFecha from "@/shared/components/CampoFecha";
@@ -84,7 +84,7 @@ async function conConcurrenciaLimitada<T>(items: T[], limite: number, tarea: (it
 }
 
 export default function NominaPage() {
-  const { sesion } = useAuth();
+  const { sesion } = useAutenticacion();
   const token = sesion!.token;
 
   const [inicioSemana, setInicioSemana] = useState(() => lunesDeSemana(new Date()));
