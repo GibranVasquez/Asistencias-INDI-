@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { esStringNoVacia, esUUID } from "../utils/validacion";
 
 const LONGITUD_MAXIMA_NOMBRE = 150;
+const LONGITUD_MAXIMA_TRAMO = 240;
 
 // horarioId es opcional: undefined/ausente (no se manda), o null (se manda
 // explicitamente para desasignar), o un UUID valido. Cualquier otra cosa
@@ -14,8 +15,12 @@ function encargadoIdsValidos(valor: unknown): boolean {
   return valor === undefined || (Array.isArray(valor) && valor.every((v) => esUUID(v)));
 }
 
+function tramoValido(valor: unknown): boolean {
+  return valor === undefined || valor === null || esStringNoVacia(valor, LONGITUD_MAXIMA_TRAMO);
+}
+
 export function validarAltaSeccion(req: Request, res: Response, next: NextFunction): void {
-  const { obraId, nombre, horarioId, encargadoIds } = req.body ?? {};
+  const { obraId, nombre, horarioId, encargadoIds, tramoUbicacion } = req.body ?? {};
 
   if (!esUUID(obraId)) {
     res.status(400).json({ error: "obraId es requerido y debe ser un UUID válido." });
@@ -34,6 +39,10 @@ export function validarAltaSeccion(req: Request, res: Response, next: NextFuncti
 
   if (!encargadoIdsValidos(encargadoIds)) {
     res.status(400).json({ error: "encargadoIds debe ser un arreglo de UUIDs si se envía." });
+    return;
+  }
+  if (!tramoValido(tramoUbicacion)) {
+    res.status(400).json({ error: "tramoUbicacion debe ser un texto válido si se envía." });
     return;
   }
 
@@ -58,6 +67,10 @@ export function validarEdicionSeccion(req: Request, res: Response, next: NextFun
 
   if (!encargadoIdsValidos(req.body?.encargadoIds)) {
     res.status(400).json({ error: "encargadoIds debe ser un arreglo de UUIDs si se envía." });
+    return;
+  }
+  if (!tramoValido(req.body?.tramoUbicacion)) {
+    res.status(400).json({ error: "tramoUbicacion debe ser un texto válido si se envía." });
     return;
   }
 

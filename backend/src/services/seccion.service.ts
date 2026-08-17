@@ -9,6 +9,7 @@ export interface DatosAltaSeccion {
   nombre: string;
   horarioId?: string | null;
   encargadoIds?: string[];
+  tramoUbicacion?: string | null;
 }
 
 export interface DatosEdicionSeccion {
@@ -18,6 +19,7 @@ export interface DatosEdicionSeccion {
   // undefined = no tocar los encargados actuales; array (incluso vacío) =
   // reemplaza la lista completa (set, no connect — así se puede quitar uno).
   encargadoIds?: string[];
+  tramoUbicacion?: string | null;
 }
 
 export interface SeccionConEncargados extends Seccion {
@@ -115,6 +117,7 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
             obraId: datos.obraId,
             nombre: datos.nombre,
             horarioId: datos.horarioId ?? null,
+            tramoUbicacion: datos.tramoUbicacion ?? null,
             encargados: datos.encargadoIds?.length ? { connect: datos.encargadoIds.map((id) => ({ id })) } : undefined,
           },
         });
@@ -138,7 +141,7 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
 export async function listarSecciones(): Promise<SeccionConEncargados[]> {
   return prisma.seccion.findMany({
     orderBy: { nombre: "asc" },
-    include: { encargados: { select: { id: true, username: true } } },
+    include: { encargados: { select: { id: true, username: true } }, obra: { select: { nombre: true } } },
   });
 }
 
@@ -175,6 +178,7 @@ export async function editarSeccion(
           data: {
             nombre: datos.nombre,
             horarioId: datos.horarioId === undefined ? undefined : datos.horarioId,
+            tramoUbicacion: datos.tramoUbicacion === undefined ? undefined : datos.tramoUbicacion,
             encargados: datos.encargadoIds !== undefined ? { set: datos.encargadoIds.map((id) => ({ id })) } : undefined,
           },
         });

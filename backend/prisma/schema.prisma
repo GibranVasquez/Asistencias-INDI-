@@ -217,6 +217,9 @@ model Seccion {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   obraId    String   @map("obra_id") @db.Uuid
   nombre    String
+  // Referencia física del frente (tramo, kilometraje o ubicación). Es
+  // opcional porque las secciones existentes pueden no tenerla todavía.
+  tramoUbicacion String? @map("tramo_ubicacion")
   // Nullable: no toda seccion tiene un horario esperado asignado desde el
   // alta. Resuelve el vinculo que faltaba entre asistencia y horario --
   // AsistenciaDiaria ya registra en que seccion se marco cada asistencia,

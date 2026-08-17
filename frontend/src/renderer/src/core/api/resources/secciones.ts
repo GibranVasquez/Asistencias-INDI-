@@ -5,7 +5,9 @@ export interface Seccion {
   obraId: string;
   nombre: string;
   horarioId: string | null;
+  tramoUbicacion: string | null;
   creadoEn: string;
+  obra?: { nombre: string };
   // Presente solo en GET /secciones (listarSecciones) — no en el /:id puntual.
   encargados?: { id: string; username: string }[];
 }
@@ -15,6 +17,7 @@ export interface DatosAltaSeccion {
   nombre: string;
   horarioId?: string | null;
   encargadoIds?: string[];
+  tramoUbicacion?: string | null;
 }
 
 export interface DatosEdicionSeccion {
@@ -23,6 +26,7 @@ export interface DatosEdicionSeccion {
   horarioId?: string | null;
   // undefined = no tocar los encargados; array (incluso vacío) = reemplaza.
   encargadoIds?: string[];
+  tramoUbicacion?: string | null;
 }
 
 export function listarSecciones(token: string) {

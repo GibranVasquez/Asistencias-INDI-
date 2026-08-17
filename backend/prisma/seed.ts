@@ -13,7 +13,7 @@ import { PrismaClient } from "@prisma/client";
 const PASSWORD_DEV_INSEGURA = "1234";
 const RONDAS_BCRYPT = 10;
 
-const OBRA_NOMBRE = "Tren Golfo de México";
+const OBRA_NOMBRE = "Tren del Golfo de México — Segmentos 19 y 20";
 // "Oficina" (además de las 4 de campo): agrupa al personal que marca en el
 // lector ADMS de oficina (ZKTeco MB10-VL) — ninguna de las 4 secciones de
 // campo le corresponde a alguien que nunca pisa la obra. Usa el mismo

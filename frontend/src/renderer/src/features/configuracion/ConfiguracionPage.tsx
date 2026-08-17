@@ -381,6 +381,7 @@ function PanelSecciones() {
 
   const [modal, setModal] = useState<{ editando: Seccion | null } | null>(null);
   const [nombre, setNombre] = useState("");
+  const [tramoUbicacion, setTramoUbicacion] = useState("");
   const [horarioId, setHorarioId] = useState("");
   const [encargadoIds, setEncargadoIds] = useState<string[]>([]);
   const [errorModal, setErrorModal] = useState<string | null>(null);
@@ -404,6 +405,7 @@ function PanelSecciones() {
 
   function abrirAlta() {
     setNombre("");
+    setTramoUbicacion("");
     setHorarioId("");
     setEncargadoIds([]);
     setErrorModal(null);
@@ -412,6 +414,7 @@ function PanelSecciones() {
 
   function abrirEdicion(s: Seccion) {
     setNombre(s.nombre);
+    setTramoUbicacion(s.tramoUbicacion ?? "");
     setHorarioId(s.horarioId ?? "");
     setEncargadoIds(s.encargados?.map((e) => e.id) ?? []);
     setErrorModal(null);
@@ -424,7 +427,7 @@ function PanelSecciones() {
     setGuardando(true);
     try {
       if (modal?.editando) {
-        const datos: DatosEdicionSeccion = { nombre, horarioId: horarioId || null, encargadoIds };
+        const datos: DatosEdicionSeccion = { nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
         await editarSeccion(token, modal.editando.id, datos);
       } else {
         // Un único Obra en todo el sistema hoy (Tren Golfo de México); no
@@ -434,7 +437,7 @@ function PanelSecciones() {
         if (!obraId) {
           throw new Error("No se pudo determinar la obra: crea el primer frente directamente en la base o contacta soporte.");
         }
-        const datos: DatosAltaSeccion = { obraId, nombre, horarioId: horarioId || null, encargadoIds };
+        const datos: DatosAltaSeccion = { obraId, nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
         await crearSeccion(token, datos);
       }
       setModal(null);
@@ -481,8 +484,9 @@ function PanelSecciones() {
             <thead>
               <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
                 <th style={{ padding: "10px 20px" }}>Nombre</th>
+                <th style={{ padding: "10px 12px" }}>Tramo o ubicación</th>
                 <th style={{ padding: "10px 12px" }}>Horario</th>
-                <th style={{ padding: "10px 12px" }}>Encargado(s)</th>
+                <th style={{ padding: "10px 12px" }}>Responsable(s) del tramo</th>
                 <th style={{ padding: "10px 20px" }}>Acciones</th>
               </tr>
             </thead>
@@ -491,6 +495,7 @@ function PanelSecciones() {
                 <Fragment key={s.id}>
                   <tr style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
                     <td style={{ padding: "11px 20px", fontWeight: 600, color: "var(--ink)" }}>{s.nombre}</td>
+                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.tramoUbicacion || "No especificado"}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.horarioId ? mapaHorarios.get(s.horarioId) ?? "—" : "—"}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.encargados?.length ? s.encargados.map((e) => e.username).join(", ") : "—"}</td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
@@ -504,7 +509,7 @@ function PanelSecciones() {
                   </tr>
                   {erroresFila[s.id] && (
                     <tr>
-                      <td colSpan={4} style={{ padding: "0 20px 10px", color: "var(--err)", fontSize: 12.5 }}>{erroresFila[s.id]}</td>
+                    <td colSpan={5} style={{ padding: "0 20px 10px", color: "var(--err)", fontSize: 12.5 }}>{erroresFila[s.id]}</td>
                     </tr>
                   )}
                 </Fragment>
@@ -522,6 +527,9 @@ function PanelSecciones() {
             <Campo etiqueta="Nombre">
               <input type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} style={estilosCampo} />
             </Campo>
+            <Campo etiqueta="Tramo o ubicación de la obra">
+              <input type="text" value={tramoUbicacion} onChange={(e) => setTramoUbicacion(e.target.value)} placeholder="No especificado" style={estilosCampo} />
+            </Campo>
             <Campo etiqueta="Horario asignado">
               <select value={horarioId} onChange={(e) => setHorarioId(e.target.value)} style={estilosCampo}>
                 <option value="">Sin horario</option>
@@ -530,7 +538,7 @@ function PanelSecciones() {
                 ))}
               </select>
             </Campo>
-            <Campo etiqueta="Encargados">
+            <Campo etiqueta="Responsables del tramo">
               <select
                 multiple
                 value={encargadoIds}
