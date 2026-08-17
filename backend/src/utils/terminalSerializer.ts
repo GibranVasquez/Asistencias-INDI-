@@ -15,7 +15,7 @@ export interface TerminalPublico {
   // Solo se actualiza para terminales tipo="adms" (ver adms.controller.ts,
   // handshake/subirDatos) — el equipo no tiene sesión JWT que "mantenga vivo"
   // un terminal Kiosco, así que este campo queda null para esos. Expuesto
-  // para que el Dashboard pueda advertir si el lector de oficina dejó de
+  // para que el panel principal pueda advertir si el lector de oficina dejó de
   // sincronizar (ver DashboardPage.tsx).
   ultimaSincronizacion: string | null;
 }

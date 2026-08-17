@@ -13,7 +13,7 @@ import { NextFunction, Request, Response } from "express";
 // configurada, se respeta igual fuera de producción. El riesgo de "la IP
 // cambia y nadie se entera" que motivó (brevemente) volver esto opcional
 // está cubierto por la alerta de inactividad del terminal ADMS en el
-// Dashboard (DashboardPage.tsx) — esa es la capa de detección; esta sigue
+// panel principal (PanelPrincipalPage.tsx) — esa es la capa de detección; esta sigue
 // siendo la de bloqueo.
 function parsearIPsPermitidas(): string[] {
   return (process.env.ADMS_IPS_PERMITIDAS ?? "")
