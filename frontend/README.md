@@ -49,9 +49,11 @@ agrupa las marcaciones por trabajador y día y conserva una vista secundaria de
 entrada o salida porque el modelo actual no guarda ese tipo de evento.
 
 `Seccion` se presenta como `Frente`, `Trabajador.categoria` es la referencia
-actual para categoría/puesto y `Horario` pertenece a una sección. Área, tramo,
-ubicación y responsable no se inventan en esta vista: requieren definición o
-datos adicionales de operación.
+actual para categoría/puesto y `Horario` pertenece a una sección. El área se
+toma de `Obra.nombre` (con valor inicial local `Tren del Golfo de México —
+Segmentos 19 y 20`); cada Frente puede tener un `tramoUbicacion` opcional y
+responsables asociados. La exportación semanal reutiliza el mismo contexto y
+ofrece PDF/Excel desde el módulo de Asistencia.
 
 ## Verificación
 
