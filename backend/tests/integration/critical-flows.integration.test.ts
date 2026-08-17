@@ -191,6 +191,24 @@ describe("HTTP real: autenticación, roles y sueldo masivo", () => {
   });
 });
 
+describe("HTTP real: configuración de la obra", () => {
+  it("permite consultar a RH y Administrador, pero solo Administrador puede modificar", async () => {
+    const { usuarios } = await escenarioBase();
+    const [tokenRh, tokenAdministrador] = await Promise.all([
+      tokenHumano(RolUsuario.rh),
+      tokenHumano(RolUsuario.administrador),
+    ]);
+
+    expect((await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenRh}`)).status).toBe(200);
+    expect((await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`)).status).toBe(200);
+    expect((await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenRh}`).send({ nombre: "No permitido" })).status).toBe(403);
+    const actualizada = await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`).send({ nombre: "Obra integración actualizada" });
+    expect(actualizada.status).toBe(200);
+    expect(actualizada.body.obra.nombre).toBe("Obra integración actualizada");
+    expect(await prisma.auditLog.count({ where: { accion: "editar_obra", usuarioId: usuarios.get(RolUsuario.administrador)!.id } })).toBe(1);
+  });
+});
+
 describe("PostgreSQL real: congelamiento central de escrituras", () => {
   it("bloquea flujos humanos, Terminal y ADMS sin cambiar datos ni auditoría", async () => {
     const { seccion, terminal, trabajadores } = await escenarioBase();

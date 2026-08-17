@@ -5,6 +5,7 @@ import {
   registrarAsistencia,
 } from "../services/asistencia.service";
 import { generarExcelListaSemanal, generarPdfListaSemanal } from "../utils/exportadores/listaSemanalExport";
+import { obtenerObraActual } from "../services/obra.service";
 
 export async function registrar(req: Request, res: Response): Promise<void> {
   const { trabajadorId, ...datos } = req.body;
@@ -35,15 +36,18 @@ export async function listar(req: Request, res: Response): Promise<void> {
 
 export async function exportarListaSemanal(req: Request, res: Response): Promise<void> {
   const { fechaInicio, fechaFin, seccionId, turno, categoria, formato } = req.query;
-  const asistencias = await listarAsistencias(req.user!.usuarioId, req.user!.rol, {
+  const [asistencias, obra] = await Promise.all([
+    listarAsistencias(req.user!.usuarioId, req.user!.rol, {
     fechaInicio: fechaInicio as string,
     fechaFin: fechaFin as string,
     seccionId: seccionId as string | undefined,
     turno: turno as string | undefined,
     categoria: categoria as string | undefined,
-  });
+    }),
+    obtenerObraActual(),
+  ]);
   const contexto = {
-    area: asistencias[0]?.obraNombre ?? "Tren del Golfo de México — Segmentos 19 y 20",
+    area: obra.nombre,
     frente: seccionId ? asistencias[0]?.seccionNombre ?? "No especificado" : "Todos los frentes",
     tramoUbicacion: seccionId ? asistencias[0]?.seccionTramoUbicacion ?? "No especificado" : "No especificado",
     responsableTramo: seccionId ? asistencias[0]?.seccionResponsables.map((r) => r.username).join(", ") || "No asignado" : "No asignado",

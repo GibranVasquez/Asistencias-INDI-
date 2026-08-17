@@ -9,6 +9,7 @@ import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 import { agruparAsistenciasPorTrabajador, aFechaLocal, aISO, encabezadoDia, lunesDeSemana, numeroSemana, sumarDias } from "@/features/asistencias/listaSemanal";
+import { obtenerObraActual } from "@/core/api/resources/obras";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
 
@@ -29,6 +30,7 @@ export default function AsistenciasPage() {
   const [asistencias, setAsistencias] = useState<AsistenciaListada[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [nombreObra, setNombreObra] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -50,6 +52,10 @@ export default function AsistenciasPage() {
       cancelado = true;
     };
   }, [token, fechaDesde, fechaHasta]);
+
+  useEffect(() => {
+    obtenerObraActual(token).then((respuesta) => setNombreObra(respuesta.obra.nombre)).catch(() => setNombreObra(null));
+  }, [token]);
 
   // Las secciones del filtro salen de los datos ya cargados, no de un
   // catálogo aparte: recepcion puede leer /asistencias pero no /secciones,
@@ -76,7 +82,7 @@ export default function AsistenciasPage() {
   const turnosDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.turno))].sort(), [asistencias]);
   const categoriasDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.trabajadorCategoria))].filter(Boolean).sort(), [asistencias]);
   const seccionSeleccionada = asistencias?.find((a) => a.seccionId === seccionFiltro);
-  const areaVisible = seccionSeleccionada?.obraNombre || "Tren del Golfo de México — Segmentos 19 y 20";
+  const areaVisible = seccionSeleccionada?.obraNombre || nombreObra || "No especificada";
   const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.username).join(", ") || "No asignado";
   const periodoLegible = `${aFechaLocal(fechaDesde).toLocaleDateString("es-MX", { day: "2-digit", month: "long" })} al ${aFechaLocal(fechaHasta).toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}`;
 

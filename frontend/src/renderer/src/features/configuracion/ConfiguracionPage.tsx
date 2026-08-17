@@ -30,15 +30,17 @@ import {
   listarCategoriasTrabajador,
 } from "@/core/api/resources/categoriasTrabajador";
 import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
+import { editarObraActual, obtenerObraActual, ObraActual } from "@/core/api/resources/obras";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import Boton from "@/shared/components/Boton";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
 import CampoFecha from "@/shared/components/CampoFecha";
 
-type Tab = "horarios" | "secciones" | "tiposMovimiento" | "tarifas" | "categorias";
+type Tab = "obra" | "horarios" | "secciones" | "tiposMovimiento" | "tarifas" | "categorias";
 
 const TABS: { id: Tab; etiqueta: string }[] = [
+  { id: "obra", etiqueta: "Datos de la obra" },
   { id: "horarios", etiqueta: "Horarios" },
   { id: "secciones", etiqueta: "Frentes" },
   { id: "tiposMovimiento", etiqueta: "Tipos de movimiento" },
@@ -110,14 +112,17 @@ function ErrorInline({ mensaje }: { mensaje: string | null }) {
 }
 
 export default function ConfiguracionPage() {
-  const [tab, setTab] = useState<Tab>("horarios");
+  const { sesion } = useAutenticacion();
+  const esAdministrador = sesion?.usuario.rol === "administrador";
+  const [tab, setTab] = useState<Tab>(() => esAdministrador ? "obra" : "horarios");
+  const tabsVisibles = esAdministrador ? TABS.filter((t) => t.id === "obra") : TABS;
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
       <EncabezadoPagina titulo="Configuración" descripcion="Administra parámetros y catálogos que definen la operación del sistema." metadata="Parámetros del sistema" />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
-        {TABS.map((t) => (
+        {tabsVisibles.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
@@ -138,6 +143,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <div style={{ marginTop: 18 }}>
+        {tab === "obra" && <PanelDatosObra />}
         {tab === "horarios" && <PanelHorarios />}
         {tab === "secciones" && <PanelSecciones />}
         {tab === "tiposMovimiento" && <PanelTiposMovimiento />}
@@ -145,6 +151,54 @@ export default function ConfiguracionPage() {
         {tab === "categorias" && <PanelCategoriasTrabajador />}
       </div>
     </div>
+  );
+}
+
+function PanelDatosObra() {
+  const { sesion } = useAutenticacion();
+  const token = sesion!.token;
+  const puedeEditar = sesion!.usuario.rol === "administrador";
+  const [obra, setObra] = useState<ObraActual | null>(null);
+  const [nombre, setNombre] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    obtenerObraActual(token)
+      .then((respuesta) => { setObra(respuesta.obra); setNombre(respuesta.obra.nombre); })
+      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo cargar la obra."))
+      .finally(() => setCargando(false));
+  }, [token]);
+
+  async function guardar(evento: FormEvent) {
+    evento.preventDefault();
+    setMensaje(null); setError(null); setGuardando(true);
+    try {
+      const respuesta = await editarObraActual(token, nombre.trim());
+      setObra(respuesta.obra); setNombre(respuesta.obra.nombre); setMensaje("Datos de la obra guardados.");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudo guardar la obra.");
+    } finally { setGuardando(false); }
+  }
+
+  return (
+    <section className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: 22, maxWidth: 720 }}>
+      <h2 style={{ margin: 0, fontSize: 17, color: "var(--ink)" }}>Datos de la obra</h2>
+      <p style={{ color: "var(--muted)", fontSize: 13.5, margin: "8px 0 20px" }}>Este nombre se muestra como área o proyecto en la asistencia y sus exportaciones.</p>
+      <ErrorInline mensaje={error} />
+      {cargando ? <div style={{ color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div> : (
+        <form onSubmit={guardar}>
+          <Campo etiqueta="Área / proyecto">
+            <input value={nombre} onChange={(evento) => setNombre(evento.target.value)} disabled={!puedeEditar || guardando} maxLength={200} style={{ ...estilosCampo, width: "100%", boxSizing: "border-box" }} />
+          </Campo>
+          {!puedeEditar && <p style={{ color: "var(--muted)", fontSize: 12.5 }}>Solo un Administrador puede modificar este dato.</p>}
+          {mensaje && <p style={{ color: "var(--ok, #18794e)", fontSize: 13 }}>{mensaje}</p>}
+          {puedeEditar && <Boton type="submit" disabled={guardando || !nombre.trim() || nombre.trim() === obra?.nombre}>{guardando ? "Guardando…" : "Guardar cambios"}</Boton>}
+        </form>
+      )}
+    </section>
   );
 }
 

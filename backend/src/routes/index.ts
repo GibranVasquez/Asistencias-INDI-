@@ -16,6 +16,7 @@ import { tipoMovimientoRouter } from "./tipoMovimiento.routes";
 import { trabajadorRouter } from "./trabajador.routes";
 import { usuarioRouter } from "./usuario.routes";
 import { incidenciaRouter } from "./incidencia.routes";
+import { obraRouter } from "./obra.routes";
 
 export const router = Router();
 
@@ -43,3 +44,4 @@ router.use("/trabajadores", trabajadorRouter);
 router.use("/movimientos", movimientoTrabajadorRouter);
 router.use("/asignaciones", asignacionRouter);
 router.use("/reportes", reportesRouter);
+router.use("/obras", obraRouter);

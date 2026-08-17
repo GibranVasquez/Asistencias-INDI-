@@ -39,4 +39,18 @@ describe("exportación de lista semanal", () => {
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(pdf.length).toBeGreaterThan(500);
   });
+
+  it("neutraliza textos que podrían interpretarse como fórmulas en Excel", async () => {
+    const buffer = await generarExcelListaSemanal({
+      contexto: { ...contexto, frente: "=HYPERLINK(\"https://ejemplo.invalid\")", tramoUbicacion: "+cmd|\"/c calc\"" },
+      asistencias: [registro({ trabajadorNombre: "@usuario", trabajadorCategoria: "-10+1" })],
+    });
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(buffer as Buffer);
+    const hoja = libro.getWorksheet("Lista semanal")!;
+    expect(hoja.getCell("B3").value).toBe("'=HYPERLINK(\"https://ejemplo.invalid\")");
+    expect(hoja.getCell("B4").value).toBe("'+cmd|\"/c calc\"");
+    expect(hoja.getCell("B12").value).toBe("'@usuario");
+    expect(hoja.getCell("C12").value).toBe("'-10+1");
+  });
 });

@@ -55,6 +55,10 @@ Segmentos 19 y 20`); cada Frente puede tener un `tramoUbicacion` opcional y
 responsables asociados. La exportación semanal reutiliza el mismo contexto y
 ofrece PDF/Excel desde el módulo de Asistencia.
 
+En **Configuración → Datos de la obra**, Administrador puede actualizar el
+nombre de `Obra`; RH puede consultarlo. Ese valor alimenta el contexto del
+Panel principal, la Lista semanal y sus exportaciones.
+
 ## Verificación
 
 ```bash

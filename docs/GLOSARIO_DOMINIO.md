@@ -20,6 +20,8 @@ de datos.
 | Estado de huella | `huellaRegistrada` | Trabajador; solo estado, nunca plantilla biométrica |
 | Terminal | `Terminal` y `terminalOrigenId` | Registro de asistencia |
 | Nómina | `NominaSemanal` | API y modelo existentes |
+| Área / proyecto | `Obra.nombre` | Configuración de la obra y encabezado de asistencia |
+| ID | Identificador operativo secuencial de la lista | Presentación; confirmar equivalencia con el identificador empresarial |
 
 ## Términos que no deben fusionarse sin definición
 
@@ -53,3 +55,14 @@ exponga). El backend no almacena plantillas de huella o rostro.
 - Responsable de tramo y alcance de sus permisos.
 - Reglas aprobadas para falta, retardo, descanso y entrada/salida.
 - Formato requerido para impresión o exportación adicional de la lista semanal.
+- Confirmar con RH si `Puesto` y `Categoría` son conceptos separados; por ahora se
+  presenta como **Puesto / categoría** porque el modelo solo tiene
+  `Trabajador.categoria`.
+- Confirmar qué identificador empresarial debe representar la columna **ID**.
+
+## Configuración de la obra
+
+La entidad `Obra` es la única fuente de verdad para el nombre visible del área o
+proyecto. La pestaña **Datos de la obra** está disponible en Configuración; RH
+puede consultarla y solo Administrador puede modificarla. El endpoint de
+escritura valida el rol en backend y registra la modificación en auditoría.
