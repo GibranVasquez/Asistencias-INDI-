@@ -11,10 +11,10 @@ import { useAuth } from "@/features/auth/AuthContext";
 import Boton from "@/shared/components/Boton";
 import ChipEstado from "@/shared/components/ChipEstado";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
-import EmptyState from "@/shared/components/EmptyState";
-import PageHeader from "@/shared/components/PageHeader";
-import ModuleSummary from "@/shared/components/ModuleSummary";
-import SectionHeader from "@/shared/components/SectionHeader";
+import EstadoVacio from "@/shared/components/EstadoVacio";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
+import ResumenModulo from "@/shared/components/ResumenModulo";
+import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 
 const ETIQUETA_TIPO: Record<string, string> = { empleado: "Empleado", contratista: "Contratista", becario: "Becario" };
 
@@ -119,7 +119,7 @@ export default function TrabajadoresPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader
+      <EncabezadoPagina
         titulo="Trabajadores"
         descripcion="Administra información laboral, asignaciones y estado del personal."
         metadata="Directorio operativo"
@@ -127,7 +127,7 @@ export default function TrabajadoresPage() {
       />
 
       {trabajadores && (
-        <ModuleSummary
+        <ResumenModulo
           etiqueta="Personal registrado"
           icono="👥"
           items={[
@@ -234,7 +234,7 @@ export default function TrabajadoresPage() {
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-        <SectionHeader
+        <EncabezadoSeccion
           titulo="Directorio de personal"
           descripcion={cargando ? "Cargando trabajadores…" : `${filtrados.length} de ${trabajadores?.length ?? 0} trabajadores visibles`}
         />
@@ -243,7 +243,7 @@ export default function TrabajadoresPage() {
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
         ) : filtrados.length === 0 ? (
-          <EmptyState
+          <EstadoVacio
             titulo={trabajadores?.length ? "No encontramos trabajadores" : "No hay trabajadores registrados"}
             descripcion={trabajadores?.length ? "Prueba modificando la búsqueda o la categoría seleccionada." : "Los trabajadores registrados aparecerán en esta lista."}
             accion={trabajadores?.length ? <Boton tamano="pequeno" variante="outline" onClick={() => { setBusqueda(""); setCategoriaFiltro(""); }}>Limpiar filtros</Boton> : undefined}

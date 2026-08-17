@@ -9,8 +9,8 @@ import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import ChipEstado from "@/shared/components/ChipEstado";
-import EmptyState from "@/shared/components/EmptyState";
-import PageHeader from "@/shared/components/PageHeader";
+import EstadoVacio from "@/shared/components/EstadoVacio";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import { bucketsPorSemanaDelMes } from "@/features/dashboard/resumenBuckets";
 import { navegacionPorId, RutaPanel } from "@/routes/navigationConfig";
 
@@ -260,7 +260,7 @@ export default function PanelPrincipalPage() {
 
   return (
     <div className="precision-dashboard" style={{ padding: "26px 30px 36px" }}>
-      <PageHeader
+      <EncabezadoPagina
         titulo="Panel principal"
         descripcion={<span style={{ textTransform: "capitalize" }}>{hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>}
         metadata="Resumen operativo"
@@ -377,7 +377,7 @@ export default function PanelPrincipalPage() {
         {asistenciasHoy.cargando ? (
           <div style={{ padding: "20px 0", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>Cargando…</div>
         ) : ultimasMarcaciones.length === 0 ? (
-          <EmptyState titulo="Aún no hay marcaciones" descripcion="Las asistencias registradas hoy aparecerán aquí." />
+          <EstadoVacio titulo="Aún no hay marcaciones" descripcion="Las asistencias registradas hoy aparecerán aquí." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
             {ultimasMarcaciones.map((a, i) => {

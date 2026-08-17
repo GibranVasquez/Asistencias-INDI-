@@ -4,7 +4,7 @@ import { asset } from "@/shared/assets";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useTimeoutInactividad } from "@/shared/hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "@/layouts/admin/AyudaSoporteModal";
-import ThemeToggle from "@/shared/components/ThemeToggle";
+import AlternarTema from "@/shared/components/AlternarTema";
 import { ETIQUETAS_GRUPO, GrupoNavegacion, menuPorRol } from "@/routes/navigationConfig";
 import { guardarRutaPersistida, guardarSidebarContraido, leerSidebarContraido } from "@/core/config/estadoUI";
 import SystemStatusIndicator from "@/layouts/admin/SystemStatusIndicator";
@@ -248,7 +248,7 @@ export default function AdminLayout() {
               {ETIQUETA_ROL[sesion.usuario.rol] ?? sesion.usuario.rol}
             </div>
           </div>
-          <ThemeToggle oscuroPorDefecto />
+          <AlternarTema oscuroPorDefecto />
           <button
             className="sidebar-logout"
             onClick={manejarCerrarSesion}

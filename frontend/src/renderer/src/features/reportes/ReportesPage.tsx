@@ -16,7 +16,7 @@ import { useAuth } from "@/features/auth/AuthContext";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import CampoFecha from "@/shared/components/CampoFecha";
-import PageHeader from "@/shared/components/PageHeader";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 
 type Tab = "asistencia" | "nomina";
 
@@ -65,7 +65,7 @@ export default function ReportesPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Reportes" descripcion="Consulta información histórica y analiza la operación por periodo." metadata="Centro de análisis" />
+      <EncabezadoPagina titulo="Reportes" descripcion="Consulta información histórica y analiza la operación por periodo." metadata="Centro de análisis" />
 
       <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         <button

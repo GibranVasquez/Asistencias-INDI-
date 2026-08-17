@@ -10,11 +10,11 @@ import {
 } from "@/features/terminales/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import Boton from "@/shared/components/Boton";
-import EmptyState from "@/shared/components/EmptyState";
-import PageHeader from "@/shared/components/PageHeader";
+import EstadoVacio from "@/shared/components/EstadoVacio";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
-import ModuleSummary from "@/shared/components/ModuleSummary";
-import SectionHeader from "@/shared/components/SectionHeader";
+import ResumenModulo from "@/shared/components/ResumenModulo";
+import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 
 const estilosCampo = {
   padding: "10px 12px",
@@ -137,7 +137,7 @@ export default function TerminalesPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Terminales" descripcion="Administra dispositivos autorizados para la operación de asistencia." metadata="Gestión de dispositivos" accion={<Boton
+      <EncabezadoPagina titulo="Terminales" descripcion="Administra dispositivos autorizados para la operación de asistencia." metadata="Gestión de dispositivos" accion={<Boton
           onClick={() => {
             setFormularioAlta(formularioAltaVacio());
             setErrorAlta(null);
@@ -148,7 +148,7 @@ export default function TerminalesPage() {
         </Boton>} />
 
       {terminales && (
-        <ModuleSummary
+        <ResumenModulo
           etiqueta="Infraestructura de asistencia"
           icono="▣"
           items={[
@@ -161,13 +161,13 @@ export default function TerminalesPage() {
       )}
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-        <SectionHeader titulo="Dispositivos autorizados" descripcion="Vinculación, ubicación y estado de las terminales registradas." />
+        <EncabezadoSeccion titulo="Dispositivos autorizados" descripcion="Vinculación, ubicación y estado de las terminales registradas." />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando terminales…</div>
         ) : terminales?.length === 0 ? (
-          <EmptyState titulo="No hay terminales registradas" descripcion="Las terminales dadas de alta aparecerán aquí con su estado de conexión." />
+          <EstadoVacio titulo="No hay terminales registradas" descripcion="Las terminales dadas de alta aparecerán aquí con su estado de conexión." />
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

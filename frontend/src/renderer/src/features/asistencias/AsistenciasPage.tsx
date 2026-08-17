@@ -4,10 +4,10 @@ import { ApiError } from "@/core/api/client";
 import { useAuth } from "@/features/auth/AuthContext";
 import ChipEstado from "@/shared/components/ChipEstado";
 import Boton from "@/shared/components/Boton";
-import EmptyState from "@/shared/components/EmptyState";
-import PageHeader from "@/shared/components/PageHeader";
-import ModuleSummary from "@/shared/components/ModuleSummary";
-import SectionHeader from "@/shared/components/SectionHeader";
+import EstadoVacio from "@/shared/components/EstadoVacio";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
+import ResumenModulo from "@/shared/components/ResumenModulo";
+import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, sumarDias } from "@/features/asistencias/listaSemanal";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
@@ -97,14 +97,14 @@ export default function AsistenciasPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader
+      <EncabezadoPagina
         titulo="Asistencia"
         descripcion="Lista semanal de asistencia: consulta las marcaciones del personal por semana y frente."
         metadata="Control operativo de obra"
       />
 
       {!cargando && asistencias && (
-        <ModuleSummary
+        <ResumenModulo
           etiqueta={`Semana · ${periodoVisible}`}
           icono="◷"
           items={[
@@ -139,14 +139,14 @@ export default function AsistenciasPage() {
       </div>
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-        <SectionHeader titulo={vista === "semanal" ? "Lista semanal de asistencia" : "Registros de asistencia"} descripcion={vista === "semanal" ? "Las horas se agrupan por trabajador y día. El sistema conserva las marcaciones originales." : "Consulta el detalle de cada marcación del periodo seleccionado."} />
+        <EncabezadoSeccion titulo={vista === "semanal" ? "Lista semanal de asistencia" : "Registros de asistencia"} descripcion={vista === "semanal" ? "Las horas se agrupan por trabajador y día. El sistema conserva las marcaciones originales." : "Consulta el detalle de cada marcación del periodo seleccionado."} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{cargando ? "Cargando asistencia…" : `${asistenciasFiltradas.length} marcación${asistenciasFiltradas.length === 1 ? "" : "es"} · ${fechaDesde} — ${fechaHasta}`}</span>
         </div>
 
         {error ? <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
           : cargando ? <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando lista semanal…</div>
-          : asistenciasFiltradas.length === 0 ? <EmptyState titulo="No hay marcaciones en esta semana" descripcion="Prueba cambiando la semana, el frente o la búsqueda de trabajador." />
+          : asistenciasFiltradas.length === 0 ? <EstadoVacio titulo="No hay marcaciones en esta semana" descripcion="Prueba cambiando la semana, el frente o la búsqueda de trabajador." />
           : vista === "semanal" ? (
             <div className="table-scroll asistencia-semanal-scroll">
               <table className="tabla-premium asistencia-semanal">
@@ -175,7 +175,7 @@ export default function AsistenciasPage() {
         const metodos = [...new Set(registros.map((registro) => ETIQUETA_METODO[registro.metodoUsado] ?? registro.metodoUsado))].join(", ");
         return <div className="modal-backdrop" onClick={() => setDetalleDia(null)}>
           <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Detalle de asistencia" onClick={(evento) => evento.stopPropagation()}>
-            <SectionHeader titulo="Detalle de asistencia" descripcion={`${detalleDia.fila.trabajadorNombre} · ${detalleDia.dia}`} />
+            <EncabezadoSeccion titulo="Detalle de asistencia" descripcion={`${detalleDia.fila.trabajadorNombre} · ${detalleDia.dia}`} />
             <dl className="detalle-asistencia-lista">
               <dt>Trabajador</dt><dd>{detalleDia.fila.trabajadorNombre}</dd>
               <dt>Frentes</dt><dd>{detalleDia.fila.frentes.join(", ")}</dd>

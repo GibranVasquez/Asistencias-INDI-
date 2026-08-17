@@ -12,12 +12,12 @@ import {
   UsuarioListado,
 } from "@/features/usuarios/api";
 import { useAuth } from "@/features/auth/AuthContext";
-import PasswordInput from "@/shared/components/PasswordInput";
+import CampoContrasena from "@/shared/components/CampoContrasena";
 import Boton from "@/shared/components/Boton";
-import PageHeader from "@/shared/components/PageHeader";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
-import ModuleSummary from "@/shared/components/ModuleSummary";
-import SectionHeader from "@/shared/components/SectionHeader";
+import ResumenModulo from "@/shared/components/ResumenModulo";
+import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
@@ -145,7 +145,7 @@ export default function UsuariosPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader titulo="Usuarios y accesos" descripcion="Administra cuentas, roles y acceso al sistema." metadata="Centro de accesos" accion={<Boton
+      <EncabezadoPagina titulo="Usuarios y accesos" descripcion="Administra cuentas, roles y acceso al sistema." metadata="Centro de accesos" accion={<Boton
             onClick={() => {
               setFormulario(formularioVacio());
               setErrorAlta(null);
@@ -157,7 +157,7 @@ export default function UsuariosPage() {
         } />
 
       {usuarios && (
-        <ModuleSummary
+        <ResumenModulo
           etiqueta="Control de acceso"
           icono="◇"
           items={[
@@ -170,7 +170,7 @@ export default function UsuariosPage() {
       )}
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-        <SectionHeader titulo="Cuentas autorizadas" descripcion="Usuarios con acceso administrativo u operativo al sistema." />
+        <EncabezadoSeccion titulo="Cuentas autorizadas" descripcion="Usuarios con acceso administrativo u operativo al sistema." />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
@@ -278,7 +278,7 @@ export default function UsuariosPage() {
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
               Contraseña
-              <PasswordInput
+              <CampoContrasena
                 required
                 value={formulario.password}
                 onChange={(v) => setFormulario((f) => ({ ...f, password: v }))}
@@ -361,7 +361,7 @@ export default function UsuariosPage() {
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
               Contraseña temporal
-              <PasswordInput
+              <CampoContrasena
                 required
                 autoFocus
                 value={passwordTemporal}

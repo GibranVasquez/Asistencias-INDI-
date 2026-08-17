@@ -4,8 +4,8 @@ import { login } from "@/features/auth/api";
 import { asset } from "@/shared/assets";
 import { ApiError } from "@/core/api/client";
 import { useAuth } from "@/features/auth/AuthContext";
-import PasswordInput from "@/shared/components/PasswordInput";
-import ThemeToggle from "@/shared/components/ThemeToggle";
+import CampoContrasena from "@/shared/components/CampoContrasena";
+import AlternarTema from "@/shared/components/AlternarTema";
 import Boton from "@/shared/components/Boton";
 
 export default function LoginPage() {
@@ -38,7 +38,7 @@ export default function LoginPage() {
   return (
     <main className="precision-login">
       <div style={{ position: "absolute", top: 20, right: 20, zIndex: 2 }}>
-        <ThemeToggle />
+        <AlternarTema />
       </div>
       <section
         className="precision-login-brand"
@@ -112,7 +112,7 @@ export default function LoginPage() {
               style={{ display: "flex", flexDirection: "column", gap: 7, fontSize: 13, fontWeight: 600, color: "var(--ink)" }}
             >
               Contraseña
-              <PasswordInput
+              <CampoContrasena
                 value={password}
                 onChange={setPassword}
                 required

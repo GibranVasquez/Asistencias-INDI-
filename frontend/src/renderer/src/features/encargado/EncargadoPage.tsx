@@ -13,7 +13,7 @@ import { listarTrabajadoresBasico, TrabajadorBasico } from "@/features/trabajado
 import { useAuth } from "@/features/auth/AuthContext";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
-import PageHeader from "@/shared/components/PageHeader";
+import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 
 const INTERVALO_POLL_MS = 20_000;
 
@@ -158,7 +158,7 @@ export default function EncargadoPage() {
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <PageHeader
+      <EncabezadoPagina
         titulo="Mi frente · hoy"
         descripcion="Supervisa el personal y la asistencia correspondiente a tu área de responsabilidad."
         metadata="Supervisión operativa"
