@@ -1,12 +1,12 @@
 import { ReactNode } from "react";
 
-interface EmptyStateProps {
+interface EstadoVacioProps {
   titulo: string;
   descripcion: string;
   accion?: ReactNode;
 }
 
-export default function EmptyState({ titulo, descripcion, accion }: EmptyStateProps) {
+export default function EstadoVacio({ titulo, descripcion, accion }: EstadoVacioProps) {
   return (
     <div className="empty-state" role="status">
       <span className="empty-state-icon" aria-hidden="true">

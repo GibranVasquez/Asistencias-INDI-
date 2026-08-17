@@ -1,19 +1,19 @@
 import { ReactNode } from "react";
 
-export interface ModuleSummaryItem {
+export interface ResumenModuloItem {
   etiqueta: string;
   valor: ReactNode;
   detalle?: ReactNode;
   tono?: "neutral" | "ok" | "warn" | "err";
 }
 
-interface ModuleSummaryProps {
+interface ResumenModuloProps {
   etiqueta: string;
-  items: ModuleSummaryItem[];
+  items: ResumenModuloItem[];
   icono?: ReactNode;
 }
 
-export default function ModuleSummary({ etiqueta, items, icono }: ModuleSummaryProps) {
+export default function ResumenModulo({ etiqueta, items, icono }: ResumenModuloProps) {
   return (
     <section className="module-summary" aria-label={etiqueta}>
       <div className="module-summary-context">

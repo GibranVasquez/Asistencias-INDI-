@@ -1,12 +1,12 @@
 import { ReactNode } from "react";
 
-interface SectionHeaderProps {
+interface EncabezadoSeccionProps {
   titulo: string;
   descripcion?: ReactNode;
   accion?: ReactNode;
 }
 
-export default function SectionHeader({ titulo, descripcion, accion }: SectionHeaderProps) {
+export default function EncabezadoSeccion({ titulo, descripcion, accion }: EncabezadoSeccionProps) {
   return (
     <div className="section-header">
       <div>

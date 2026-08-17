@@ -44,7 +44,7 @@ function IconoPunto() {
   );
 }
 
-interface PasswordInputProps {
+interface CampoContrasenaProps {
   id?: string;
   value: string;
   onChange: (valor: string) => void;
@@ -58,7 +58,7 @@ interface PasswordInputProps {
   mostrarRequisitos?: boolean;
 }
 
-export default function PasswordInput({
+export default function CampoContrasena({
   id,
   value,
   onChange,
@@ -66,7 +66,7 @@ export default function PasswordInput({
   required,
   autoFocus,
   mostrarRequisitos,
-}: PasswordInputProps) {
+}: CampoContrasenaProps) {
   const [visible, setVisible] = useState(false);
 
   return (

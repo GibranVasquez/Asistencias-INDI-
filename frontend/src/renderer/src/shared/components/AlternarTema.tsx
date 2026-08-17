@@ -1,6 +1,6 @@
 import { useTheme } from "@/app/providers/ThemeProvider";
 
-export default function ThemeToggle({ oscuroPorDefecto = false }: { oscuroPorDefecto?: boolean }) {
+export default function AlternarTema({ oscuroPorDefecto = false }: { oscuroPorDefecto?: boolean }) {
   const { temaResuelto, cambiarTema } = useTheme();
   const esOscuro = temaResuelto === "oscuro";
 

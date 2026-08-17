@@ -1,13 +1,13 @@
 import { ReactNode } from "react";
 
-interface PageHeaderProps {
+interface EncabezadoPaginaProps {
   titulo: string;
   descripcion?: ReactNode;
   metadata?: ReactNode;
   accion?: ReactNode;
 }
 
-export default function PageHeader({ titulo, descripcion, metadata, accion }: PageHeaderProps) {
+export default function EncabezadoPagina({ titulo, descripcion, metadata, accion }: EncabezadoPaginaProps) {
   return (
     <header className="page-header">
       <div className="page-header-copy">

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import ModuleSummary from "@/shared/components/ModuleSummary";
+import ResumenModulo from "@/shared/components/ResumenModulo";
 
-describe("ModuleSummary", () => {
+describe("ResumenModulo", () => {
   it("expone contexto y datos reales como una región accesible", () => {
     render(
-      <ModuleSummary
+      <ResumenModulo
         etiqueta="Personal registrado"
         items={[
           { etiqueta: "Total", valor: 137 },

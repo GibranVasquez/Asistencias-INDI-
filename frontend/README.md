@@ -29,6 +29,17 @@ src/
   El backend continúa siendo la autoridad efectiva de autorización.
 - El Kiosco usa su propio feature y no depende de `AdminLayout`.
 
+### Convenciones de código
+
+- El dominio propio usa identificadores en español y sin tildes (`trabajador`,
+  `estaCargando`, `fechaInicio`, `abrirDetalle`).
+- Las APIs de React, Electron, Express, Prisma, Vitest y Playwright conservan
+  sus nombres originales; también se conservan rutas HTTP y propiedades JSON
+  que forman parte de contratos externos.
+- Los textos visibles, etiquetas ARIA y documentación usan ortografía española.
+- Los nombres arquitectónicos (`app`, `core`, `features`, `routes`, `shared`)
+  permanecen como convenciones técnicas para mantener una estructura reconocible.
+
 ## Terminología de asistencia
 
 La pantalla principal de `features/asistencias` se presenta como **Lista
