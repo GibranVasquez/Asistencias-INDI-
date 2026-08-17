@@ -131,6 +131,7 @@ export default function AsistenciasPage() {
           <div><span className="texto-kicker">Tramo o ubicación</span><strong>{seccionSeleccionada?.seccionTramoUbicacion || "No especificado"}</strong></div>
           <div><span className="texto-kicker">Responsable del tramo</span><strong>{responsablesVisibles}</strong></div>
           <div><span className="texto-kicker">Turno</span><strong>{turnoFiltro || (new Set(asistenciasFiltradas.map((a) => a.turno)).size > 1 ? "Múltiple" : asistenciasFiltradas[0]?.turno || "No especificado")}</strong></div>
+          <div><span className="texto-kicker">Categoría</span><strong>{categoriaFiltro || (new Set(asistenciasFiltradas.map((a) => a.trabajadorCategoria)).size > 1 ? "Todas las categorías" : asistenciasFiltradas[0]?.trabajadorCategoria || "No especificada")}</strong></div>
           <div><span className="texto-kicker">Semana</span><strong>{numeroSemana(inicioSemana)}</strong></div>
           <div><span className="texto-kicker">Periodo</span><strong>{periodoLegible}</strong></div>
         </div>
@@ -186,15 +187,19 @@ export default function AsistenciasPage() {
           : vista === "semanal" ? (
             <div className="table-scroll asistencia-semanal-scroll">
               <table className="tabla-premium asistencia-semanal">
-                <thead><tr><th className="columna-fija">Trabajador</th><th>Frentes</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana">{encabezadoDia(dia)}</th>)}</tr></thead>
-                <tbody>{filasSemanales.map((fila) => <tr key={fila.trabajadorId}>
-                  <td className="columna-fija"><strong>{fila.trabajadorNombre}</strong></td>
-                  <td>{fila.frentes.join(", ")}</td>
+                <thead><tr><th className="columna-fija">ID</th><th className="columna-fija">Trabajador</th><th className="columna-fija">Puesto / categoría</th><th>Huella</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana">{encabezadoDia(dia)}</th>)}</tr></thead>
+                <tbody>{filasSemanales.map((fila, indiceFila) => <tr key={fila.trabajadorId}>
+                  <td className="columna-fija"><strong>{String(indiceFila + 1).padStart(3, "0")}</strong></td>
+                  <td className="columna-fija"><strong>{fila.trabajadorNombre}</strong><small>{fila.frentes.join(", ")}</small></td>
+                  <td className="columna-fija">{fila.trabajadorCategoria || "No especificada"}</td>
+                  <td>{fila.huellaRegistrada ? "Enrolado" : "No enrolado"}</td>
                   {diasSemana.map((dia) => {
                     const registros = fila.porDia.get(dia) ?? [];
                     return <td key={dia} className="celda-dia" title={registros.length ? `${registros.length} marcación${registros.length === 1 ? "" : "es"}` : "Sin registro"}>
                       {registros.length ? <button type="button" className="celda-dia-boton" onClick={() => setDetalleDia({ fila, dia })} aria-label={`Ver marcaciones de ${fila.trabajadorNombre} del ${dia}`}>
-                        {registros.map((registro) => <span key={registro.id}>{registro.hora.slice(11, 16)}</span>)}
+                        <span className="marcacion-resumen"><small>Primera marcación</small>{registros[0].hora.slice(11, 16)}</span>
+                        {registros.length > 1 && <span className="marcacion-resumen"><small>Última marcación</small>{registros[registros.length - 1].hora.slice(11, 16)}</span>}
+                        {registros.length === 1 && <span className="marcacion-resumen"><small>1 marcación</small>—</span>}
                       </button> : <span className="sin-registro">—</span>}
                     </td>;
                   })}

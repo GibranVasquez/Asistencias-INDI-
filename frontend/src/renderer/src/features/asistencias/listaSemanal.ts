@@ -3,6 +3,8 @@ import { AsistenciaListada } from "@/features/asistencias/api";
 export interface FilaListaSemanal {
   trabajadorId: string;
   trabajadorNombre: string;
+  trabajadorCategoria: string;
+  huellaRegistrada: boolean;
   frentes: string[];
   porDia: Map<string, AsistenciaListada[]>;
 }
@@ -54,6 +56,8 @@ export function agruparAsistenciasPorTrabajador(asistencias: AsistenciaListada[]
     const fila = filas.get(asistencia.trabajadorId) ?? {
       trabajadorId: asistencia.trabajadorId,
       trabajadorNombre: asistencia.trabajadorNombre,
+      trabajadorCategoria: asistencia.trabajadorCategoria,
+      huellaRegistrada: asistencia.trabajadorHuellaRegistrada,
       frentes: [],
       porDia: new Map<string, AsistenciaListada[]>(),
     };

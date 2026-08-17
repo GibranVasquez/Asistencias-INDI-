@@ -1155,7 +1155,10 @@ input {
 .asistencia-semanal { min-width: 980px; table-layout: fixed; }
 .asistencia-semanal th,
 .asistencia-semanal td { min-width: 102px; }
-.asistencia-semanal .columna-fija { position: sticky; left: 0; z-index: 2; min-width: 210px; width: 210px; background: var(--surface); }
+.asistencia-semanal .columna-fija { position: sticky; z-index: 2; background: var(--surface); }
+.asistencia-semanal th:nth-child(1), .asistencia-semanal td:nth-child(1) { left: 0; min-width: 58px; width: 58px; }
+.asistencia-semanal th:nth-child(2), .asistencia-semanal td:nth-child(2) { left: 58px; min-width: 190px; width: 190px; }
+.asistencia-semanal th:nth-child(3), .asistencia-semanal td:nth-child(3) { left: 248px; min-width: 150px; width: 150px; }
 .asistencia-semanal thead .columna-fija { z-index: 3; }
 .asistencia-semanal .dia-semana { text-align: center; }
 .asistencia-semanal .celda-dia { text-align: center; font-variant-numeric: tabular-nums; }
@@ -1164,6 +1167,9 @@ input {
 .asistencia-semanal-scroll { max-width: 100%; }
 .celda-dia-boton { display: grid; gap: 2px; width: 100%; padding: 3px 4px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .celda-dia-boton:hover, .celda-dia-boton:focus-visible { background: color-mix(in srgb, var(--indi) 10%, transparent); outline: 2px solid color-mix(in srgb, var(--indi) 45%, transparent); outline-offset: 1px; }
+.asistencia-semanal td small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 500; }
+.asistencia-semanal .marcacion-resumen { display: grid; gap: 1px; font-variant-numeric: tabular-nums; }
+.asistencia-semanal .marcacion-resumen small { font-size: 10px; line-height: 1.15; }
 .detalle-asistencia-lista { display: grid; grid-template-columns: minmax(100px, auto) 1fr; gap: 9px 16px; margin: 18px 0 22px; font-size: 13.5px; }
 .detalle-asistencia-lista dt { color: var(--muted); font-weight: 700; }
 .detalle-asistencia-lista dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
