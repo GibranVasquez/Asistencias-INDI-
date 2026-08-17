@@ -329,6 +329,7 @@ textarea:focus-visible {
 
 .sidebar-navigation {
   overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 8px;
 }
 
@@ -473,36 +474,6 @@ textarea:focus-visible {
   flex-direction: column;
   gap: 10px !important;
   justify-content: center;
-}
-
-.admin-sidebar.contraido .sidebar-link[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  z-index: 20;
-  transform: translate(4px, -50%);
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-  transition:
-    opacity var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-standard);
-}
-
-.admin-sidebar.contraido .sidebar-link[data-tooltip]:hover::after,
-.admin-sidebar.contraido .sidebar-link[data-tooltip]:focus-visible::after {
-  opacity: 1;
-  transform: translate(0, -50%);
 }
 
 .sidebar-link:hover {

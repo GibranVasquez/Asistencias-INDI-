@@ -130,6 +130,7 @@ export default function AdminLayout() {
               className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
               aria-label={item.label}
               data-tooltip={sidebarContraido ? item.label : undefined}
+              title={sidebarContraido ? item.label : undefined}
               style={({ isActive }) => ({
                 display: "flex", alignItems: "center", gap: 13, padding: "13px 16px", margin: "0 12px",
                 background: isActive ? "rgba(255,255,255,.14)" : "transparent", border: "none",
@@ -149,6 +150,7 @@ export default function AdminLayout() {
           onClick={() => setMostrarAyuda(true)}
           aria-label="Ayuda y soporte"
           data-tooltip={sidebarContraido ? "Ayuda y soporte" : undefined}
+          title={sidebarContraido ? "Ayuda y soporte" : undefined}
           style={{
             display: "flex",
             alignItems: "center",
