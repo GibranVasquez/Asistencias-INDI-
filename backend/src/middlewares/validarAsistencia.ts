@@ -81,6 +81,39 @@ export function validarFiltroAsistencia(req: Request, res: Response, next: NextF
     res.status(400).json({ error: "trabajadorId (query) debe ser un UUID válido si se envía." });
     return;
   }
+  for (const [nombre, valor] of [["turno", req.query.turno], ["categoria", req.query.categoria]] as const) {
+    if (valor !== undefined && (typeof valor !== "string" || valor.length === 0 || valor.length > 150)) {
+      res.status(400).json({ error: `${nombre} debe ser un texto válido si se envía.` });
+      return;
+    }
+  }
 
+  next();
+}
+
+export function validarExportarListaSemanal(req: Request, res: Response, next: NextFunction): void {
+  const { fechaInicio, fechaFin, seccionId, formato, turno, categoria } = req.query;
+  if (!esFechaISO(fechaInicio) || !esFechaISO(fechaFin)) {
+    res.status(400).json({ error: "fechaInicio y fechaFin son requeridas en formato YYYY-MM-DD." });
+    return;
+  }
+  if (Date.parse(fechaFin as string) < Date.parse(fechaInicio as string)) {
+    res.status(400).json({ error: "fechaFin no puede ser anterior a fechaInicio." });
+    return;
+  }
+  if (seccionId !== undefined && !esUUID(seccionId)) {
+    res.status(400).json({ error: "seccionId debe ser un UUID válido si se envía." });
+    return;
+  }
+  if (formato !== "pdf" && formato !== "excel") {
+    res.status(400).json({ error: "formato debe ser 'pdf' o 'excel'." });
+    return;
+  }
+  for (const [nombre, valor] of [["turno", turno], ["categoria", categoria]] as const) {
+    if (valor !== undefined && (typeof valor !== "string" || valor.length === 0 || valor.length > 150)) {
+      res.status(400).json({ error: `${nombre} debe ser un texto válido si se envía.` });
+      return;
+    }
+  }
   next();
 }

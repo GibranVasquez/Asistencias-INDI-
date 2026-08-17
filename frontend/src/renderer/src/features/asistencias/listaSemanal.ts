@@ -32,6 +32,14 @@ export function sumarDias(fecha: Date, dias: number): Date {
   return copia;
 }
 
+export function numeroSemana(fecha: Date): number {
+  const inicio = new Date(Date.UTC(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()));
+  const dia = inicio.getUTCDay() || 7;
+  inicio.setUTCDate(inicio.getUTCDate() + 4 - dia);
+  const inicioAnio = new Date(Date.UTC(inicio.getUTCFullYear(), 0, 1));
+  return Math.ceil((((inicio.getTime() - inicioAnio.getTime()) / 86400000) + 1) / 7);
+}
+
 export function encabezadoDia(fechaISO: string): string {
   return aFechaLocal(fechaISO).toLocaleDateString("es-MX", {
     weekday: "short",

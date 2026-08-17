@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AsistenciaListada } from "@/features/asistencias/api";
-import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, numeroSemana, sumarDias } from "@/features/asistencias/listaSemanal";
 
 function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
   return {
@@ -14,6 +14,12 @@ function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
     terminalOrigenId: parcial.terminalOrigenId ?? "terminal-1",
     trabajadorNombre: parcial.trabajadorNombre ?? "Ana Pérez",
     seccionNombre: parcial.seccionNombre ?? "Frente Norte",
+    trabajadorCategoria: parcial.trabajadorCategoria ?? "Operador",
+    trabajadorHuellaRegistrada: parcial.trabajadorHuellaRegistrada ?? true,
+    seccionTramoUbicacion: parcial.seccionTramoUbicacion ?? null,
+    seccionResponsables: parcial.seccionResponsables ?? [],
+    obraNombre: parcial.obraNombre ?? "Tren del Golfo de México — Segmentos 19 y 20",
+    horarioNombre: parcial.horarioNombre ?? null,
   };
 }
 
@@ -22,6 +28,7 @@ describe("lista semanal de asistencia", () => {
     const lunes = lunesDeSemana(new Date(2026, 7, 12));
     expect(aISO(lunes)).toBe("2026-08-10");
     expect(aISO(sumarDias(lunes, 6))).toBe("2026-08-16");
+    expect(numeroSemana(lunes)).toBe(33);
   });
 
   it("agrupa por trabajador y día, ordenando sus marcaciones por hora", () => {

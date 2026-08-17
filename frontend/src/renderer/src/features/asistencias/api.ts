@@ -32,6 +32,8 @@ export interface FiltrosListarAsistencias {
   fechaFin?: string;
   seccionId?: string;
   trabajadorId?: string;
+  turno?: string;
+  categoria?: string;
 }
 
 // Igual forma que AsistenciaRegistrada, pero fecha/hora vienen como
@@ -44,6 +46,12 @@ export interface FiltrosListarAsistencias {
 export interface AsistenciaListada extends AsistenciaRegistrada {
   trabajadorNombre: string;
   seccionNombre: string;
+  trabajadorCategoria: string;
+  trabajadorHuellaRegistrada: boolean;
+  seccionTramoUbicacion: string | null;
+  seccionResponsables: { id: string; username: string }[];
+  obraNombre: string;
+  horarioNombre: string | null;
 }
 
 function aQueryString(filtros: FiltrosListarAsistencias): string {
@@ -57,6 +65,17 @@ function aQueryString(filtros: FiltrosListarAsistencias): string {
 
 export function listarAsistencias(token: string, filtros: FiltrosListarAsistencias = {}) {
   return apiClient.get<{ asistencias: AsistenciaListada[] }>(`/asistencias${aQueryString(filtros)}`, token);
+}
+
+export async function exportarListaSemanal(token: string, filtros: FiltrosListarAsistencias & { formato: "pdf" | "excel" }, nombreArchivo: string): Promise<void> {
+  const base = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+  const params = new URLSearchParams();
+  for (const [clave, valor] of Object.entries(filtros)) if (valor) params.set(clave, valor);
+  const respuesta = await fetch(`${base}/asistencias/lista-semanal/exportar?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!respuesta.ok) throw new Error((await respuesta.json().catch(() => ({})))?.error ?? "No se pudo exportar la lista semanal.");
+  const url = URL.createObjectURL(await respuesta.blob());
+  const enlace = document.createElement("a"); enlace.href = url; enlace.download = nombreArchivo; enlace.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 // Para la pantalla de confirmación del Kiosco (modo ADMS) — la marcación
