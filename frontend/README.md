@@ -29,6 +29,19 @@ src/
   El backend continúa siendo la autoridad efectiva de autorización.
 - El Kiosco usa su propio feature y no depende de `AdminLayout`.
 
+## Terminología de asistencia
+
+La pantalla principal de `features/asistencias` se presenta como **Lista
+semanal de asistencia**. Reutiliza el rango existente de `/asistencias`,
+agrupa las marcaciones por trabajador y día y conserva una vista secundaria de
+`Registros`. Una hora se muestra como marcación; el sistema no la etiqueta como
+entrada o salida porque el modelo actual no guarda ese tipo de evento.
+
+`Seccion` se presenta como `Frente`, `Trabajador.categoria` es la referencia
+actual para categoría/puesto y `Horario` pertenece a una sección. Área, tramo,
+ubicación y responsable no se inventan en esta vista: requieren definición o
+datos adicionales de operación.
+
 ## Verificación
 
 ```bash
