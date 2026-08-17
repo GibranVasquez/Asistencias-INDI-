@@ -41,7 +41,7 @@ const icono = (children: ReactNode) => (
 // Fuente única para path, etiqueta, icono, roles, agrupación y orden del
 // sidebar. El backend sigue siendo la autoridad de autorización efectiva.
 export const NAVEGACION: NavegacionItem[] = [
-  { id: "dashboard", path: "/panel/dashboard", label: "Dashboard", group: "general", roles: ["rh", "administrador"], icon: icono(<><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></>) },
+  { id: "dashboard", path: "/panel/dashboard", label: "Panel principal", group: "general", roles: ["rh", "administrador"], icon: icono(<><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></>) },
   { id: "trabajadores", path: "/panel/trabajadores", label: "Trabajadores", group: "operacion", roles: ["rh"], icon: icono(<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></>) },
   { id: "asistencias", path: "/panel/asistencias", label: "Asistencias", group: "operacion", roles: ["rh", "recepcion"], icon: icono(<><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>) },
   { id: "nomina", path: "/panel/nomina", label: "Nómina RH", group: "operacion", roles: ["rh"], icon: icono(<><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></>) },

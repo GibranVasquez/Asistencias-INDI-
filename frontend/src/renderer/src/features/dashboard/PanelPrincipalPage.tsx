@@ -11,7 +11,7 @@ import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import ChipEstado from "@/shared/components/ChipEstado";
 import EmptyState from "@/shared/components/EmptyState";
 import PageHeader from "@/shared/components/PageHeader";
-import { bucketsPorSemanaDelMes } from "@/features/dashboard/dashboardBuckets";
+import { bucketsPorSemanaDelMes } from "@/features/dashboard/resumenBuckets";
 import { navegacionPorId, RutaPanel } from "@/routes/navigationConfig";
 
 type Rango = "dia" | "semana" | "mes";
@@ -112,13 +112,13 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[]): Estado
   return estado;
 }
 
-export default function DashboardPage() {
+export default function PanelPrincipalPage() {
   const { sesion } = useAuth();
   const token = sesion!.token;
 
   const [rango, setRango] = useState<Rango>("semana");
   // `hoy` NO puede ser un useMemo([]) — se congelaba en el momento de montar
-  // la pantalla y nunca se volvía a calcular: alguien que deja el Dashboard
+  // la pantalla y nunca se volvía a calcular: alguien que deja el panel
   // abierto (uso normal en un escritorio de oficina) seguía viendo
   // "Asistencias hoy" del día en que se abrió, aunque ya fuera el día
   // siguiente. Se recalcula al recuperar foco/visibilidad (cubre el caso
@@ -261,7 +261,7 @@ export default function DashboardPage() {
   return (
     <div className="precision-dashboard" style={{ padding: "26px 30px 36px" }}>
       <PageHeader
-        titulo="Dashboard"
+        titulo="Panel principal"
         descripcion={<span style={{ textTransform: "capitalize" }}>{hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>}
         metadata="Resumen operativo"
         accion={<div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4 }}>

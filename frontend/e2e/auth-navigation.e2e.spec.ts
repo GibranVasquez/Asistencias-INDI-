@@ -50,7 +50,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
   const app = await lanzarElectron("rh-navegacion");
   try {
     await login(app.page, "rh");
-    await expect(app.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(app.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
     expect(await app.page.locator(".page-transition").evaluate((elemento) => getComputedStyle(elemento).animationName)).toBe("pageEnter");
     const dona = app.page.locator(".dona-puntualidad");
     await expect(dona).toBeVisible();
@@ -67,7 +67,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     await app.page.getByRole("button", { name: "Contraer menú" }).click();
     await expect(sidebar).toHaveClass(/contraido/);
     await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeLessThan(80);
-    await expect(app.page.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    await expect(app.page.getByRole("link", { name: "Panel principal" })).toHaveAttribute("aria-current", "page");
     await expect(app.page.getByRole("link", { name: "Trabajadores" })).toHaveAttribute("data-tooltip", "Trabajadores");
     await expect(app.page.locator(".sidebar-label").first()).toBeHidden();
     expect((await app.page.locator("main").boundingBox())!.width).toBeGreaterThan(anchoPrincipalExpandido);
@@ -79,7 +79,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     await expect(sidebar).not.toHaveClass(/contraido/);
     await expect.poll(async () => (await sidebar.boundingBox())!.width).toBeGreaterThan(230);
     await app.page.evaluate(() => { window.location.hash = "#/panel/usuarios"; });
-    await expect(app.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(app.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
     await app.page.getByRole("button", { name: "Cerrar sesión" }).click();
     await expect(app.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
     await app.page.evaluate(() => { window.location.hash = "#/panel/trabajadores"; });
@@ -90,7 +90,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
 });
 
 for (const caso of [
-  { rol: "administrador" as const, destino: "Dashboard", permitido: "Usuarios", prohibido: "Nómina RH" },
+  { rol: "administrador" as const, destino: "Panel principal", permitido: "Usuarios", prohibido: "Nómina RH" },
   { rol: "recepcion" as const, destino: "Asistencia", permitido: "Asistencias", prohibido: "Nómina RH" },
   { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Encargado", prohibido: "Nómina RH" },
 ]) {
@@ -129,13 +129,13 @@ test("Recordarme restaura la sesión humana y logout elimina la persistencia", a
     test.skip(true, `safeStorage seguro no disponible: ${almacenamiento.backend}`);
   }
   await login(primerArranque.page, "rh");
-  await expect(primerArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(primerArranque.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
   await primerArranque.page.getByRole("button", { name: "Contraer menú" }).click();
   await expect(primerArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveClass(/contraido/);
   await cerrar(primerArranque);
 
   const segundoArranque = await lanzarElectron("persistencia-humana");
-  await expect(segundoArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(segundoArranque.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
   await expect(segundoArranque.page.getByRole("navigation", { name: "Navegación principal" })).toHaveClass(/contraido/);
   await segundoArranque.page.getByRole("button", { name: "Cerrar sesión" }).click();
   await expect(segundoArranque.page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
@@ -156,7 +156,7 @@ test("Recordarme restaura la sesión humana y logout elimina la persistencia", a
 test("sesión humana sin Recordarme vuelve a Login tras reiniciar Electron", async () => {
   const primerArranque = await lanzarElectron("sesion-efimera");
   await login(primerArranque.page, "rh", false);
-  await expect(primerArranque.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(primerArranque.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
   await primerArranque.page.getByRole("link", { name: "Trabajadores" }).click();
   await expect(primerArranque.page.getByRole("heading", { name: "Trabajadores" })).toBeVisible();
   await cerrar(primerArranque);

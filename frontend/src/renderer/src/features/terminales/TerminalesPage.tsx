@@ -25,9 +25,9 @@ const estilosCampo = {
   color: "var(--ink)",
 };
 
-// 24h: mismo umbral que DashboardPage.tsx usa para el banner de inactividad
+// 24h: mismo umbral que PanelPrincipalPage.tsx usa para el banner de inactividad
 // del lector ADMS — aquí solo se muestra como dato en la fila, la alerta
-// visible vive en el Dashboard.
+// visible vive en el panel principal.
 const UMBRAL_HORAS_INACTIVIDAD_ADMS = 24;
 
 function horasDesdeSincronizacion(ultimaSincronizacion: string | null): number | null {

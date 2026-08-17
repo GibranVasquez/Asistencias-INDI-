@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { RolUsuario } from "@/features/auth/api";
 import { useAuth } from "@/features/auth/AuthContext";
 import LoginPage from "@/features/auth/LoginPage";
-import DashboardPage from "@/features/dashboard/DashboardPage";
+import PanelPrincipalPage from "@/features/dashboard/PanelPrincipalPage";
 import AsistenciasPage from "@/features/asistencias/AsistenciasPage";
 import TrabajadoresPage from "@/features/trabajadores/TrabajadoresPage";
 import TrabajadorFormPage from "@/features/trabajadores/TrabajadorFormPage";
@@ -39,7 +39,7 @@ export default function AppRoutes() {
     <Route path="/panel" element={sesion ? <AdminLayout /> : <Navigate to="/" replace />}>
       {rol && <>
         <Route index element={<Navigate to={rutaInicialPara(rol)} replace />} />
-        <Route path="dashboard" element={<RutaProtegida rol={rol} ruta="dashboard"><DashboardPage /></RutaProtegida>} />
+        <Route path="dashboard" element={<RutaProtegida rol={rol} ruta="dashboard"><PanelPrincipalPage /></RutaProtegida>} />
         <Route path="asistencias" element={<RutaProtegida rol={rol} ruta="asistencias"><AsistenciasPage /></RutaProtegida>} />
         <Route path="trabajadores" element={<RutaProtegida rol={rol} ruta="trabajadores"><TrabajadoresPage /></RutaProtegida>} />
         <Route path="trabajadores/nuevo" element={<RutaProtegida rol={rol} ruta="trabajadores"><TrabajadorFormPage /></RutaProtegida>} />
