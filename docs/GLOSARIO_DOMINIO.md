@@ -27,8 +27,12 @@ de datos.
 
 - **Área, tramo y ubicación:** no son campos independientes en el modelo
   actual. No se presentan como datos inventados.
-- **Responsable del tramo:** usuarios relacionados con `Seccion.encargados`;
-  el rol técnico continúa siendo `encargado_seccion`.
+- **Responsable del tramo:** cuentas de usuario relacionadas con
+  `Seccion.encargados`; el rol técnico continúa siendo `encargado_seccion`.
+  Cuando la cuenta tiene un trabajador vinculado, la interfaz muestra también
+  su nombre y categoría. El modelo actual no permite asignar directamente a
+  cualquier `Trabajador` sin una cuenta; esa decisión de negocio queda
+  pendiente de validación con RH.
 - **Puesto:** el modelo actual usa `Trabajador.categoria`, texto libre. No hay
   una entidad `Puesto` separada.
 - **Entrada y salida:** una asistencia solo contiene fecha y hora; no existe un

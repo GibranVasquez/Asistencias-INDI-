@@ -9,7 +9,7 @@ export interface Seccion {
   creadoEn: string;
   obra?: { nombre: string };
   // Presente solo en GET /secciones (listarSecciones) — no en el /:id puntual.
-  encargados?: { id: string; username: string }[];
+  encargados?: { id: string; username: string; trabajadorId: string | null; trabajadorNombre?: string | null; trabajadorCategoria?: string | null }[];
 }
 
 export interface DatosAltaSeccion {

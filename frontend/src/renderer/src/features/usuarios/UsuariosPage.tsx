@@ -22,7 +22,7 @@ import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
   recepcion: "Recepción",
-  encargado_seccion: "Encargado de frente",
+  encargado_seccion: "Responsable del tramo",
   rh: "Recursos Humanos",
   administrador: "Administrador",
 };

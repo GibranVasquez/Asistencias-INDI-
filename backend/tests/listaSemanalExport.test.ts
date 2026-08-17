@@ -9,7 +9,7 @@ function registro(parcial: Partial<AsistenciaListada> = {}): AsistenciaListada {
     id: "registro-1", trabajadorId: "trabajador-1", fecha: new Date("2026-08-10T00:00:00Z"), hora: new Date("1970-01-01T07:01:00Z"),
     seccionId: "frente-1", turno: "Diurno", metodoUsado: "huella", terminalOrigenId: "terminal-1",
     trabajadorNombre: "Ana Pérez", trabajadorCategoria: "Operadora", trabajadorHuellaRegistrada: true,
-    seccionNombre: "Frente 03", seccionTramoUbicacion: "No especificado", seccionResponsables: [{ id: "u1", username: "responsable" }],
+    seccionNombre: "Frente 03", seccionTramoUbicacion: "No especificado", seccionResponsables: [{ id: "u1", username: "responsable", trabajadorNombre: null, trabajadorCategoria: null }],
     obraNombre: "Tren del Golfo de México — Segmentos 19 y 20", horarioNombre: "Diurno", ...parcial,
   };
 }

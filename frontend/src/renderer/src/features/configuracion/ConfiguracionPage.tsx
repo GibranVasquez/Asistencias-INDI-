@@ -551,7 +551,7 @@ function PanelSecciones() {
                     <td style={{ padding: "11px 20px", fontWeight: 600, color: "var(--ink)" }}>{s.nombre}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.tramoUbicacion || "No especificado"}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.horarioId ? mapaHorarios.get(s.horarioId) ?? "—" : "—"}</td>
-                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.encargados?.length ? s.encargados.map((e) => e.username).join(", ") : "—"}</td>
+                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.encargados?.length ? s.encargados.map((e) => e.trabajadorNombre ? `${e.trabajadorNombre}${e.trabajadorCategoria ? ` · ${e.trabajadorCategoria}` : ""}` : e.username).join(", ") : "—"}</td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
                       <Boton variante="outline" tamano="pequeno" onClick={() => abrirEdicion(s)}>
                         Editar
@@ -600,7 +600,7 @@ function PanelSecciones() {
                 style={{ ...estilosCampo, minHeight: 90 }}
               >
                 {encargados?.map((en) => (
-                  <option key={en.id} value={en.id}>{en.username}</option>
+                  <option key={en.id} value={en.id}>{en.trabajadorNombre ? `${en.trabajadorNombre}${en.trabajadorCategoria ? ` · ${en.trabajadorCategoria}` : ""}` : en.username}</option>
                 ))}
               </select>
             </Campo>

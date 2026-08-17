@@ -44,6 +44,9 @@ export async function listarUsuarios(): Promise<UsuarioListado[]> {
 export interface EncargadoBasico {
   id: string;
   username: string;
+  trabajadorId: string | null;
+  trabajadorNombre: string | null;
+  trabajadorCategoria: string | null;
 }
 
 // Subconjunto mínimo (sin rol/estatus/trabajadorId de las demás cuentas) para
@@ -54,9 +57,15 @@ export async function listarEncargados(): Promise<EncargadoBasico[]> {
   const usuarios = await prisma.usuario.findMany({
     where: { rol: RolUsuario.encargado_seccion },
     orderBy: { username: "asc" },
-    select: { id: true, username: true },
+    select: { id: true, username: true, trabajadorId: true, trabajador: { select: { nombreCompleto: true, categoria: true } } },
   });
-  return usuarios;
+  return usuarios.map((usuario) => ({
+    id: usuario.id,
+    username: usuario.username,
+    trabajadorId: usuario.trabajadorId,
+    trabajadorNombre: usuario.trabajador?.nombreCompleto ?? null,
+    trabajadorCategoria: usuario.trabajador?.categoria ?? null,
+  }));
 }
 
 export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsuario): Promise<UsuarioPublico> {

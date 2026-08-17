@@ -92,7 +92,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
 for (const caso of [
   { rol: "administrador" as const, destino: "Panel principal", permitido: "Usuarios", prohibido: "Nómina RH" },
   { rol: "recepcion" as const, destino: "Asistencia", permitido: "Asistencias", prohibido: "Nómina RH" },
-  { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Encargado", prohibido: "Nómina RH" },
+  { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Responsable del tramo", prohibido: "Nómina RH" },
 ]) {
   test(`${caso.rol} solo recibe su navegación permitida`, async () => {
     const app = await lanzarElectron(`rol-${caso.rol}`);

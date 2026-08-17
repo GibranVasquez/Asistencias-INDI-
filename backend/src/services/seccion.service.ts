@@ -23,7 +23,7 @@ export interface DatosEdicionSeccion {
 }
 
 export interface SeccionConEncargados extends Seccion {
-  encargados: { id: string; username: string }[];
+  encargados: { id: string; username: string; trabajadorId: string | null; trabajadorNombre: string | null; trabajadorCategoria: string | null }[];
 }
 
 interface TrabajadorResumen {
@@ -128,7 +128,12 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
             accion: "crear_seccion",
             entidad: "Seccion",
             entidadId: seccion.id,
-            detalle: { nombre: seccion.nombre, obraId: seccion.obraId },
+            detalle: {
+              nombre: seccion.nombre,
+              obraId: seccion.obraId,
+              tramoUbicacion: seccion.tramoUbicacion,
+              encargadoIds: datos.encargadoIds ?? [],
+            },
           },
         });
 
@@ -139,10 +144,20 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
 }
 
 export async function listarSecciones(): Promise<SeccionConEncargados[]> {
-  return prisma.seccion.findMany({
+  const secciones = await prisma.seccion.findMany({
     orderBy: { nombre: "asc" },
-    include: { encargados: { select: { id: true, username: true } }, obra: { select: { nombre: true } } },
+    include: { encargados: { select: { id: true, username: true, trabajadorId: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } }, obra: { select: { nombre: true } } },
   });
+  return secciones.map((seccion) => ({
+    ...seccion,
+    encargados: seccion.encargados.map((encargado) => ({
+      id: encargado.id,
+      username: encargado.username,
+      trabajadorId: encargado.trabajadorId,
+      trabajadorNombre: encargado.trabajador?.nombreCompleto ?? null,
+      trabajadorCategoria: encargado.trabajador?.categoria ?? null,
+    })),
+  }));
 }
 
 export async function obtenerSeccion(id: string): Promise<Seccion> {
@@ -158,7 +173,13 @@ export async function editarSeccion(
   id: string,
   datos: DatosEdicionSeccion
 ): Promise<Seccion> {
-  const seccion = await obtenerSeccion(id);
+  const seccion = await prisma.seccion.findUnique({
+    where: { id },
+    include: { encargados: { select: { id: true } } },
+  });
+  if (!seccion) {
+    throw new AppError(404, "Sección no encontrada.");
+  }
 
   const conflicto = await prisma.seccion.findUnique({
     where: { obraId_nombre: { obraId: seccion.obraId, nombre: datos.nombre } },
@@ -189,7 +210,12 @@ export async function editarSeccion(
             accion: "editar_seccion",
             entidad: "Seccion",
             entidadId: id,
-            detalle: { nombre: actualizada.nombre },
+            detalle: {
+              nombre: actualizada.nombre,
+              tramoUbicacion: actualizada.tramoUbicacion,
+              encargadoIdsAnteriores: seccion.encargados.map((encargado) => encargado.id),
+              encargadoIdsNuevos: datos.encargadoIds ?? seccion.encargados.map((encargado) => encargado.id),
+            },
           },
         });
 

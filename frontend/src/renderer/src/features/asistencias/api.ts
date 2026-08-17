@@ -49,7 +49,7 @@ export interface AsistenciaListada extends AsistenciaRegistrada {
   trabajadorCategoria: string;
   trabajadorHuellaRegistrada: boolean;
   seccionTramoUbicacion: string | null;
-  seccionResponsables: { id: string; username: string }[];
+  seccionResponsables: { id: string; username: string; trabajadorNombre: string | null; trabajadorCategoria: string | null }[];
   obraNombre: string;
   horarioNombre: string | null;
 }
