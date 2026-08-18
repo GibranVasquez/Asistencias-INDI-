@@ -20,6 +20,7 @@ interface Window {
     // en el build, así el paquete instalado puede apuntar a donde sea que
     // viva el backend sin recompilar.
     apiBaseUrl: string;
+    guardarExportacion?: (solicitud: { nombreSugerido: string; formato: "pdf" | "xlsx"; bytes: Uint8Array }) => Promise<{ cancelado: boolean; guardado?: boolean }>;
     sesionSegura: {
       guardar: (valor: string, persistir: boolean) => Promise<void>;
       leer: () => Promise<{ valor: string; persistida: boolean } | null>;

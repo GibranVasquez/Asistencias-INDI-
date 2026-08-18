@@ -19,6 +19,8 @@ function leerApiBaseUrl(): string {
 contextBridge.exposeInMainWorld("indiApp", {
   esKiosco: process.argv.includes("--kiosk") || process.env.INDI_KIOSK === "1",
   apiBaseUrl: leerApiBaseUrl(),
+  guardarExportacion: (solicitud: { nombreSugerido: string; formato: "pdf" | "xlsx"; bytes: Uint8Array }): Promise<{ cancelado: boolean; guardado?: boolean }> =>
+    ipcRenderer.invoke("archivo:guardar-exportacion", solicitud),
   sesionSegura: {
     guardar: (valor: string, persistir: boolean): Promise<void> =>
       ipcRenderer.invoke("secure-store:guardar", valor, persistir),

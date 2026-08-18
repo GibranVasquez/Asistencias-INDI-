@@ -1,4 +1,5 @@
 import { apiClient } from "@/core/api/client";
+import { descargarExportacion } from "@/core/api/descargarExportacion";
 
 export type MetodoAsistencia = "huella" | "rostro";
 
@@ -68,14 +69,9 @@ export function listarAsistencias(token: string, filtros: FiltrosListarAsistenci
 }
 
 export async function exportarListaSemanal(token: string, filtros: FiltrosListarAsistencias & { formato: "pdf" | "excel" }, nombreArchivo: string): Promise<void> {
-  const base = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
   const params = new URLSearchParams();
   for (const [clave, valor] of Object.entries(filtros)) if (valor) params.set(clave, valor);
-  const respuesta = await fetch(`${base}/asistencias/lista-semanal/exportar?${params}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!respuesta.ok) throw new Error((await respuesta.json().catch(() => ({})))?.error ?? "No se pudo exportar la lista semanal.");
-  const url = URL.createObjectURL(await respuesta.blob());
-  const enlace = document.createElement("a"); enlace.href = url; enlace.download = nombreArchivo; enlace.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  await descargarExportacion(token, `/asistencias/lista-semanal/exportar?${params}`, nombreArchivo, filtros.formato);
 }
 
 // Para la pantalla de confirmación del Kiosco (modo ADMS) — la marcación

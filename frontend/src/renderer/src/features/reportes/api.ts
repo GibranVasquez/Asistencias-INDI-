@@ -1,4 +1,5 @@
 import { apiClient } from "@/core/api/client";
+import { descargarExportacion } from "@/core/api/descargarExportacion";
 
 export interface ResumenAsistencia {
   presentes: number;
@@ -97,28 +98,6 @@ export function obtenerReporteNomina(token: string, desde: string, hasta: string
   return apiClient.get<ReporteNomina>(`/reportes/nomina?${qs}`, token);
 }
 
-// Los exports son binarios (PDF/Excel), no JSON — apiClient.get asume JSON,
-// así que estos hacen fetch directo con el mismo esquema de auth (Bearer)
-// y disparan la descarga vía blob + <a>, igual que el CSV de Nómina RH.
-async function descargarArchivo(token: string, ruta: string, nombreArchivo: string): Promise<void> {
-  const API_BASE_URL = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
-  const respuesta = await fetch(`${API_BASE_URL}${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
-  if (!respuesta.ok) {
-    const datos = await respuesta.json().catch(() => ({}));
-    throw new Error(datos?.error ?? "No se pudo generar el archivo.");
-  }
-  const blob = await respuesta.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nombreArchivo;
-  a.click();
-  // El navegador procesa la descarga de forma asíncrona tras click(): revocar
-  // el blob en el mismo tick lo destruye antes de que la descarga real
-  // ocurra, y esta falla en silencio (sin error, sin archivo).
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
 export function exportarAsistencia(
   token: string,
   desde: string,
@@ -128,11 +107,11 @@ export function exportarAsistencia(
 ) {
   const qs = new URLSearchParams({ desde, hasta, formato, ...(seccionId ? { seccionId } : {}) });
   const ext = formato === "pdf" ? "pdf" : "xlsx";
-  return descargarArchivo(token, `/reportes/asistencia/exportar?${qs}`, `reporte-asistencia_${desde}_${hasta}.${ext}`);
+  return descargarExportacion(token, `/reportes/asistencia/exportar?${qs}`, `reporte-asistencia_${desde}_${hasta}.${ext}`, formato);
 }
 
 export function exportarNomina(token: string, desde: string, hasta: string, formato: "pdf" | "excel") {
   const qs = new URLSearchParams({ desde, hasta, formato });
   const ext = formato === "pdf" ? "pdf" : "xlsx";
-  return descargarArchivo(token, `/reportes/nomina/exportar?${qs}`, `reporte-nomina_${desde}_${hasta}.${ext}`);
+  return descargarExportacion(token, `/reportes/nomina/exportar?${qs}`, `reporte-nomina_${desde}_${hasta}.${ext}`, formato);
 }

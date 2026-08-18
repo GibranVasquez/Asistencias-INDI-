@@ -3,6 +3,7 @@ import { isAbsolute, join, resolve } from "path";
 import { resolverApiBaseUrl } from "./apiConfig";
 import { construirContentSecurityPolicy, esNavegacionAlMismoDocumento } from "./contentSecurityPolicy";
 import { registrarHandlersSecureStore } from "./secureStore";
+import { registrarHandlerGuardarExportacion } from "./exportaciones";
 
 // Electron 43 + NVIDIA bajo Wayland pierde el contexto EGL de forma repetida
 // (eglCreateImage 0x3009) hasta terminar el proceso GPU. En esa combinación
@@ -107,11 +108,9 @@ function restringirPermisos(): void {
   session.defaultSession.setPermissionRequestHandler((_webContents, _permiso, responder) => responder(false));
 }
 
-// Sin este handler, guardar un blob (reportes en PDF/Excel, ver
-// api/reportes.ts) vía <a download> depende del comportamiento por-defecto
-// de Chromium ante una descarga — que en pruebas resultó intermitente bajo
-// Electron. Fijar explícitamente la carpeta de Descargas del sistema (sin
-// diálogo "Guardar como") lo vuelve determinista.
+// Las exportaciones que pasan por el bridge `archivo:guardar-exportacion`
+// muestran su propio diálogo nativo. Este handler se conserva para descargas
+// web/fallback que todavía utilicen `<a download>` en otras áreas.
 function registrarDescargas(): void {
   session.defaultSession.on("will-download", (_evento, item) => {
     item.setSavePath(join(app.getPath("downloads"), item.getFilename()));
@@ -122,6 +121,7 @@ void app.whenReady().then(() => {
   // La URL se resuelve una sola vez y alimenta tanto al preload como a CSP.
   const apiBaseUrl = resolverApiBaseUrl();
   registrarHandlersSecureStore();
+  registrarHandlerGuardarExportacion();
   registrarDescargas();
   registrarPoliticaDeContenido(apiBaseUrl);
   restringirPermisos();
