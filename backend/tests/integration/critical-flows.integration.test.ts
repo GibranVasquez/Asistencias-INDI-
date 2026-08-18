@@ -216,6 +216,14 @@ describe("HTTP real: responsables operativos del tramo", () => {
       tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.recepcion), tokenHumano(RolUsuario.encargado_seccion),
     ]);
 
+    // El listado que consume Configuración → Frentes incluye ambas relaciones
+    // (cuentas técnicas y responsables operativos); con el esquema efímero
+    // completo debe responder sin el 500 genérico observado con bases locales
+    // que aún no tenían las migraciones recientes.
+    const listadoSecciones = await request(app).get("/secciones").set("Authorization", `Bearer ${tokenRh}`);
+    expect(listadoSecciones.status).toBe(200);
+    expect(listadoSecciones.body.secciones[0]).toMatchObject({ id: seccion.id, responsablesTramo: [] });
+
     const elegibles = await request(app).get("/secciones/responsables/elegibles").set("Authorization", `Bearer ${tokenRh}`);
     expect(elegibles.status).toBe(200);
     expect(elegibles.body.trabajadores).toHaveLength(2);

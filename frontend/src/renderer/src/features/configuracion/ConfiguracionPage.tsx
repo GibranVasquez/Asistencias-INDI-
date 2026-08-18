@@ -72,11 +72,11 @@ function hoyISO(): string {
 function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
   return (
     <div
-      className="modal-backdrop"
+      className="modal-backdrop configuracion-modal-backdrop"
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
       onClick={onClose}
     >
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420, maxHeight: "85vh", overflowY: "auto" }}>
+      <div className="modal-panel configuracion-modal" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -94,7 +94,7 @@ function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }
 
 function BotonesModal({ guardando, onCancelar, etiqueta }: { guardando: boolean; onCancelar: () => void; etiqueta: string }) {
   return (
-    <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+    <div className="configuracion-modal-acciones" style={{ display: "flex", gap: 10, marginTop: 4 }}>
       <Boton variante="outline" type="button" onClick={onCancelar} style={{ flex: 1 }}>
         Cancelar
       </Boton>
@@ -121,10 +121,10 @@ export default function ConfiguracionPage() {
   const tabsVisibles = esAdministrador ? TABS.filter((t) => t.id === "obra") : TABS;
 
   return (
-    <div style={{ padding: "26px 30px 36px" }}>
+    <div className="configuracion-page" style={{ padding: "26px 30px 36px" }}>
       <EncabezadoPagina titulo="Configuración" descripcion="Administra parámetros y catálogos que definen la operación del sistema." metadata="Parámetros del sistema" />
 
-      <div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
+      <div className="configuracion-tabs" style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, marginTop: 18, width: "fit-content" }}>
         {tabsVisibles.map((t) => (
           <button
             key={t.id}
@@ -145,7 +145,7 @@ export default function ConfiguracionPage() {
         ))}
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      <div className="configuracion-contenido" style={{ marginTop: 18 }}>
         {tab === "obra" && <PanelDatosObra />}
         {tab === "horarios" && <PanelHorarios />}
         {tab === "secciones" && <PanelSecciones />}
@@ -541,16 +541,19 @@ function PanelSecciones() {
   return (
     <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)" }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{secciones ? `${secciones.length} frente${secciones.length === 1 ? "" : "s"}` : "Cargando…"}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{cargando ? "Cargando…" : secciones ? `${secciones.length} frente${secciones.length === 1 ? "" : "s"}` : "Frentes"}</span>
         <Boton tamano="pequeno" onClick={abrirAlta}>
           + Nuevo frente
         </Boton>
       </div>
 
-      {error ? (
-        <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
-      ) : cargando ? (
+      {cargando ? (
         <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13.5 }}>Cargando…</div>
+      ) : error ? (
+        <div className="configuracion-error" role="alert">
+          <span>No fue posible cargar los frentes.</span>
+          <Boton variante="outline" tamano="pequeno" onClick={cargar}>Reintentar</Boton>
+        </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -612,16 +615,17 @@ function PanelSecciones() {
               </select>
             </Campo>
             <Campo etiqueta="Cuentas técnicas con acceso al frente">
-              <select
-                multiple
-                value={encargadoIds}
-                onChange={(e) => setEncargadoIds(Array.from(e.target.selectedOptions, (o) => o.value))}
-                style={{ ...estilosCampo, minHeight: 90 }}
-              >
-                {encargados?.map((en) => (
-                  <option key={en.id} value={en.id}>{en.trabajadorNombre ? `${en.trabajadorNombre}${en.trabajadorCategoria ? ` · ${en.trabajadorCategoria}` : ""}` : en.username}</option>
-                ))}
-              </select>
+              <div className="seleccion-lista" aria-label="Cuentas técnicas con acceso">
+                {encargados?.length ? encargados.map((en) => {
+                  const seleccionado = encargadoIds.includes(en.id);
+                  return (
+                    <label className={`seleccion-opcion${seleccionado ? " seleccionada" : ""}`} key={en.id}>
+                      <input type="checkbox" checked={seleccionado} onChange={() => setEncargadoIds((actuales) => seleccionado ? actuales.filter((id) => id !== en.id) : [...actuales, en.id])} />
+                      <span>{en.trabajadorNombre ? `${en.trabajadorNombre}${en.trabajadorCategoria ? ` · ${en.trabajadorCategoria}` : ""}` : en.username}</span>
+                    </label>
+                  );
+                }) : <span className="seleccion-vacia">No hay cuentas técnicas disponibles.</span>}
+              </div>
             </Campo>
             <Campo etiqueta="Responsables operativos del tramo">
               <input
@@ -631,16 +635,19 @@ function PanelSecciones() {
                 placeholder="Buscar trabajador activo…"
                 style={{ ...estilosCampo, marginBottom: 7 }}
               />
-              <select
-                multiple
-                value={responsableIds}
-                onChange={(evento) => setResponsableIds(Array.from(evento.target.selectedOptions, (opcion) => opcion.value))}
-                style={{ ...estilosCampo, minHeight: 110 }}
-              >
-                {trabajadoresResponsables.filter((trabajador) => `${trabajador.nombreCompleto} ${trabajador.categoria}`.toLocaleLowerCase().includes(busquedaResponsable.toLocaleLowerCase())).map((trabajador) => (
-                  <option key={trabajador.id} value={trabajador.id}>{trabajador.nombreCompleto} · {trabajador.categoria}</option>
-                ))}
-              </select>
+              <div className="seleccion-lista" aria-label="Responsables operativos del tramo">
+                {trabajadoresResponsables.filter((trabajador) => `${trabajador.nombreCompleto} ${trabajador.categoria}`.toLocaleLowerCase().includes(busquedaResponsable.toLocaleLowerCase())).length ? trabajadoresResponsables
+                  .filter((trabajador) => `${trabajador.nombreCompleto} ${trabajador.categoria}`.toLocaleLowerCase().includes(busquedaResponsable.toLocaleLowerCase()))
+                  .map((trabajador) => {
+                    const seleccionado = responsableIds.includes(trabajador.id);
+                    return (
+                      <label className={`seleccion-opcion${seleccionado ? " seleccionada" : ""}`} key={trabajador.id}>
+                        <input type="checkbox" checked={seleccionado} onChange={() => setResponsableIds((actuales) => seleccionado ? actuales.filter((id) => id !== trabajador.id) : [...actuales, trabajador.id])} />
+                        <span>{trabajador.nombreCompleto} · {trabajador.categoria}</span>
+                      </label>
+                    );
+                  }) : <span className="seleccion-vacia">No hay trabajadores que coincidan.</span>}
+              </div>
               <span style={{ fontSize: 11.5, fontWeight: 400, color: "var(--muted)" }}>Solo trabajadores activos. Puedes seleccionar varios.</span>
             </Campo>
             <BotonesModal guardando={guardando} onCancelar={() => setModal(null)} etiqueta={modal.editando ? "Guardar cambios" : "Crear frente"} />
