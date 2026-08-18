@@ -7,6 +7,7 @@ import {
   obtenerVistaPreviaNomina,
   VistaPreviaTrabajador,
 } from "@/features/nomina/api";
+import { exportarNomina } from "@/features/reportes/api";
 import { ApiError } from "@/core/api/client";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
@@ -251,60 +252,18 @@ export default function NominaPage() {
     });
   }
 
-  function exportarCSV() {
-    const encabezados = [
-      "Nombre",
-      "Categoría",
-      "Frentes trabajados",
-      "Días laborados",
-      "Horas extra",
-      "Viáticos semanal",
-      "Viáticos mensual",
-      "Descuentos varios",
-      "Aguinaldo",
-      "Total a pagar",
-      "Estatus",
-    ];
-    const filas = filtrados.map((t) => {
-      const e = ediciones[t.id] ?? edicionVacia();
-      const estatus = t.nominaExistente ? ETIQUETA_ESTATUS[t.nominaExistente.estatus] : "Sin generar";
-      return [
-        t.nombreCompleto,
-        t.categoria,
-        t.seccionesTrabajadas.join(" / "),
-        String(t.diasLaborados),
-        String(e.horasExtra),
-        String(e.viaticosSemanal),
-        String(e.viaticosMensual),
-        String(e.descuentosVarios),
-        e.aguinaldo !== null ? String(e.aguinaldo) : "",
-        t.nominaExistente?.totalAPagar ?? "",
-        estatus,
-      ];
-    });
-    const csv = [encabezados, ...filas]
-      .map((fila) => fila.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `nomina_${periodoInicio}_${periodoFin}.csv`;
-    a.click();
-    // Revocar en el mismo tick destruye el blob antes de que el navegador
-    // termine de procesar la descarga (asíncrono) — falla en silencio.
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  async function exportar(formato: "pdf" | "excel"): Promise<void> {
+    try {
+      await exportarNomina(token, periodoInicio, periodoFin, formato);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No fue posible generar el archivo.");
+    }
   }
 
   const estilosCampo = { padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 13.5, background: "var(--surface)", color: "var(--ink)" };
 
   return (
     <div style={{ padding: "26px 30px 36px" }}>
-      <style>{`@media print {
-        .no-imprimir { display: none !important; }
-        table { font-size: 11px; }
-      }`}</style>
-
       <div className="no-imprimir">
         <EncabezadoPagina titulo="Nómina RH" descripcion="Consulta y gestiona los cálculos del periodo seleccionado." metadata={`Semana · ${periodoInicio} — ${periodoFin}`} accion={<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <Boton variante="outline" tamano="pequeno" onClick={() => setInicioSemana((f) => sumarDias(f, -7))}>
@@ -358,10 +317,10 @@ export default function NominaPage() {
           </select>
         </label>
         <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-          <Boton variante="outline" onClick={exportarCSV} disabled={!vistaPrevia}>
-            Exportar CSV (Excel)
+          <Boton variante="outline" onClick={() => exportar("excel")} disabled={!vistaPrevia} textoEnProceso="Generando…">
+            Exportar Excel
           </Boton>
-          <Boton variante="outline" onClick={() => window.print()} disabled={!vistaPrevia}>
+          <Boton variante="outline" onClick={() => exportar("pdf")} disabled={!vistaPrevia} textoEnProceso="Generando…">
             Exportar PDF
           </Boton>
           <Boton onClick={calcularNominaDeLaSemana} disabled={generando || !vistaPrevia || procesables === 0}>
