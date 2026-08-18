@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { RolUsuario } from "@prisma/client";
-import { borrar, crear, editar, hoy, listar, obtener } from "../controllers/seccion.controller";
+import { asignarResponsable, borrar, crear, editar, hoy, listar, obtener, responsables, retirarResponsable, trabajadoresResponsables } from "../controllers/seccion.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { permitirRoles } from "../middlewares/role.middleware";
 import { permitirTerminalOUsuarioConRol } from "../middlewares/authTerminalOUsuario";
-import { validarAltaSeccion, validarEdicionSeccion, validarIdSeccion } from "../middlewares/validarSeccion";
+import { validarAltaSeccion, validarEdicionSeccion, validarIdSeccion, validarTrabajadorResponsable } from "../middlewares/validarSeccion";
 
 export const seccionRouter = Router();
 
@@ -31,6 +31,11 @@ seccionRouter.get(
   validarIdSeccion,
   obtener
 );
+
+seccionRouter.get("/responsables/elegibles", authMiddleware, permitirRoles(RolUsuario.rh, RolUsuario.administrador), trabajadoresResponsables);
+seccionRouter.get("/:id/responsables", authMiddleware, permitirRoles(RolUsuario.rh, RolUsuario.administrador), validarIdSeccion, responsables);
+seccionRouter.post("/:id/responsables", authMiddleware, permitirRoles(RolUsuario.rh, RolUsuario.administrador), validarIdSeccion, validarTrabajadorResponsable, asignarResponsable);
+seccionRouter.delete("/:id/responsables/:trabajadorId", authMiddleware, permitirRoles(RolUsuario.rh, RolUsuario.administrador), validarIdSeccion, validarTrabajadorResponsable, retirarResponsable);
 
 seccionRouter.use(authMiddleware, permitirRoles(RolUsuario.rh));
 

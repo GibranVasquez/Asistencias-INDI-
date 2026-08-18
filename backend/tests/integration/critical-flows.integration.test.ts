@@ -209,6 +209,46 @@ describe("HTTP real: configuración de la obra", () => {
   });
 });
 
+describe("HTTP real: responsables operativos del tramo", () => {
+  it("permite a RH y Administrador asignar, consultar y retirar trabajadores activos con auditoría", async () => {
+    const { seccion, trabajadores, usuarios } = await escenarioBase();
+    const [tokenRh, tokenAdmin, tokenRecepcion, tokenEncargado] = await Promise.all([
+      tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.recepcion), tokenHumano(RolUsuario.encargado_seccion),
+    ]);
+
+    const elegibles = await request(app).get("/secciones/responsables/elegibles").set("Authorization", `Bearer ${tokenRh}`);
+    expect(elegibles.status).toBe(200);
+    expect(elegibles.body.trabajadores).toHaveLength(2);
+    expect(elegibles.body.trabajadores[0]).not.toHaveProperty("sueldoBase");
+
+    const asignado = await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id });
+    expect(asignado.status).toBe(201);
+    expect(asignado.body.responsable).toMatchObject({ id: trabajadores[0].id, nombreCompleto: "Trabajador A", estatus: "activo" });
+
+    const duplicado = await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id });
+    expect(duplicado.status).toBe(409);
+    const segundo = await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenAdmin}`).send({ trabajadorId: trabajadores[1].id });
+    expect(segundo.status).toBe(201);
+
+    for (const token of [tokenRecepcion, tokenEncargado]) {
+      expect((await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${token}`).send({ trabajadorId: trabajadores[0].id })).status).toBe(403);
+    }
+
+    await prisma.trabajador.update({ where: { id: trabajadores[1].id }, data: { estatus: TrabajadorEstatus.baja } });
+    const inactivo = await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[1].id });
+    expect(inactivo.status).toBe(400);
+
+    const listado = await request(app).get(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`);
+    expect(listado.body.responsablesTramo.map((responsable: { id: string }) => responsable.id)).toEqual([trabajadores[0].id, trabajadores[1].id]);
+    expect(await prisma.auditLog.count({ where: { accion: "responsable_tramo_asignado" } })).toBe(2);
+
+    const retirado = await request(app).delete(`/secciones/${seccion.id}/responsables/${trabajadores[0].id}`).set("Authorization", `Bearer ${tokenRh}`);
+    expect(retirado.status).toBe(204);
+    expect((await request(app).delete(`/secciones/${seccion.id}/responsables/${trabajadores[0].id}`).set("Authorization", `Bearer ${tokenRh}`)).status).toBe(404);
+    expect(await prisma.auditLog.count({ where: { accion: "responsable_tramo_retirado", usuarioId: usuarios.get(RolUsuario.rh)!.id } })).toBe(1);
+  });
+});
+
 describe("PostgreSQL real: congelamiento central de escrituras", () => {
   it("bloquea flujos humanos, Terminal y ADMS sin cambiar datos ni auditoría", async () => {
     const { seccion, terminal, trabajadores } = await escenarioBase();

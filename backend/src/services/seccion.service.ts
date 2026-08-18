@@ -1,4 +1,4 @@
-import { RolUsuario, Seccion } from "@prisma/client";
+import { RolUsuario, Seccion, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { verificarAccesoSeccion } from "../utils/accesoSeccion";
@@ -24,6 +24,14 @@ export interface DatosEdicionSeccion {
 
 export interface SeccionConEncargados extends Seccion {
   encargados: { id: string; username: string; trabajadorId: string | null; trabajadorNombre: string | null; trabajadorCategoria: string | null }[];
+  responsablesTramo: { id: string; nombreCompleto: string; categoria: string; estatus: TrabajadorEstatus }[];
+}
+
+export interface ResponsableTramoBasico {
+  id: string;
+  nombreCompleto: string;
+  categoria: string;
+  estatus: TrabajadorEstatus;
 }
 
 interface TrabajadorResumen {
@@ -146,7 +154,11 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
 export async function listarSecciones(): Promise<SeccionConEncargados[]> {
   const secciones = await prisma.seccion.findMany({
     orderBy: { nombre: "asc" },
-    include: { encargados: { select: { id: true, username: true, trabajadorId: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } }, obra: { select: { nombre: true } } },
+    include: {
+      encargados: { select: { id: true, username: true, trabajadorId: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } },
+      responsablesTramo: { select: { id: true, nombreCompleto: true, categoria: true, estatus: true }, orderBy: { nombreCompleto: "asc" } },
+      obra: { select: { nombre: true } },
+    },
   });
   return secciones.map((seccion) => ({
     ...seccion,
@@ -157,7 +169,51 @@ export async function listarSecciones(): Promise<SeccionConEncargados[]> {
       trabajadorNombre: encargado.trabajador?.nombreCompleto ?? null,
       trabajadorCategoria: encargado.trabajador?.categoria ?? null,
     })),
+    responsablesTramo: seccion.responsablesTramo,
   }));
+}
+
+export async function listarResponsablesTramo(seccionId: string): Promise<ResponsableTramoBasico[]> {
+  const seccion = await prisma.seccion.findUnique({
+    where: { id: seccionId },
+    include: { responsablesTramo: { select: { id: true, nombreCompleto: true, categoria: true, estatus: true }, orderBy: { nombreCompleto: "asc" } } },
+  });
+  if (!seccion) throw new AppError(404, "Sección no encontrada.");
+  return seccion.responsablesTramo;
+}
+
+export async function listarTrabajadoresResponsables(): Promise<ResponsableTramoBasico[]> {
+  return prisma.trabajador.findMany({
+    where: { estatus: TrabajadorEstatus.activo },
+    select: { id: true, nombreCompleto: true, categoria: true, estatus: true },
+    orderBy: { nombreCompleto: "asc" },
+  });
+}
+
+export async function asignarResponsableTramo(usuarioActorId: string, seccionId: string, trabajadorId: string): Promise<ResponsableTramoBasico> {
+  return prisma.$transaction(async (tx) => {
+    const seccion = await tx.seccion.findUnique({ where: { id: seccionId }, select: { id: true, nombre: true, tramoUbicacion: true } });
+    if (!seccion) throw new AppError(404, "Sección no encontrada.");
+    const trabajador = await tx.trabajador.findUnique({ where: { id: trabajadorId }, select: { id: true, nombreCompleto: true, categoria: true, estatus: true } });
+    if (!trabajador) throw new AppError(404, "Trabajador no encontrado.");
+    if (trabajador.estatus !== TrabajadorEstatus.activo) throw new AppError(400, "Solo se pueden asignar trabajadores activos.");
+    const yaAsignado = await tx.seccion.findFirst({ where: { id: seccionId, responsablesTramo: { some: { id: trabajadorId } } }, select: { id: true } });
+    if (yaAsignado) throw new AppError(409, "El trabajador ya está asignado como responsable de este tramo.");
+    await tx.seccion.update({ where: { id: seccionId }, data: { responsablesTramo: { connect: { id: trabajadorId } } } });
+    await tx.auditLog.create({ data: { usuarioId: usuarioActorId, accion: "responsable_tramo_asignado", entidad: "Seccion", entidadId: seccionId, detalle: { seccion: seccion.nombre, tramoUbicacion: seccion.tramoUbicacion, trabajadorId, trabajadorNombre: trabajador.nombreCompleto } } });
+    return trabajador;
+  });
+}
+
+export async function retirarResponsableTramo(usuarioActorId: string, seccionId: string, trabajadorId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    const seccion = await tx.seccion.findUnique({ where: { id: seccionId }, select: { id: true, nombre: true, tramoUbicacion: true, responsablesTramo: { where: { id: trabajadorId }, select: { id: true, nombreCompleto: true } } } });
+    if (!seccion) throw new AppError(404, "Sección no encontrada.");
+    const responsable = seccion.responsablesTramo[0];
+    if (!responsable) throw new AppError(404, "La asignación indicada no existe.");
+    await tx.seccion.update({ where: { id: seccionId }, data: { responsablesTramo: { disconnect: { id: trabajadorId } } } });
+    await tx.auditLog.create({ data: { usuarioId: usuarioActorId, accion: "responsable_tramo_retirado", entidad: "Seccion", entidadId: seccionId, detalle: { seccion: seccion.nombre, tramoUbicacion: seccion.tramoUbicacion, trabajadorId, trabajadorNombre: responsable.nombreCompleto } } });
+  });
 }
 
 export async function obtenerSeccion(id: string): Promise<Seccion> {

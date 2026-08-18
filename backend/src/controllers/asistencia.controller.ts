@@ -50,7 +50,7 @@ export async function exportarListaSemanal(req: Request, res: Response): Promise
     area: obra.nombre,
     frente: seccionId ? asistencias[0]?.seccionNombre ?? "No especificado" : "Todos los frentes",
     tramoUbicacion: seccionId ? asistencias[0]?.seccionTramoUbicacion ?? "No especificado" : "No especificado",
-    responsableTramo: seccionId ? asistencias[0]?.seccionResponsables.map((r) => r.trabajadorNombre ?? r.username).join(", ") || "No asignado" : "No asignado",
+    responsableTramo: seccionId ? asistencias[0]?.seccionResponsables.map((r) => r.nombreCompleto).join(", ") || "No asignado" : "No asignado",
     categoria: typeof categoria === "string" ? categoria : "Todas las categorías",
     turno: typeof turno === "string" ? turno : ([...new Set(asistencias.map((a) => a.turno))].join(", ") || "No especificado"),
     semana: String(numeroSemana(new Date(`${fechaInicio}T00:00:00Z`))),

@@ -10,6 +10,9 @@ import {
   editarSeccion,
   listarSecciones,
   Seccion,
+  asignarResponsableTramo,
+  listarTrabajadoresResponsables,
+  retirarResponsableTramo,
 } from "@/core/api/resources/secciones";
 import { crearTarifaHoraExtra, DatosTarifaHoraExtra, listarTarifasHoraExtra, TarifaHoraExtra } from "@/core/api/resources/tarifasHoraExtra";
 import {
@@ -438,6 +441,8 @@ function PanelSecciones() {
   const [tramoUbicacion, setTramoUbicacion] = useState("");
   const [horarioId, setHorarioId] = useState("");
   const [encargadoIds, setEncargadoIds] = useState<string[]>([]);
+  const [responsableIds, setResponsableIds] = useState<string[]>([]);
+  const [trabajadoresResponsables, setTrabajadoresResponsables] = useState<{ id: string; nombreCompleto: string; categoria: string }[]>([]);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [erroresFila, setErroresFila] = useState<Record<string, string>>({});
@@ -446,11 +451,12 @@ function PanelSecciones() {
   function cargar() {
     setCargando(true);
     setError(null);
-    Promise.all([listarSecciones(token), listarHorarios(token), listarEncargados(token)])
-      .then(([s, h, e]) => {
+    Promise.all([listarSecciones(token), listarHorarios(token), listarEncargados(token), listarTrabajadoresResponsables(token)])
+      .then(([s, h, e, t]) => {
         setSecciones(s.secciones);
         setHorarios(h.horarios);
         setEncargados(e.usuarios);
+        setTrabajadoresResponsables(t.trabajadores);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
       .finally(() => setCargando(false));
@@ -462,6 +468,7 @@ function PanelSecciones() {
     setTramoUbicacion("");
     setHorarioId("");
     setEncargadoIds([]);
+    setResponsableIds([]);
     setErrorModal(null);
     setModal({ editando: null });
   }
@@ -471,6 +478,7 @@ function PanelSecciones() {
     setTramoUbicacion(s.tramoUbicacion ?? "");
     setHorarioId(s.horarioId ?? "");
     setEncargadoIds(s.encargados?.map((e) => e.id) ?? []);
+    setResponsableIds(s.responsablesTramo?.map((r) => r.id) ?? []);
     setErrorModal(null);
     setModal({ editando: s });
   }
@@ -480,9 +488,10 @@ function PanelSecciones() {
     setErrorModal(null);
     setGuardando(true);
     try {
+      let seccionGuardada: Seccion;
       if (modal?.editando) {
         const datos: DatosEdicionSeccion = { nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
-        await editarSeccion(token, modal.editando.id, datos);
+        seccionGuardada = (await editarSeccion(token, modal.editando.id, datos)).seccion;
       } else {
         // Un único Obra en todo el sistema hoy (Tren Golfo de México); no
         // existe GET /obras, así que se reutiliza el obraId de una sección
@@ -492,7 +501,14 @@ function PanelSecciones() {
           throw new Error("No se pudo determinar la obra: crea el primer frente directamente en la base o contacta soporte.");
         }
         const datos: DatosAltaSeccion = { obraId, nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
-        await crearSeccion(token, datos);
+        seccionGuardada = (await crearSeccion(token, datos)).seccion;
+      }
+      const anteriores = modal?.editando?.responsablesTramo?.map((r) => r.id) ?? [];
+      for (const trabajadorId of responsableIds.filter((id) => !anteriores.includes(id))) {
+        await asignarResponsableTramo(token, seccionGuardada!.id, trabajadorId);
+      }
+      for (const trabajadorId of anteriores.filter((id) => !responsableIds.includes(id))) {
+        await retirarResponsableTramo(token, seccionGuardada!.id, trabajadorId);
       }
       setModal(null);
       cargar();
@@ -551,7 +567,7 @@ function PanelSecciones() {
                     <td style={{ padding: "11px 20px", fontWeight: 600, color: "var(--ink)" }}>{s.nombre}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.tramoUbicacion || "No especificado"}</td>
                     <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.horarioId ? mapaHorarios.get(s.horarioId) ?? "—" : "—"}</td>
-                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.encargados?.length ? s.encargados.map((e) => e.trabajadorNombre ? `${e.trabajadorNombre}${e.trabajadorCategoria ? ` · ${e.trabajadorCategoria}` : ""}` : e.username).join(", ") : "—"}</td>
+                    <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{s.responsablesTramo?.length ? s.responsablesTramo.map((r) => `${r.nombreCompleto} · ${r.categoria}`).join(", ") : "No asignado"}</td>
                     <td style={{ padding: "11px 20px", display: "flex", gap: 8 }}>
                       <Boton variante="outline" tamano="pequeno" onClick={() => abrirEdicion(s)}>
                         Editar
@@ -592,7 +608,7 @@ function PanelSecciones() {
                 ))}
               </select>
             </Campo>
-            <Campo etiqueta="Responsables del tramo">
+            <Campo etiqueta="Cuentas técnicas con acceso al frente">
               <select
                 multiple
                 value={encargadoIds}
@@ -603,6 +619,19 @@ function PanelSecciones() {
                   <option key={en.id} value={en.id}>{en.trabajadorNombre ? `${en.trabajadorNombre}${en.trabajadorCategoria ? ` · ${en.trabajadorCategoria}` : ""}` : en.username}</option>
                 ))}
               </select>
+            </Campo>
+            <Campo etiqueta="Responsables operativos del tramo">
+              <select
+                multiple
+                value={responsableIds}
+                onChange={(evento) => setResponsableIds(Array.from(evento.target.selectedOptions, (opcion) => opcion.value))}
+                style={{ ...estilosCampo, minHeight: 110 }}
+              >
+                {trabajadoresResponsables.map((trabajador) => (
+                  <option key={trabajador.id} value={trabajador.id}>{trabajador.nombreCompleto} · {trabajador.categoria}</option>
+                ))}
+              </select>
+              <span style={{ fontSize: 11.5, fontWeight: 400, color: "var(--muted)" }}>Solo trabajadores activos. Puedes seleccionar varios.</span>
             </Campo>
             <BotonesModal guardando={guardando} onCancelar={() => setModal(null)} etiqueta={modal.editando ? "Guardar cambios" : "Crear frente"} />
           </form>

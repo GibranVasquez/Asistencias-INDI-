@@ -6,6 +6,10 @@ import {
   listarSecciones,
   obtenerResumenHoy,
   obtenerSeccion,
+  listarResponsablesTramo,
+  listarTrabajadoresResponsables,
+  asignarResponsableTramo,
+  retirarResponsableTramo,
 } from "../services/seccion.service";
 
 export async function hoy(req: Request, res: Response): Promise<void> {
@@ -26,6 +30,26 @@ export async function listar(_req: Request, res: Response): Promise<void> {
 export async function obtener(req: Request, res: Response): Promise<void> {
   const seccion = await obtenerSeccion(req.params.id as string);
   res.json({ seccion });
+}
+
+export async function responsables(req: Request, res: Response): Promise<void> {
+  const responsablesTramo = await listarResponsablesTramo(req.params.id as string);
+  res.json({ responsablesTramo });
+}
+
+export async function trabajadoresResponsables(_req: Request, res: Response): Promise<void> {
+  const trabajadores = await listarTrabajadoresResponsables();
+  res.json({ trabajadores });
+}
+
+export async function asignarResponsable(req: Request, res: Response): Promise<void> {
+  const responsable = await asignarResponsableTramo(req.user!.usuarioId, req.params.id as string, req.body.trabajadorId);
+  res.status(201).json({ responsable });
+}
+
+export async function retirarResponsable(req: Request, res: Response): Promise<void> {
+  await retirarResponsableTramo(req.user!.usuarioId, req.params.id as string, req.params.trabajadorId as string);
+  res.status(204).send();
 }
 
 export async function editar(req: Request, res: Response): Promise<void> {

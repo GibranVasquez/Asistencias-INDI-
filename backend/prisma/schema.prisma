@@ -166,6 +166,7 @@ model Trabajador {
   movimientos  MovimientoTrabajador[]
   nominas      NominaSemanal[]
   asignaciones AsignacionDiaria[]
+  seccionesResponsableTramo Seccion[] @relation("SeccionResponsablesTramo")
 
   @@index([estatus], map: "idx_trabajadores_estatus")
   @@map("trabajadores")
@@ -231,6 +232,7 @@ model Seccion {
   obra         Obra               @relation(fields: [obraId], references: [id])
   horario      Horario?           @relation(fields: [horarioId], references: [id])
   encargados   Usuario[]          @relation("SeccionEncargados")
+  responsablesTramo Trabajador[]  @relation("SeccionResponsablesTramo")
   asistencias  AsistenciaDiaria[]
   asignaciones AsignacionDiaria[]
 

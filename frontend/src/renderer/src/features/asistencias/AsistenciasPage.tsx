@@ -83,7 +83,7 @@ export default function AsistenciasPage() {
   const categoriasDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.trabajadorCategoria))].filter(Boolean).sort(), [asistencias]);
   const seccionSeleccionada = asistencias?.find((a) => a.seccionId === seccionFiltro);
   const areaVisible = seccionSeleccionada?.obraNombre || nombreObra || "No especificada";
-  const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.trabajadorNombre ?? r.username).join(", ") || "No asignado";
+  const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.nombreCompleto).join(", ") || "No asignado";
   const periodoLegible = periodoSemanalLegible(fechaDesde, fechaHasta);
 
   const diasSemana = useMemo(

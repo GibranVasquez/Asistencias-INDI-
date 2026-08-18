@@ -16,7 +16,7 @@ export interface AsistenciaListada extends AsistenciaDiaria {
   trabajadorCategoria: string;
   trabajadorHuellaRegistrada: boolean;
   seccionTramoUbicacion: string | null;
-  seccionResponsables: { id: string; username: string; trabajadorNombre: string | null; trabajadorCategoria: string | null }[];
+  seccionResponsables: { id: string; nombreCompleto: string; categoria: string }[];
   obraNombre: string;
   horarioNombre: string | null;
 }
@@ -122,7 +122,7 @@ export async function obtenerAsistenciaMasRecienteDeTerminal(): Promise<Asistenc
     where: { terminalOrigen: { tipo: "adms" } },
     include: {
       trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
-      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, encargados: { select: { id: true, username: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } }, horario: { select: { nombre: true } } } },
+      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, responsablesTramo: { where: { estatus: TrabajadorEstatus.activo }, select: { id: true, nombreCompleto: true, categoria: true } }, horario: { select: { nombre: true } } } },
     },
     orderBy: { creadoEn: "desc" },
   });
@@ -137,7 +137,7 @@ export async function obtenerAsistenciaMasRecienteDeTerminal(): Promise<Asistenc
     trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
     seccionNombre: seccion.nombre,
     seccionTramoUbicacion: seccion.tramoUbicacion,
-    seccionResponsables: seccion.encargados.map((encargado) => ({ id: encargado.id, username: encargado.username, trabajadorNombre: encargado.trabajador?.nombreCompleto ?? null, trabajadorCategoria: encargado.trabajador?.categoria ?? null })),
+    seccionResponsables: seccion.responsablesTramo,
     obraNombre: seccion.obra.nombre,
     horarioNombre: seccion.horario?.nombre ?? null,
   };
@@ -181,7 +181,7 @@ export async function listarAsistencias(
     },
     include: {
       trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
-      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, encargados: { select: { id: true, username: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } }, horario: { select: { nombre: true } } } },
+      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, responsablesTramo: { where: { estatus: TrabajadorEstatus.activo }, select: { id: true, nombreCompleto: true, categoria: true } }, horario: { select: { nombre: true } } } },
     },
     orderBy: [{ fecha: "desc" }, { hora: "desc" }],
   });
@@ -193,7 +193,7 @@ export async function listarAsistencias(
     trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
     seccionNombre: seccion.nombre,
     seccionTramoUbicacion: seccion.tramoUbicacion,
-    seccionResponsables: seccion.encargados.map((encargado) => ({ id: encargado.id, username: encargado.username, trabajadorNombre: encargado.trabajador?.nombreCompleto ?? null, trabajadorCategoria: encargado.trabajador?.categoria ?? null })),
+    seccionResponsables: seccion.responsablesTramo,
     obraNombre: seccion.obra.nombre,
     horarioNombre: seccion.horario?.nombre ?? null,
   }));

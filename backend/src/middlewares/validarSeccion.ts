@@ -85,3 +85,11 @@ export function validarIdSeccion(req: Request, res: Response, next: NextFunction
 
   next();
 }
+
+export function validarTrabajadorResponsable(req: Request, res: Response, next: NextFunction): void {
+  if (!esUUID(req.params.trabajadorId ?? req.body?.trabajadorId)) {
+    res.status(400).json({ error: "trabajadorId debe ser un UUID válido." });
+    return;
+  }
+  next();
+}
