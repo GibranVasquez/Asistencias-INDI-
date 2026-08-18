@@ -14,6 +14,7 @@ import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
+import ResponsablesPorFrentePage from "@/features/encargado/ResponsablesPorFrentePage";
 
 const INTERVALO_POLL_MS = 20_000;
 
@@ -40,7 +41,7 @@ function contarDiasHabiles(inicio: Date, fin: Date): number {
   return cuenta;
 }
 
-export default function EncargadoPage() {
+function MiFrentePage() {
   const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const rol = sesion!.usuario.rol;
@@ -237,6 +238,14 @@ export default function EncargadoPage() {
       )}
     </div>
   );
+}
+
+export default function EncargadoPage() {
+  const { sesion } = useAutenticacion();
+  if (sesion?.usuario.rol === "rh" || sesion?.usuario.rol === "administrador") {
+    return <ResponsablesPorFrentePage />;
+  }
+  return <MiFrentePage />;
 }
 
 function agruparAvisoMovidos(movidos: TrabajadorMovido[]): string {

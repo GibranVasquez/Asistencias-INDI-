@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { menuPorRol, puedeAcceder, rutaInicialPara } from "@/routes/navigationConfig";
+import { etiquetaNavegacion, menuPorRol, puedeAcceder, rutaInicialPara } from "@/routes/navigationConfig";
 
 describe("guards de navegación por rol", () => {
   const rutas = (rol: Parameters<typeof menuPorRol>[0]) => menuPorRol(rol).map((item) => item.id);
@@ -12,12 +12,17 @@ describe("guards de navegación por rol", () => {
     expect(puedeAcceder("rh", "trabajadores")).toBe(true);
     expect(puedeAcceder("rh", "incidencias")).toBe(true);
     expect(puedeAcceder("rh", "auditoria")).toBe(false);
+    expect(etiquetaNavegacion(menuPorRol("rh").find((item) => item.id === "encargado")!, "rh")).toBe("Responsables por frente");
   });
   it("administrador no accede a nómina ni trabajadores", () => {
     expect(puedeAcceder("administrador", "nomina")).toBe(false);
     expect(puedeAcceder("administrador", "trabajadores")).toBe(false);
     expect(puedeAcceder("administrador", "incidencias")).toBe(true);
     expect(puedeAcceder("administrador", "auditoria")).toBe(true);
+    expect(etiquetaNavegacion(menuPorRol("administrador").find((item) => item.id === "encargado")!, "administrador")).toBe("Responsables por frente");
+  });
+  it("el encargado conserva la etiqueta de su vista personal", () => {
+    expect(etiquetaNavegacion(menuPorRol("encargado_seccion")[0], "encargado_seccion")).toBe("Mi frente");
   });
   it("elige la primera ruta permitida como inicio", () => {
     expect(rutaInicialPara("recepcion")).toBe("asistencias");

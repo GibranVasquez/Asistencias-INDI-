@@ -62,6 +62,12 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     expect(await dona.evaluate((elemento) => getComputedStyle(elemento).getPropertyValue("--dona-revelado").trim())).toBe("100%");
     await expect(app.page.getByRole("link", { name: "Trabajadores" })).toBeVisible();
     await expect(app.page.getByRole("link", { name: "Nómina RH" })).toBeVisible();
+    await app.page.getByRole("link", { name: "Responsables por frente" }).click();
+    await expect(app.page.getByRole("heading", { name: "Responsables por frente" })).toBeVisible();
+    await expect(app.page.getByLabel("Frente")).toBeVisible();
+    await expect(app.page.getByText("Contacta a RH", { exact: false })).toHaveCount(0);
+    await app.page.getByRole("link", { name: "Panel principal" }).click();
+    await expect(app.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
     const sidebar = app.page.getByRole("navigation", { name: "Navegación principal" });
     const anchoPrincipalExpandido = (await app.page.locator("main").boundingBox())!.width;
     await app.page.getByRole("button", { name: "Contraer menú" }).click();
@@ -92,7 +98,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
 for (const caso of [
   { rol: "administrador" as const, destino: "Panel principal", permitido: "Usuarios", prohibido: "Nómina RH" },
   { rol: "recepcion" as const, destino: "Asistencia", permitido: "Asistencias", prohibido: "Nómina RH" },
-  { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Responsable del tramo", prohibido: "Nómina RH" },
+  { rol: "encargado_seccion" as const, destino: "Mi frente · hoy", permitido: "Mi frente", prohibido: "Nómina RH" },
 ]) {
   test(`${caso.rol} solo recibe su navegación permitida`, async () => {
     const app = await lanzarElectron(`rol-${caso.rol}`);

@@ -5,7 +5,7 @@ import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import { useTimeoutInactividad } from "@/shared/hooks/useTimeoutInactividad";
 import AyudaSoporteModal from "@/layouts/admin/AyudaSoporteModal";
 import AlternarTema from "@/shared/components/AlternarTema";
-import { ETIQUETAS_GRUPO, GrupoNavegacion, menuPorRol } from "@/routes/navigationConfig";
+import { etiquetaNavegacion, ETIQUETAS_GRUPO, GrupoNavegacion, menuPorRol } from "@/routes/navigationConfig";
 import { guardarRutaPersistida, guardarSidebarContraido, leerSidebarContraido } from "@/core/config/estadoUI";
 import IndicadorEstadoSistema from "@/layouts/admin/IndicadorEstadoSistema";
 
@@ -124,13 +124,15 @@ export default function AdminLayout() {
         <div className="sidebar-navigation">
           {grupos.map((grupo) => <section className="sidebar-group" key={grupo.id} aria-label={ETIQUETAS_GRUPO[grupo.id]}>
             <div className="sidebar-group-label" aria-hidden={sidebarContraido}>{ETIQUETAS_GRUPO[grupo.id]}</div>
-            {grupo.items.map((item) => <NavLink
+            {grupo.items.map((item) => {
+              const etiqueta = etiquetaNavegacion(item, sesion.usuario.rol);
+              return <NavLink
               key={item.id}
               to={item.path}
               className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
-              aria-label={item.label}
-              data-tooltip={sidebarContraido ? item.label : undefined}
-              title={sidebarContraido ? item.label : undefined}
+              aria-label={etiqueta}
+              data-tooltip={sidebarContraido ? etiqueta : undefined}
+              title={sidebarContraido ? etiqueta : undefined}
               style={({ isActive }) => ({
                 display: "flex", alignItems: "center", gap: 13, padding: "13px 16px", margin: "0 12px",
                 background: isActive ? "rgba(255,255,255,.14)" : "transparent", border: "none",
@@ -139,8 +141,9 @@ export default function AdminLayout() {
               })}
             >
               <span className="sidebar-icon" aria-hidden="true">{item.icon}</span>
-              <span className="sidebar-label">{item.label}</span>
-            </NavLink>)}
+              <span className="sidebar-label">{etiqueta}</span>
+            </NavLink>;
+            })}
           </section>)}
         </div>
 

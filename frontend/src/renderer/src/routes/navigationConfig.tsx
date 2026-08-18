@@ -20,6 +20,7 @@ export interface NavegacionItem {
   id: RutaPanel;
   path: `/panel/${string}`;
   label: string;
+  labelPorRol?: Partial<Record<RolUsuario, string>>;
   group: GrupoNavegacion;
   roles: RolUsuario[];
   icon: ReactNode;
@@ -46,7 +47,7 @@ export const NAVEGACION: NavegacionItem[] = [
   { id: "asistencias", path: "/panel/asistencias", label: "Asistencias", group: "operacion", roles: ["rh", "recepcion"], icon: icono(<><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>) },
   { id: "nomina", path: "/panel/nomina", label: "Nómina RH", group: "operacion", roles: ["rh"], icon: icono(<><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></>) },
   { id: "reportes", path: "/panel/reportes", label: "Reportes", group: "operacion", roles: ["rh"], icon: icono(<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>) },
-  { id: "encargado", path: "/panel/encargado", label: "Responsable del tramo", group: "operacion", roles: ["rh", "encargado_seccion"], icon: icono(<><path d="m12 2-10 5 10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></>) },
+  { id: "encargado", path: "/panel/encargado", label: "Mi frente", labelPorRol: { rh: "Responsables por frente", administrador: "Responsables por frente", encargado_seccion: "Mi frente" }, group: "operacion", roles: ["rh", "administrador", "encargado_seccion"], icon: icono(<><path d="m12 2-10 5 10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></>) },
   { id: "incidencias", path: "/panel/incidencias", label: "Incidencias", group: "supervision", roles: ["rh", "administrador"], icon: icono(<><path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></>) },
   { id: "auditoria", path: "/panel/auditoria", label: "Auditoría", group: "supervision", roles: ["administrador"], icon: icono(<><path d="M3 3v5h5M3.1 13a9 9 0 1 0 2.1-6.2L3 8M12 7v5l3 2"/></>) },
   { id: "usuarios", path: "/panel/usuarios", label: "Usuarios", group: "administracion", roles: ["administrador"], icon: icono(<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></>) },
@@ -58,3 +59,4 @@ export const menuPorRol = (rol: RolUsuario): NavegacionItem[] => NAVEGACION.filt
 export const puedeAcceder = (rol: RolUsuario, ruta: RutaPanel): boolean => NAVEGACION.some((item) => item.id === ruta && item.roles.includes(rol));
 export const rutaInicialPara = (rol: RolUsuario): RutaPanel => menuPorRol(rol)[0]?.id ?? "dashboard";
 export const navegacionPorId = (ruta: RutaPanel): NavegacionItem | undefined => NAVEGACION.find((item) => item.id === ruta);
+export const etiquetaNavegacion = (item: NavegacionItem, rol: RolUsuario): string => item.labelPorRol?.[rol] ?? item.label;
