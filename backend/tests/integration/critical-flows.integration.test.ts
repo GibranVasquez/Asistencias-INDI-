@@ -237,6 +237,10 @@ describe("HTTP real: responsables operativos del tramo", () => {
     await prisma.trabajador.update({ where: { id: trabajadores[1].id }, data: { estatus: TrabajadorEstatus.baja } });
     const inactivo = await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[1].id });
     expect(inactivo.status).toBe(400);
+    const elegiblesTrasBaja = await request(app).get("/secciones/responsables/elegibles").set("Authorization", `Bearer ${tokenRh}`);
+    expect(elegiblesTrasBaja.body.trabajadores.map((trabajador: { id: string }) => trabajador.id)).not.toContain(trabajadores[1].id);
+    expect((await request(app).post(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: "00000000-0000-4000-8000-000000000000" })).status).toBe(404);
+    expect((await request(app).post("/secciones/00000000-0000-4000-8000-000000000000/responsables").set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id })).status).toBe(404);
 
     const listado = await request(app).get(`/secciones/${seccion.id}/responsables`).set("Authorization", `Bearer ${tokenRh}`);
     expect(listado.body.responsablesTramo.map((responsable: { id: string }) => responsable.id)).toEqual([trabajadores[0].id, trabajadores[1].id]);
