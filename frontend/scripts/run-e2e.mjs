@@ -66,7 +66,7 @@ async function esperarBackend(proceso) {
     } catch (error) {
       ultimoError = error;
       if (proceso.exitCode !== null) {
-        throw new Error(`Backend E2E terminó antes de readiness (código ${proceso.exitCode}). ${String(ultimoError)}`);
+        throw new Error(`Backend E2E terminó antes de readiness (código ${proceso.exitCode}). ${String(error)}`, { cause: error });
       }
     }
     await new Promise((resolver) => setTimeout(resolver, 150));

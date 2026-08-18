@@ -442,6 +442,7 @@ function PanelSecciones() {
   const [horarioId, setHorarioId] = useState("");
   const [encargadoIds, setEncargadoIds] = useState<string[]>([]);
   const [responsableIds, setResponsableIds] = useState<string[]>([]);
+  const [busquedaResponsable, setBusquedaResponsable] = useState("");
   const [trabajadoresResponsables, setTrabajadoresResponsables] = useState<{ id: string; nombreCompleto: string; categoria: string }[]>([]);
   const [errorModal, setErrorModal] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -469,6 +470,7 @@ function PanelSecciones() {
     setHorarioId("");
     setEncargadoIds([]);
     setResponsableIds([]);
+    setBusquedaResponsable("");
     setErrorModal(null);
     setModal({ editando: null });
   }
@@ -479,6 +481,7 @@ function PanelSecciones() {
     setHorarioId(s.horarioId ?? "");
     setEncargadoIds(s.encargados?.map((e) => e.id) ?? []);
     setResponsableIds(s.responsablesTramo?.map((r) => r.id) ?? []);
+    setBusquedaResponsable("");
     setErrorModal(null);
     setModal({ editando: s });
   }
@@ -621,13 +624,20 @@ function PanelSecciones() {
               </select>
             </Campo>
             <Campo etiqueta="Responsables operativos del tramo">
+              <input
+                type="search"
+                value={busquedaResponsable}
+                onChange={(evento) => setBusquedaResponsable(evento.target.value)}
+                placeholder="Buscar trabajador activo…"
+                style={{ ...estilosCampo, marginBottom: 7 }}
+              />
               <select
                 multiple
                 value={responsableIds}
                 onChange={(evento) => setResponsableIds(Array.from(evento.target.selectedOptions, (opcion) => opcion.value))}
                 style={{ ...estilosCampo, minHeight: 110 }}
               >
-                {trabajadoresResponsables.map((trabajador) => (
+                {trabajadoresResponsables.filter((trabajador) => `${trabajador.nombreCompleto} ${trabajador.categoria}`.toLocaleLowerCase().includes(busquedaResponsable.toLocaleLowerCase())).map((trabajador) => (
                   <option key={trabajador.id} value={trabajador.id}>{trabajador.nombreCompleto} · {trabajador.categoria}</option>
                 ))}
               </select>
