@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { get as solicitarHttp } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -43,15 +44,30 @@ function ejecutar(comando, argumentos, cwd, env = process.env) {
   });
 }
 
-async function esperarBackend() {
+function comprobarHealth() {
+  return new Promise((resolvePromise, reject) => {
+    const solicitud = solicitarHttp(`${apiUrl}/health`, (respuesta) => {
+      respuesta.resume();
+      if (respuesta.statusCode === 200) resolvePromise(true);
+      else reject(new Error(`health respondió ${respuesta.statusCode ?? "sin estado"}`));
+    });
+    solicitud.once("error", reject);
+    solicitud.setTimeout(1_000, () => solicitud.destroy(new Error("timeout de health")));
+  });
+}
+
+async function esperarBackend(proceso) {
   const limite = Date.now() + 20_000;
   let ultimoError;
   while (Date.now() < limite) {
     try {
-      const respuesta = await fetch(`${apiUrl}/health`);
-      if (respuesta.ok) return;
+      await comprobarHealth();
+      return;
     } catch (error) {
       ultimoError = error;
+      if (proceso.exitCode !== null) {
+        throw new Error(`Backend E2E terminó antes de readiness (código ${proceso.exitCode}). ${String(ultimoError)}`);
+      }
     }
     await new Promise((resolver) => setTimeout(resolver, 150));
   }
@@ -71,7 +87,7 @@ try {
   await ejecutar("npm", ["run", "build"], frontend, { ...process.env, INDI_API_BASE_URL: apiUrl });
 
   backendProceso = spawn("node", ["dist/index.js"], { cwd: backend, env: entornoBackend, stdio: "inherit" });
-  await esperarBackend();
+  await esperarBackend(backendProceso);
   await ejecutar("npx", ["playwright", "test", "--config", "playwright.e2e.config.ts", ...process.argv.slice(2)], frontend, {
     ...process.env,
     NODE_ENV: "test",
