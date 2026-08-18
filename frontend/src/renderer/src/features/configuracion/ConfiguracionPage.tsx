@@ -1,4 +1,5 @@
 import { Fragment, FormEvent, ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ApiError } from "@/core/api/client";
 import { listarEncargados, EncargadoBasico } from "@/core/api/resources/encargados";
 import { crearHorario, borrarHorario, DatosHorario, editarHorario, Horario, listarHorarios } from "@/core/api/resources/horarios";
@@ -70,16 +71,28 @@ function hoyISO(): string {
 }
 
 function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
-  return (
-    <div
-      className="modal-backdrop configuracion-modal-backdrop"
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
-      onClick={onClose}
-    >
-      <div className="modal-panel configuracion-modal" onClick={(e) => e.stopPropagation()}>
+  useEffect(() => {
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function cerrarConEscape(evento: KeyboardEvent) {
+      if (evento.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", cerrarConEscape);
+    return () => {
+      document.body.style.overflow = overflowAnterior;
+      window.removeEventListener("keydown", cerrarConEscape);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div className="modal-backdrop configuracion-modal-backdrop" onClick={onClose}>
+      <div className="modal-panel configuracion-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
