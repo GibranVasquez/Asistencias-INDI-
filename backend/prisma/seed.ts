@@ -2,8 +2,11 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import bcrypt from "bcrypt";
+import { exigirHostLocal } from "../src/config/hostGuard";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+
+exigirHostLocal("DATABASE_URL");
 
 // ---------------------------------------------------------------------
 // ADVERTENCIA: la contraseña "1234" es SOLO para desarrollo/pruebas locales.

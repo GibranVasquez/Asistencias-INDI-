@@ -16,6 +16,7 @@
 // querer con un script que sí imprime la URL real.
 import { config as cargarDotenv } from "dotenv";
 cargarDotenv({ quiet: true });
+import { exigirHostLocal } from "./src/config/hostGuard";
 import { defineConfig } from "prisma/config";
 
 const URL_BASE_INTEGRACION = "postgresql://indi_test:indi_test_only@127.0.0.1:55432/indi_test";
@@ -25,6 +26,8 @@ if (
 ) {
   throw new Error("Prisma test abortado: DATABASE_URL y DIRECT_URL deben apuntar exactamente a PostgreSQL local indi_test.");
 }
+
+exigirHostLocal("DATABASE_URL");
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
