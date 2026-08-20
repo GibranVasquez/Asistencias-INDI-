@@ -7,6 +7,17 @@ de Grupo INDI. Los clientes de escritorio se distribuyen con Electron; el
 backend es una API Node.js/Express conectada a PostgreSQL. El proyecto también
 recibe marcaciones de equipos ZKTeco mediante el protocolo ADMS.
 
+## Identidad del proyecto
+
+- Identificador lógico y administrativo: `INDI_ASISTENCIAS`.
+- Namespace técnico para recursos nuevos: `indi-asistencias`.
+- Los recursos AWS existentes con nomenclatura histórica no se renombran,
+  recrean ni reemplazan automáticamente; cualquier migración de nombres exige
+  una auditoría de infraestructura y autorización específica.
+
+Esta identidad técnica distingue el producto dentro de Grupo INDI y no
+sustituye el título académico ni el contexto operativo del sistema.
+
 ## Arquitectura
 
 ```text
