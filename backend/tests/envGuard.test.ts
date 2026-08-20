@@ -57,6 +57,11 @@ describe("exigirHostLocal — allowlist local", () => {
     expect(() => exigirHostLocal("DATABASE_URL")).toThrow("host externo");
   });
 
+  it("rechaza un host externo efectivo indicado mediante query", () => {
+    process.env.DATABASE_URL = "postgresql://u:p@localhost:5432/db?host=db.external.invalid";
+    expect(() => exigirHostLocal("DATABASE_URL")).toThrow("db.external.invalid");
+  });
+
   it("rechaza protocolos ajenos aunque el host sea localhost", () => {
     process.env.DATABASE_URL = "https://localhost:55432/db";
     expect(() => exigirHostLocal("DATABASE_URL")).toThrow("protocolo PostgreSQL");

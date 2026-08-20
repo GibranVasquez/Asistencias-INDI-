@@ -2,7 +2,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
-import { exigirHostLocal } from "../config/hostGuard";
+import { esUrlPostgresLocal, exigirHostLocal } from "../config/hostGuard";
+import { crearConfiguracionConexionPrisma } from "../config/prismaTls";
 
 // Tanto el pooler de Supabase como RDS presentan cadenas firmadas por su
 // propia CA privada (ninguna está en el almacén de CAs por default de
@@ -74,17 +75,17 @@ if (esEnsayoMigracionLocal && ![URL_MIGRACION_LOCAL, URL_MIGRACION_SOURCE_LOCAL]
   );
 }
 
-// PostgreSQL efímero de integración no usa TLS y solo se admite detrás de
-// la guardia exacta anterior. Cualquier ejecución normal conserva la CA y
-// verificación TLS estricta existente; no hay fallback inseguro.
-const adapter = esIntegracionLocal || esEnsayoMigracionLocal
-  ? new PrismaPg({ connectionString: esIntegracionLocal ? URL_INTEGRACION_LOCAL : process.env.DATABASE_URL! })
+// El selector puro compartido deshabilita TLS únicamente para el host local
+// efectivo. Para cualquier otro host se conserva CA pinning y verificación
+// estricta; no existe fallback con rejectUnauthorized:false.
+const connectionString = esIntegracionLocal ? URL_INTEGRACION_LOCAL : process.env.DATABASE_URL!;
+const configuracionConexion = esUrlPostgresLocal(connectionString)
+  ? crearConfiguracionConexionPrisma(connectionString)
   : (() => {
-      const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
-      return new PrismaPg({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: true, ca: ca.toString() },
-      });
-    })();
+    const ca = readFileSync(join(__dirname, "..", "..", "certs", resolverArchivoCA()));
+    return crearConfiguracionConexionPrisma(connectionString, ca.toString());
+  })();
+
+const adapter = new PrismaPg(configuracionConexion);
 
 export const prisma = new PrismaClient({ adapter });

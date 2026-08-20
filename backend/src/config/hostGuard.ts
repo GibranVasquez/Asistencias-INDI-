@@ -12,6 +12,22 @@
  * runners de integración fijan además la URL efímera exacta.
  */
 const HOSTS_LOCALES = new Set(["localhost", "127.0.0.1"]);
+const PROTOCOLOS_POSTGRES = new Set(["postgres:", "postgresql:"]);
+
+function hostnameEfectivo(parsed: URL): string {
+  // pg-connection-string permite que ?host= sobrescriba el hostname de la
+  // URL. La guarda debe evaluar el destino que pg usará realmente.
+  return (parsed.searchParams.get("host") || parsed.hostname).toLowerCase();
+}
+
+export function esUrlPostgresLocal(valor: string): boolean {
+  try {
+    const parsed = new URL(valor);
+    return PROTOCOLOS_POSTGRES.has(parsed.protocol) && HOSTS_LOCALES.has(hostnameEfectivo(parsed));
+  } catch {
+    return false;
+  }
+}
 
 export function exigirHostLocal(nombreVariable: string): void {
   if (process.env.NODE_ENV === "production") return;
@@ -28,12 +44,12 @@ export function exigirHostLocal(nombreVariable: string): void {
     throw new Error(`${nombreVariable} no es una URL PostgreSQL válida. Operación abortada.`);
   }
 
-  if (!["postgres:", "postgresql:"].includes(parsed.protocol)) {
+  if (!PROTOCOLOS_POSTGRES.has(parsed.protocol)) {
     throw new Error(`${nombreVariable} no usa el protocolo PostgreSQL. Operación abortada.`);
   }
 
-  const hostname = parsed.hostname.toLowerCase();
-  if (!HOSTS_LOCALES.has(hostname)) {
+  const hostname = hostnameEfectivo(parsed);
+  if (!esUrlPostgresLocal(url)) {
     const hostnameSeguro = hostname || "vacío";
     throw new Error(
       `${nombreVariable} apunta a un host externo (${hostnameSeguro}). ` +
