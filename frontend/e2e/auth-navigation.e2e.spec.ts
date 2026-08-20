@@ -102,6 +102,12 @@ for (const caso of [
 ]) {
   test(`${caso.rol} solo recibe su navegación permitida`, async () => {
     const app = await lanzarElectron(`rol-${caso.rol}`);
+    const respuestasRechazadas: string[] = [];
+    app.page.on("response", (respuesta) => {
+      if (respuesta.url().startsWith(process.env.INDI_E2E_API_URL!) && respuesta.status() >= 400) {
+        respuestasRechazadas.push(`${respuesta.status()} ${new URL(respuesta.url()).pathname}`);
+      }
+    });
     try {
       await login(app.page, caso.rol);
       await expect(app.page.getByRole("heading", { name: caso.destino, exact: true })).toBeVisible();
@@ -110,6 +116,7 @@ for (const caso of [
       await app.page.evaluate(() => { window.location.hash = "#/panel/nomina"; });
       await expect(app.page.getByRole("heading", { name: caso.destino, exact: true })).toBeVisible();
       if (caso.rol === "administrador") {
+        await expect.poll(() => respuestasRechazadas).toEqual([]);
         await expect(app.page.getByRole("button", { name: /Sistema conectado/ })).toBeVisible();
         await app.page.getByRole("link", { name: "Incidencias" }).click();
         await expect(app.page.getByRole("heading", { name: "Centro de incidencias" })).toBeVisible();

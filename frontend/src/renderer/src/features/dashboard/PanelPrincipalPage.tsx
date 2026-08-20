@@ -84,10 +84,18 @@ interface EstadoCarga<T> {
   cargando: boolean;
 }
 
-function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[]): EstadoCarga<T> {
-  const [estado, setEstado] = useState<EstadoCarga<T>>({ datos: null, error: null, cargando: true });
+function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[], habilitada = true): EstadoCarga<T> {
+  const [estado, setEstado] = useState<EstadoCarga<T>>(
+    habilitada
+      ? { datos: null, error: null, cargando: true }
+      : { datos: null, error: "no disponible para tu rol", cargando: false }
+  );
 
   useEffect(() => {
+    if (!habilitada) {
+      setEstado({ datos: null, error: "no disponible para tu rol", cargando: false });
+      return;
+    }
     let cancelado = false;
     setEstado((e) => ({ ...e, cargando: true, error: null }));
     cargar()
@@ -116,6 +124,7 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[]): Estado
 export default function PanelPrincipalPage() {
   const { sesion } = useAutenticacion();
   const token = sesion!.token;
+  const tieneAccesoOperativo = sesion!.usuario.rol === "rh";
 
   const [rango, setRango] = useState<Rango>("semana");
   // `hoy` NO puede ser un useMemo([]) — se congelaba en el momento de montar
@@ -149,18 +158,28 @@ export default function PanelPrincipalPage() {
 
   const asistenciasHoy = useCargaProtegida(
     () => listarAsistencias(token, { fecha: hoyISO }).then((r) => r.asistencias),
-    [token, hoyISO]
+    [token, hoyISO, tieneAccesoOperativo],
+    tieneAccesoOperativo
   );
   const asistenciasPeriodo = useCargaProtegida(
     () =>
       listarAsistencias(token, { fechaInicio: aFechaISO(inicio), fechaFin: aFechaISO(fin) }).then(
         (r) => r.asistencias
       ),
-    [token, aFechaISO(inicio), aFechaISO(fin)]
+    [token, aFechaISO(inicio), aFechaISO(fin), tieneAccesoOperativo],
+    tieneAccesoOperativo
   );
-  const trabajadores = useCargaProtegida(() => listarTrabajadores(token).then((r) => r.trabajadores), [token]);
+  const trabajadores = useCargaProtegida(
+    () => listarTrabajadores(token).then((r) => r.trabajadores),
+    [token, tieneAccesoOperativo],
+    tieneAccesoOperativo
+  );
   const secciones = useCargaProtegida(() => listarSecciones(token).then((r) => r.secciones), [token]);
-  const horarios = useCargaProtegida(() => listarHorarios(token).then((r) => r.horarios), [token]);
+  const horarios = useCargaProtegida(
+    () => listarHorarios(token).then((r) => r.horarios),
+    [token, tieneAccesoOperativo],
+    tieneAccesoOperativo
+  );
   const terminales = useCargaProtegida(() => listarTerminales(token).then((r) => r.terminales), [token]);
   const [obraActual, setObraActual] = useState<string | null>(null);
   useEffect(() => {
