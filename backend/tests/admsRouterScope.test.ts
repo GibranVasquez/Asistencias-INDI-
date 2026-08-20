@@ -20,7 +20,7 @@ describe("alcance de la allowlist ADMS", () => {
     process.env.ADMS_IPS_PERMITIDAS = "203.0.113.10";
     const respuesta = await request(app).get("/health");
     expect(respuesta.status).toBe(200);
-    expect(respuesta.body).toEqual({ status: "ok" });
+    expect(respuesta.body).toEqual({ status: "ok", maintenance: false });
   });
 
   it("continúa bloqueando /iclock para una IP fuera de la allowlist", async () => {
