@@ -289,11 +289,15 @@ describe("PostgreSQL real: congelamiento central de escrituras", () => {
         expect(respuesta.status).toBe(503);
         expect(respuesta.body).toEqual({ error:"MAINTENANCE_MODE", message:"El sistema se encuentra temporalmente en mantenimiento." });
       }
-      expect((await request(app).get("/health")).status).toBe(200);
+      const health = await request(app).get("/health");
+      expect(health.status).toBe(200);
+      expect(health.body).toEqual({ status: "ok", maintenance: true });
       expect((await request(app).post("/auth/login").send({ username:"test-rh", password:PASSWORD })).status).toBe(503);
       expect(await snapshot()).toEqual(antes);
       expect(antes.terminales.find(t=>t.id===terminal.id)?.ultimaSincronizacion).toBeNull();
     } finally { delete process.env.MAINTENANCE_MODE; }
+
+    expect((await request(app).get("/health")).body).toEqual({ status: "ok", maintenance: false });
 
     const normal = await request(app).post("/asistencias").set("Authorization", `Bearer ${tokenKiosco}`).send({ trabajadorId: trabajadores[0].id, fecha: "2026-08-03", hora: "08:00:00", seccionId: seccion.id, turno: "Día", metodoUsado: "huella" });
     expect(normal.status).toBe(201);

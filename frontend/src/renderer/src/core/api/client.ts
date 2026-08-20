@@ -18,17 +18,25 @@ export class ApiError extends Error {
 
 type EscuchaMantenimiento = (activo: boolean) => void;
 const escuchasMantenimiento = new Set<EscuchaMantenimiento>();
+let estadoMantenimientoNotificado = false;
 export function escucharMantenimiento(escucha: EscuchaMantenimiento): () => void {
   escuchasMantenimiento.add(escucha);
+  // Conserva el último health observado: los efectos hijos pueden comprobar
+  // salud antes de que el provider padre termine de suscribirse.
+  escucha(estadoMantenimientoNotificado);
   return () => escuchasMantenimiento.delete(escucha);
 }
-function notificarMantenimiento(): void { for (const escucha of escuchasMantenimiento) escucha(true); }
+function notificarMantenimiento(activo: boolean): void {
+  estadoMantenimientoNotificado = activo;
+  for (const escucha of escuchasMantenimiento) escucha(activo);
+}
 
 export async function comprobarSalud(): Promise<boolean> {
   try {
     const respuesta = await fetch(`${API_BASE_URL}/health`, { method: "GET" });
     if (!respuesta.ok) return false;
     const datos = await respuesta.json().catch(() => null);
+    notificarMantenimiento(datos?.maintenance === true);
     return datos?.status === "ok";
   } catch {
     return false;
@@ -55,7 +63,7 @@ async function solicitud<T>(ruta: string, opciones: Opciones): Promise<T> {
 
   if (!respuesta.ok) {
     if (respuesta.status === 503 && datos?.error === "MAINTENANCE_MODE") {
-      notificarMantenimiento();
+      notificarMantenimiento(true);
       throw new ApiError(respuesta.status, datos?.message ?? "El sistema se encuentra temporalmente en mantenimiento.", datos.error);
     }
     throw new ApiError(respuesta.status, datos?.error ?? "Error inesperado del servidor.", datos?.error);

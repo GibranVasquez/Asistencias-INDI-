@@ -17,11 +17,14 @@ import { trabajadorRouter } from "./trabajador.routes";
 import { usuarioRouter } from "./usuario.routes";
 import { incidenciaRouter } from "./incidencia.routes";
 import { obraRouter } from "./obra.routes";
+import { mantenimientoActivo } from "../config/maintenance";
 
 export const router = Router();
 
 router.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  // Sigue siendo 200 para readiness, pero informa el estado operativo para
+  // que un Electron recién abierto muestre mantenimiento antes del login.
+  res.json({ status: "ok", maintenance: mantenimientoActivo() });
 });
 
 // Sin prefijo: las rutas /iclock/* las fija el firmware del equipo ADMS,
