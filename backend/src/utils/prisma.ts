@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { exigirHostLocal } from "../config/hostGuard";
 
 // Tanto el pooler de Supabase como RDS presentan cadenas firmadas por su
 // propia CA privada (ninguna está en el almacén de CAs por default de
@@ -56,6 +57,11 @@ const esIntegracionLocal = process.env.INTEGRATION_TEST_DB === "1";
 const URL_MIGRACION_LOCAL = "postgresql://indi_migration_test:migration_test_only@127.0.0.1:55433/indi_mexico_test";
 const URL_MIGRACION_SOURCE_LOCAL = "postgresql://indi_migration_test:migration_test_only@127.0.0.1:55432/indi_source_test";
 const esEnsayoMigracionLocal = process.env.MIGRATION_TEST_DB === "1";
+
+// Este módulo se carga desde los routers antes de que app.ts alcance su
+// validación general. La guarda debe ejecutarse aquí, antes de construir el
+// adapter o PrismaClient, para que tampoco exista una ventana de conexión.
+exigirHostLocal("DATABASE_URL");
 
 if (esIntegracionLocal && process.env.DATABASE_URL !== URL_INTEGRACION_LOCAL) {
   throw new Error(

@@ -7,30 +7,38 @@
  *   - prisma.config.ts         (Prisma CLI: migrate, generate, studio)
  *   - prisma/seed.ts           (semilla general)
  *
- * En producción y test el guard se omite:
- *   - producción usa hosts externos legítimos (RDS, Supabase, etc.)
- *   - tests setean NODE_ENV=test y el runner de integración overridea
- *     DATABASE_URL al efímero 127.0.0.1:55432.
+ * Solo producción puede usar hosts externos legítimos. Desarrollo, un
+ * NODE_ENV ausente y test quedan limitados a infraestructura local; los
+ * runners de integración fijan además la URL efímera exacta.
  */
 const HOSTS_LOCALES = new Set(["localhost", "127.0.0.1"]);
 
 export function exigirHostLocal(nombreVariable: string): void {
-  if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "test") return;
+  if (process.env.NODE_ENV === "production") return;
 
   const url = process.env[nombreVariable];
+  // Algunos comandos sin conexión (por ejemplo `prisma generate`) no
+  // necesitan URL. Los entrypoints que sí la requieren la validan aparte.
   if (!url) return;
 
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
-    if (!HOSTS_LOCALES.has(parsed.hostname)) {
-      console.error(
-        `${nombreVariable} apunta a un host externo (${parsed.hostname}). ` +
-          "En desarrollo local debe apuntar a un PostgreSQL local (localhost/127.0.0.1). " +
-          "Si .env tiene múltiples líneas de esta variable, la última gana — comenta las externas."
-      );
-      process.exit(1);
-    }
+    parsed = new URL(url);
   } catch {
-    // URL malformada — Prisma fallará al conectar con un error claro
+    throw new Error(`${nombreVariable} no es una URL PostgreSQL válida. Operación abortada.`);
+  }
+
+  if (!["postgres:", "postgresql:"].includes(parsed.protocol)) {
+    throw new Error(`${nombreVariable} no usa el protocolo PostgreSQL. Operación abortada.`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (!HOSTS_LOCALES.has(hostname)) {
+    const hostnameSeguro = hostname || "vacío";
+    throw new Error(
+      `${nombreVariable} apunta a un host externo (${hostnameSeguro}). ` +
+        "En desarrollo local y test debe apuntar a PostgreSQL local (localhost/127.0.0.1). " +
+        "Si .env tiene múltiples líneas de esta variable, la última gana — comenta las externas."
+    );
   }
 }

@@ -28,6 +28,7 @@ if (
 }
 
 exigirHostLocal("DATABASE_URL");
+exigirHostLocal("DIRECT_URL");
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
