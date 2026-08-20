@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { Usuario } from "@prisma/client";
+import { RolUsuario, Usuario } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { serializarUsuarioConSecciones, UsuarioPublicoConSecciones } from "../utils/usuarioSerializer";
@@ -11,6 +11,7 @@ const INCLUIR_SECCIONES_ASIGNADAS = {
 
 const MENSAJE_CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos.";
 const MENSAJE_CUENTA_DESACTIVADA = "Esta cuenta está desactivada. Contacta a un administrador.";
+const MENSAJE_SIN_ACCESO_PANEL = "Esta cuenta no tiene acceso al panel administrativo.";
 
 // Bloqueo por intentos fallidos — independiente del rate limit por
 // IP/usuario de middlewares/rateLimit.ts: aquella limita peticiones por
@@ -103,6 +104,14 @@ export async function iniciarSesion(username: string, password: string): Promise
   if (!usuario.activo) {
     // Solo se llega aquí con contraseña correcta; aun así se rechaza.
     throw new AppError(403, MENSAJE_CUENTA_DESACTIVADA);
+  }
+
+  // Las cuentas trabajador vinculan identidad operativa/biométrica, pero no
+  // tienen ninguna ruta del panel. Emitirles un JWT humano las dejaba dentro
+  // del AdminLayout sin módulos ni contenido; se rechazan antes de firmar o
+  // persistir una sesión administrativa.
+  if (usuario.rol === RolUsuario.trabajador) {
+    throw new AppError(403, MENSAJE_SIN_ACCESO_PANEL);
   }
 
   const token = firmarToken(usuario);

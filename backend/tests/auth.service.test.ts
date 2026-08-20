@@ -28,4 +28,11 @@ describe("login", () => {
     mocks.buscar.mockResolvedValue(null);
     await expect(iniciarSesion("nadie", "Incorrecta9")).rejects.toMatchObject({ status: 401, message: "Usuario o contraseña incorrectos." });
   });
+  it("no emite sesión administrativa para una cuenta trabajador", async () => {
+    mocks.buscar.mockResolvedValue({ id: "u2", username: "trabajador-test", passwordHash: hash, rol: RolUsuario.trabajador, trabajadorId: "t1", activo: true, intentosFallidos: 0, bloqueadoHasta: null, requiereCambioPassword: false, creadoEn: new Date(), actualizadoEn: new Date(), seccionesAsignadas: [] });
+    await expect(iniciarSesion("trabajador-test", password)).rejects.toMatchObject({
+      status: 403,
+      message: "Esta cuenta no tiene acceso al panel administrativo.",
+    });
+  });
 });
