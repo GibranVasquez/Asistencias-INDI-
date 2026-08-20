@@ -64,7 +64,7 @@ test("RH navega por menú, bloquea una ruta ajena y logout protege la ruta priva
     await expect(app.page.getByRole("link", { name: "Nómina RH" })).toBeVisible();
     await app.page.getByRole("link", { name: "Responsables por frente" }).click();
     await expect(app.page.getByRole("heading", { name: "Responsables por frente" })).toBeVisible();
-    await expect(app.page.getByLabel("Frente")).toBeVisible();
+    await expect(app.page.getByRole("combobox", { name: /^Frente/ })).toBeVisible();
     await expect(app.page.getByText("Contacta a RH", { exact: false })).toHaveCount(0);
     await app.page.getByRole("link", { name: "Panel principal" }).click();
     await expect(app.page.getByRole("heading", { name: "Panel principal" })).toBeVisible();
