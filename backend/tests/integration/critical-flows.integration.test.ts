@@ -174,11 +174,18 @@ describe("HTTP real: autenticación, roles y sueldo masivo", () => {
   });
 
   it("aplica la matriz actual: solo RH ve finanzas y los tipos de token no se intercambian", async () => {
-    await escenarioBase();
-    const [rh, admin, recepcion, encargado, trabajador, terminal] = await Promise.all([
+    const { usuarios } = await escenarioBase();
+    const [rh, admin, recepcion, encargado, terminal, trabajadorRechazado] = await Promise.all([
       tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.recepcion),
-      tokenHumano(RolUsuario.encargado_seccion), tokenHumano(RolUsuario.trabajador), tokenTerminal(),
+      tokenHumano(RolUsuario.encargado_seccion), tokenTerminal(),
+      request(app).post("/auth/login").send({ username: "test-trabajador", password: PASSWORD }),
     ]);
+    expect(trabajadorRechazado.status).toBe(403);
+    const trabajador = jwt.sign({
+      usuarioId: usuarios.get(RolUsuario.trabajador)!.id,
+      rol: RolUsuario.trabajador,
+      trabajadorId: usuarios.get(RolUsuario.trabajador)!.trabajadorId,
+    }, process.env.JWT_SECRET!, { expiresIn: "5m" });
     expect((await request(app).get("/nominas").set("Authorization", `Bearer ${rh}`)).status).toBe(200);
     for (const token of [admin, recepcion, encargado, trabajador, terminal]) {
       const res = await request(app).get("/nominas").set("Authorization", `Bearer ${token}`);
