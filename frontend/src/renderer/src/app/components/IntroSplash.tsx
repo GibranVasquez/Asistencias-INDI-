@@ -8,6 +8,11 @@ const DURACION_MS = 2800;
 
 export default function IntroSplash() {
   const [visible, setVisible] = useState(true);
+  // Un url() guardado en una custom property se resuelve desde la hoja CSS
+  // que lo consume, no desde el documento. En el build file:// eso duplicaba
+  // el segmento assets/ (assets/assets/indi-logo.png). La URL absoluta evita
+  // que cada montaje del splash genere ERR_FILE_NOT_FOUND.
+  const logoUrl = new URL(asset("assets/indi-logo.png"), document.baseURI).href;
 
   useEffect(() => {
     const id = setTimeout(() => setVisible(false), DURACION_MS);
@@ -20,7 +25,7 @@ export default function IntroSplash() {
     <div className="intro-veil">
       <div
         className="intro-lock"
-        style={{ ["--intro-logo-url" as string]: `url(${asset("assets/indi-logo.png")})` }}
+        style={{ ["--intro-logo-url" as string]: `url(${logoUrl})` }}
       >
         <i className="il1" />
         <i className="il2" />

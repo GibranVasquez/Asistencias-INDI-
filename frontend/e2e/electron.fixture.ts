@@ -39,6 +39,12 @@ export async function lanzarElectron(nombrePerfil: string, kiosco = false): Prom
   const erroresRuntime: string[] = [];
   const page = await electronApp.firstWindow();
   page.on("pageerror", (error) => erroresRuntime.push(`pageerror: ${error.message}`));
+  page.on("requestfailed", (solicitud) => {
+    const fallo = solicitud.failure()?.errorText ?? "fallo desconocido";
+    if (/ERR_FILE_NOT_FOUND|ERR_CONNECTION_REFUSED|fetch failed/i.test(fallo)) {
+      erroresRuntime.push(`requestfailed: ${new URL(solicitud.url()).pathname} (${fallo})`);
+    }
+  });
   page.on("console", (mensaje) => {
     const texto = mensaje.text();
     if (/content security policy|refused to (execute|load)|preload.*error|unhandled rejection/i.test(texto)) {
