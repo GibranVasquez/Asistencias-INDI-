@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ConfiguracionPage from "@/features/configuracion/ConfiguracionPage";
+import { listarHorarios } from "@/core/api/resources/horarios";
+import {
+  asignarResponsableTramo,
+  editarSeccion,
+  listarSecciones,
+  retirarResponsableTramo,
+} from "@/core/api/resources/secciones";
 
 const estado = vi.hoisted(() => ({ rol: "rh" }));
 
@@ -36,7 +43,10 @@ vi.mock("@/core/api/resources/secciones", () => ({
   editarSeccion: vi.fn(),
   borrarSeccion: vi.fn(),
   listarTrabajadoresResponsables: vi.fn().mockResolvedValue({
-    trabajadores: [{ id: "trabajador-1", nombreCompleto: "Responsable ficticio", categoria: "Operación" }],
+    trabajadores: [
+      { id: "responsable-actual", nombreCompleto: "Responsable actual", categoria: "Operación", estatus: "activo" },
+      { id: "trabajador-1", nombreCompleto: "Responsable ficticio", categoria: "Operación", estatus: "activo" },
+    ],
   }),
   asignarResponsableTramo: vi.fn(),
   retirarResponsableTramo: vi.fn(),
@@ -116,6 +126,60 @@ describe("Configuración", () => {
     expect(screen.getByText("tecnico-ficticio")).not.toBeNull();
     expect(screen.getByText(/Responsable ficticio/)).not.toBeNull();
     expect(screen.getByPlaceholderText("Buscar trabajador activo…")).not.toBeNull();
+  });
+
+  it("edita el Frente y sincroniza responsables operativos sin mezclar cuentas técnicas", async () => {
+    const user = userEvent.setup();
+    const frente = {
+      id: "frente-1",
+      obraId: "obra-1",
+      nombre: "Frente inicial",
+      horarioId: "horario-1",
+      tramoUbicacion: "Tramo 19",
+      creadoEn: "2026-08-21T00:00:00.000Z",
+      encargados: [{ id: "usuario-tecnico-1", username: "tecnico-ficticio", trabajadorId: null }],
+      responsablesTramo: [{ id: "responsable-actual", nombreCompleto: "Responsable actual", categoria: "Operación", estatus: "activo" as const }],
+    };
+    vi.mocked(listarSecciones).mockResolvedValueOnce({ secciones: [frente] });
+    vi.mocked(listarHorarios).mockResolvedValue({
+      horarios: [{
+        id: "horario-1",
+        nombre: "Turno ficticio",
+        horaEntrada: "1970-01-01T08:00:00.000Z",
+        horaSalida: "1970-01-01T17:00:00.000Z",
+        toleranciaMinutos: 10,
+        recesoInicio: null,
+        recesoFin: null,
+        creadoEn: "2026-08-21T00:00:00.000Z",
+      }],
+    });
+    vi.mocked(editarSeccion).mockResolvedValueOnce({ seccion: frente });
+    render(<ConfiguracionPage />);
+
+    await user.click(screen.getByRole("button", { name: "Frentes" }));
+    expect(await screen.findByText("Frente inicial")).not.toBeNull();
+    await user.click(screen.getByText("Editar").closest("button")!);
+
+    expect((screen.getByLabelText("Nombre") as HTMLInputElement).value).toBe("Frente inicial");
+    expect((screen.getByLabelText("Tramo o ubicación de la obra") as HTMLInputElement).value).toBe("Tramo 19");
+    expect((screen.getByLabelText("Horario asignado") as HTMLSelectElement).value).toBe("horario-1");
+    expect((screen.getByText("tecnico-ficticio").closest("label")!.querySelector("input") as HTMLInputElement).checked).toBe(true);
+
+    const listaResponsables = screen.getByLabelText("Responsables operativos del tramo");
+    await user.click(within(listaResponsables).getByText(/Responsable actual/).closest("label")!.querySelector("input")!);
+    await user.click(within(listaResponsables).getByText(/Responsable ficticio/).closest("label")!.querySelector("input")!);
+    await user.click(screen.getByText("Guardar cambios").closest("button")!);
+
+    await waitFor(() => {
+      expect(editarSeccion).toHaveBeenCalledWith("token-ficticio", "frente-1", {
+        nombre: "Frente inicial",
+        horarioId: "horario-1",
+        encargadoIds: ["usuario-tecnico-1"],
+        tramoUbicacion: "Tramo 19",
+      });
+      expect(asignarResponsableTramo).toHaveBeenCalledWith("token-ficticio", "frente-1", "trabajador-1");
+      expect(retirarResponsableTramo).toHaveBeenCalledWith("token-ficticio", "frente-1", "responsable-actual");
+    });
   });
 
   it("conserva el panel y modal de Categorías", async () => {
