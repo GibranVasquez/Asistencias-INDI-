@@ -7,7 +7,7 @@ import request from "supertest";
 import { MetodoAsistencia, RolUsuario, TrabajadorEstatus } from "@prisma/client";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { app } from "../../src/app";
-import { generarNominaSemanal } from "../../src/services/nomina.service";
+import { corregirNominaSemanal, generarNominaSemanal } from "../../src/services/nomina.service";
 import { obtenerReporteNomina } from "../../src/services/reporteNomina.service";
 import { generarExcelNomina, generarPdfNomina } from "../../src/utils/exportadores/nominaExport";
 import { prisma } from "../../src/utils/prisma";
@@ -133,9 +133,101 @@ describe("PostgreSQL real: nómina y snapshots", () => {
     expect(await prisma.nominaSemanal.count()).toBe(0);
     expect(await prisma.auditLog.count({ where: { accion: "crear_nomina" } })).toBe(0);
   });
+
+  it("congela decimales de sueldo, tarifa y conceptos en la escala monetaria real", async () => {
+    const { seccion, terminal, trabajadores, usuarios } = await escenarioBase();
+    const trabajador = trabajadores[0];
+    await prisma.trabajador.update({ where: { id: trabajador.id }, data: { sueldoBase: 100.1 } });
+    for (let dia = 3; dia <= 9; dia++) {
+      await prisma.asistenciaDiaria.create({
+        data: {
+          trabajadorId: trabajador.id,
+          terminalOrigenId: terminal.id,
+          seccionId: seccion.id,
+          fecha: FECHA(`2026-08-${String(dia).padStart(2, "0")}`),
+          hora: HORA("08:00:00"),
+          turno: "Día",
+          metodoUsado: MetodoAsistencia.huella,
+        },
+      });
+    }
+    await prisma.tarifaHoraExtra.create({ data: { valor: 33.3, vigenteDesde: FECHA("2026-01-01") } });
+
+    const nomina = await generarNominaSemanal(usuarios.get(RolUsuario.rh)!.id, trabajador.id, {
+      periodoInicio: "2026-08-03",
+      periodoFin: "2026-08-09",
+      horasExtra: 0.3,
+      viaticosSemanal: 0.1,
+      viaticosMensual: 0,
+      descuentosVarios: 0.2,
+    });
+
+    expect(nomina.montoSueldo.toFixed(2)).toBe("100.10");
+    expect(nomina.montoHorasExtra.toFixed(2)).toBe("9.99");
+    expect(nomina.viaticosSemanal.toFixed(2)).toBe("0.10");
+    expect(nomina.descuentosVarios.toFixed(2)).toBe("0.20");
+    expect(nomina.totalAPagar.toFixed(2)).toBe("109.99");
+    expect(Number.isFinite(nomina.totalAPagar.toNumber())).toBe(true);
+  });
+
+  it("corrige una nómina, conserva periodo/trabajador y registra la auditoría", async () => {
+    const { seccion, terminal, trabajadores, usuarios } = await escenarioBase();
+    const trabajador = trabajadores[0];
+    for (const dia of ["2026-08-03", "2026-08-04", "2026-08-05"]) {
+      await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA(dia), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella } });
+    }
+    await prisma.tarifaHoraExtra.create({ data: { valor: 100, vigenteDesde: FECHA("2026-01-01") } });
+    const original = await generarNominaSemanal(usuarios.get(RolUsuario.rh)!.id, trabajador.id, {
+      periodoInicio: "2026-08-03", periodoFin: "2026-08-09", horasExtra: 0, viaticosSemanal: 0, viaticosMensual: 0, descuentosVarios: 0,
+    });
+    const creadoEn = original.creadoEn;
+
+    const corregida = await corregirNominaSemanal(usuarios.get(RolUsuario.rh)!.id, original.id, {
+      horasExtra: 2, viaticosSemanal: 50, viaticosMensual: 0, descuentosVarios: 25,
+    });
+
+    expect(corregida.trabajadorId).toBe(trabajador.id);
+    expect(corregida.periodoInicio).toEqual(original.periodoInicio);
+    expect(corregida.periodoFin).toEqual(original.periodoFin);
+    expect(corregida.creadoEn).toEqual(creadoEn);
+    expect(corregida.diasLaborados.toNumber()).toBe(3);
+    expect(corregida.montoSueldo.toFixed(2)).toBe("300.00");
+    expect(corregida.montoHorasExtra.toFixed(2)).toBe("200.00");
+    expect(corregida.totalAPagar.toFixed(2)).toBe("525.00");
+    expect(await prisma.auditLog.count({ where: { accion: "corregir_nomina", entidadId: original.id } })).toBe(1);
+  });
+
+  it("permite correcciones sucesivas y conserva el resultado de la última", async () => {
+    const { trabajadores, usuarios } = await escenarioBase();
+    const original = await generarNominaSemanal(usuarios.get(RolUsuario.rh)!.id, trabajadores[0].id, {
+      periodoInicio: "2026-08-03", periodoFin: "2026-08-09", horasExtra: 0, viaticosSemanal: 0, viaticosMensual: 0, descuentosVarios: 0,
+    });
+    await corregirNominaSemanal(usuarios.get(RolUsuario.rh)!.id, original.id, { horasExtra: 0, viaticosSemanal: 10, viaticosMensual: 0, descuentosVarios: 0 });
+    const ultima = await corregirNominaSemanal(usuarios.get(RolUsuario.rh)!.id, original.id, { horasExtra: 0, viaticosSemanal: 25, viaticosMensual: 0, descuentosVarios: 0 });
+
+    expect(ultima.viaticosSemanal.toFixed(2)).toBe("25.00");
+    expect(ultima.totalAPagar.toFixed(2)).toBe("25.00");
+    expect(await prisma.auditLog.count({ where: { accion: "corregir_nomina", entidadId: original.id } })).toBe(2);
+  });
 });
 
 describe("HTTP real: autenticación, roles y sueldo masivo", () => {
+  it("mantiene la nómina histórica al aplicar un sueldo nuevo al trabajador", async () => {
+    const { seccion, terminal, trabajadores, usuarios } = await escenarioBase();
+    const trabajador = trabajadores[0];
+    await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella } });
+    const usuarioRh = usuarios.get(RolUsuario.rh)!;
+    const historica = await generarNominaSemanal(usuarioRh.id, trabajador.id, {
+      periodoInicio: "2026-08-03", periodoFin: "2026-08-09", horasExtra: 0, viaticosSemanal: 0, viaticosMensual: 0, descuentosVarios: 0,
+    });
+    const token = await tokenHumano(RolUsuario.rh);
+    const respuesta = await request(app).post("/trabajadores/aplicar-sueldo").set("Authorization", `Bearer ${token}`).send({ ids: [trabajador.id], nuevoSueldoBase: 1400 });
+    expect(respuesta.status).toBe(200);
+    const nominaConsultada = await prisma.nominaSemanal.findUniqueOrThrow({ where: { id: historica.id } });
+    expect(nominaConsultada.montoSueldo.toFixed(2)).toBe("100.00");
+    expect((await prisma.trabajador.findUniqueOrThrow({ where: { id: trabajador.id } })).sueldoBase?.toFixed(2)).toBe("1400.00");
+  });
+
   it("distingue login válido, credenciales genéricas, cuenta inactiva y JWT expirado", async () => {
     const { usuarios } = await escenarioBase();
     const ok = await request(app).post("/auth/login").send({ username: "test-rh", password: PASSWORD });
