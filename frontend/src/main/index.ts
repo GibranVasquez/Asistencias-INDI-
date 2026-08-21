@@ -119,7 +119,15 @@ function registrarDescargas(): void {
 
 void app.whenReady().then(() => {
   // La URL se resuelve una sola vez y alimenta tanto al preload como a CSP.
-  const apiBaseUrl = resolverApiBaseUrl();
+  let apiBaseUrl: string;
+  try {
+    apiBaseUrl = resolverApiBaseUrl();
+  } catch (error) {
+    const mensaje = error instanceof Error ? error.message : "La configuración de la API no es válida.";
+    console.error(`[apiConfig] ${mensaje}`);
+    app.quit();
+    return;
+  }
   registrarHandlersSecureStore();
   registrarHandlerGuardarExportacion();
   registrarDescargas();

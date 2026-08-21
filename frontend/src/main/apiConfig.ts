@@ -1,13 +1,10 @@
 import { app } from "electron";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import { extraerApiBaseUrl, validarApiBaseUrl } from "./apiConfigValidation";
 
 const URL_POR_DEFECTO = "http://localhost:4000";
 const NOMBRE_ARCHIVO = "config.json";
-
-interface ConfigArchivo {
-  apiBaseUrl?: string;
-}
 
 function rutaConfig(): string {
   return join(app.getPath("userData"), NOMBRE_ARCHIVO);
@@ -17,7 +14,7 @@ function rutaConfig(): string {
 // tocó userData), lo crea con el valor de desarrollo — así queda un archivo
 // real y descubrible para que quien instale la app en su destino final solo
 // tenga que editar apiBaseUrl y reiniciar, sin recompilar ni reinstalar.
-function leerConfigArchivo(): ConfigArchivo {
+function leerConfigArchivo(): unknown {
   const ruta = rutaConfig();
 
   if (!existsSync(ruta)) {
@@ -35,7 +32,7 @@ function leerConfigArchivo(): ConfigArchivo {
   }
 
   try {
-    return JSON.parse(readFileSync(ruta, "utf-8")) as ConfigArchivo;
+    return JSON.parse(readFileSync(ruta, "utf-8")) as unknown;
   } catch (err) {
     console.warn("[apiConfig] config.json existente no es JSON válido, usando el valor por defecto:", err);
     return {};
@@ -50,9 +47,9 @@ function leerConfigArchivo(): ConfigArchivo {
  */
 export function resolverApiBaseUrl(): string {
   if (process.env.INDI_API_BASE_URL) {
-    return process.env.INDI_API_BASE_URL;
+    return validarApiBaseUrl(process.env.INDI_API_BASE_URL);
   }
 
   const config = leerConfigArchivo();
-  return config.apiBaseUrl || URL_POR_DEFECTO;
+  return extraerApiBaseUrl(config) ?? URL_POR_DEFECTO;
 }
