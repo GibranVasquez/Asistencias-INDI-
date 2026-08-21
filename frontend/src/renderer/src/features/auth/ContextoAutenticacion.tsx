@@ -3,7 +3,7 @@ import { usuarioActual, UsuarioPublico } from "@/features/auth/api";
 import { ApiError } from "@/core/api/client";
 import { limpiarEstadoUI } from "@/core/config/estadoUI";
 
-interface SesionAuth {
+export interface SesionAuth {
   token: string;
   usuario: UsuarioPublico;
 }
@@ -41,6 +41,14 @@ const ContextoAutenticacion = createContext<ContextoAutenticacionValor | null>(n
 
 export function esPersistenciaDegradada(recordar: boolean, persistida: boolean): boolean {
   return recordar && !persistida;
+}
+
+export function actualizarUsuarioEnSesion(
+  sesion: SesionAuth | null,
+  cambios: Partial<UsuarioPublico>
+): SesionAuth | null {
+  if (!sesion) return null;
+  return { ...sesion, usuario: { ...sesion.usuario, ...cambios } };
 }
 
 function parsearSesion(crudo: string | null): SesionAuth | null {
@@ -161,12 +169,12 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
         setPersistenciaDegradada(false);
       },
       actualizarUsuario: async (cambios) => {
-        setSesion((actual) => {
-          if (!actual) return actual;
-          const actualizada = { ...actual, usuario: { ...actual.usuario, ...cambios } };
-          window.indiApp?.sesionSegura.guardar(JSON.stringify(actualizada), sesionPersistida ?? false).catch(() => {});
-          return actualizada;
-        });
+        const actualizada = actualizarUsuarioEnSesion(sesion, cambios);
+        if (!actualizada) return;
+        setSesion(actualizada);
+        await window.indiApp?.sesionSegura
+          .guardar(JSON.stringify(actualizada), sesionPersistida ?? false)
+          .catch(() => {});
       },
     }),
     [sesion, cargando, sesionPersistida, persistenciaDegradada]

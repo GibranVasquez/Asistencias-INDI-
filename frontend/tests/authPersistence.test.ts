@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { esPersistenciaDegradada, restaurarSesionHumana } from "@/features/auth/ContextoAutenticacion";
+import {
+  actualizarUsuarioEnSesion,
+  esPersistenciaDegradada,
+  restaurarSesionHumana,
+} from "@/features/auth/ContextoAutenticacion";
 import { guardarRutaPersistida, leerRutaPersistida } from "@/core/config/estadoUI";
 
 function almacenamientoMemoria(): Storage {
@@ -37,6 +41,19 @@ describe("estado visible de persistencia de sesión humana", () => {
 
   it("no advierte cuando Recordarme quedó cifrado correctamente", () => {
     expect(esPersistenciaDegradada(true, true)).toBe(false);
+  });
+
+  it("actualiza el usuario sin mutar la sesión que después se persiste", () => {
+    const original = { token: "token-test", usuario: usuarioRh };
+    const actualizada = actualizarUsuarioEnSesion(original, { requiereCambioPassword: true });
+
+    expect(actualizada).toEqual({
+      token: "token-test",
+      usuario: { ...usuarioRh, requiereCambioPassword: true },
+    });
+    expect(actualizada).not.toBe(original);
+    expect(actualizada?.usuario).not.toBe(original.usuario);
+    expect(original.usuario.requiereCambioPassword).toBe(false);
   });
 
   it("un arranque sin sesión limpia la ruta anterior y termina desautenticado", async () => {

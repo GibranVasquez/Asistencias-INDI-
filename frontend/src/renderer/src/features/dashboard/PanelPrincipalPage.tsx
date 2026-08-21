@@ -92,10 +92,7 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[], habilit
   );
 
   useEffect(() => {
-    if (!habilitada) {
-      setEstado({ datos: null, error: "no disponible para tu rol", cargando: false });
-      return;
-    }
+    if (!habilitada) return;
     let cancelado = false;
     setEstado((e) => ({ ...e, cargando: true, error: null }));
     cargar()
@@ -118,7 +115,9 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: unknown[], habilit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
-  return estado;
+  return habilitada
+    ? estado
+    : { datos: null, error: "no disponible para tu rol", cargando: false };
 }
 
 export default function PanelPrincipalPage() {

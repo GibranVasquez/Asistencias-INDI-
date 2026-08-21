@@ -10,10 +10,10 @@ import { crearConfiguracionConexionPrisma } from "../config/prismaTls";
 // Node) — con solo `rejectUnauthorized: true` la conexión falla con
 // "self-signed certificate in certificate chain". En vez de relajar la
 // verificación (rejectUnauthorized: false), se fija la CA correcta como
-// ancla de confianza explícita según a qué proveedor apunte DATABASE_URL
-// realmente — necesario desde que el ECS de producción empezó a apuntar a
-// RDS (secrets.tf) mientras el desarrollo local sigue contra Supabase
-// (backend/.env): un CA fijo para ambos casos rompía uno de los dos
+// ancla de confianza explícita según a qué proveedor externo apunte
+// DATABASE_URL en producción. Desarrollo y test están limitados por
+// hostGuard.ts a PostgreSQL local y no recorren esta rama TLS; un CA fijo
+// para todos los proveedores externos rompía uno de los dos
 // (bug real encontrado en producción 2026-07-30 - toda query fallaba tras
 // el primer deploy a ECS, oculto detrás de un 500 genérico porque
 // NODE_ENV=production esconde el mensaje real en errorHandler.ts).

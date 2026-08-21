@@ -40,6 +40,40 @@ export interface FiltrosAsistencia {
   categoria?: string;
 }
 
+const RELACIONES_ASISTENCIA = {
+  trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
+  seccion: {
+    select: {
+      nombre: true,
+      tramoUbicacion: true,
+      obra: { select: { nombre: true } },
+      responsablesTramo: {
+        where: { estatus: TrabajadorEstatus.activo },
+        select: { id: true, nombreCompleto: true, categoria: true },
+      },
+      horario: { select: { nombre: true } },
+    },
+  },
+} satisfies Prisma.AsistenciaDiariaInclude;
+
+type AsistenciaConRelaciones = Prisma.AsistenciaDiariaGetPayload<{
+  include: typeof RELACIONES_ASISTENCIA;
+}>;
+
+function aAsistenciaListada({ trabajador, seccion, ...resto }: AsistenciaConRelaciones): AsistenciaListada {
+  return {
+    ...resto,
+    trabajadorNombre: trabajador.nombreCompleto,
+    trabajadorCategoria: trabajador.categoria,
+    trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
+    seccionNombre: seccion.nombre,
+    seccionTramoUbicacion: seccion.tramoUbicacion,
+    seccionResponsables: seccion.responsablesTramo,
+    obraNombre: seccion.obra.nombre,
+    horarioNombre: seccion.horario?.nombre ?? null,
+  };
+}
+
 function normalizarHora(hora: string): string {
   return hora.length === 5 ? `${hora}:00` : hora;
 }
@@ -120,27 +154,13 @@ export async function registrarAsistencia(
 export async function obtenerAsistenciaMasRecienteDeTerminal(): Promise<AsistenciaListada | null> {
   const registro = await prisma.asistenciaDiaria.findFirst({
     where: { terminalOrigen: { tipo: "adms" } },
-    include: {
-      trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
-      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, responsablesTramo: { where: { estatus: TrabajadorEstatus.activo }, select: { id: true, nombreCompleto: true, categoria: true } }, horario: { select: { nombre: true } } } },
-    },
+    include: RELACIONES_ASISTENCIA,
     orderBy: { creadoEn: "desc" },
   });
 
   if (!registro) return null;
 
-  const { trabajador, seccion, ...resto } = registro;
-  return {
-    ...resto,
-    trabajadorNombre: trabajador.nombreCompleto,
-    trabajadorCategoria: trabajador.categoria,
-    trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
-    seccionNombre: seccion.nombre,
-    seccionTramoUbicacion: seccion.tramoUbicacion,
-    seccionResponsables: seccion.responsablesTramo,
-    obraNombre: seccion.obra.nombre,
-    horarioNombre: seccion.horario?.nombre ?? null,
-  };
+  return aAsistenciaListada(registro);
 }
 
 /**
@@ -179,22 +199,9 @@ export async function listarAsistencias(
       ...(filtros.turno ? { turno: filtros.turno } : {}),
       ...(filtros.categoria ? { trabajador: { categoria: filtros.categoria } } : {}),
     },
-    include: {
-      trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
-      seccion: { select: { nombre: true, tramoUbicacion: true, obra: { select: { nombre: true } }, responsablesTramo: { where: { estatus: TrabajadorEstatus.activo }, select: { id: true, nombreCompleto: true, categoria: true } }, horario: { select: { nombre: true } } } },
-    },
+    include: RELACIONES_ASISTENCIA,
     orderBy: [{ fecha: "desc" }, { hora: "desc" }],
   });
 
-  return registros.map(({ trabajador, seccion, ...resto }) => ({
-    ...resto,
-    trabajadorNombre: trabajador.nombreCompleto,
-    trabajadorCategoria: trabajador.categoria,
-    trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
-    seccionNombre: seccion.nombre,
-    seccionTramoUbicacion: seccion.tramoUbicacion,
-    seccionResponsables: seccion.responsablesTramo,
-    obraNombre: seccion.obra.nombre,
-    horarioNombre: seccion.horario?.nombre ?? null,
-  }));
+  return registros.map(aAsistenciaListada);
 }

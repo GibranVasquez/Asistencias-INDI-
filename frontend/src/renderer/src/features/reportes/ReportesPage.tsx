@@ -60,6 +60,11 @@ function BotonesExportar({ onExportar }: { onExportar: (formato: "pdf" | "excel"
   );
 }
 
+interface EstadoHistorico {
+  clave: string | null;
+  datos: HistoricoTrabajador | null;
+}
+
 export default function ReportesPage() {
   const [tab, setTab] = useState<Tab>("asistencia");
 
@@ -105,8 +110,7 @@ function PanelReporteAsistencia() {
   const [trabajadores, setTrabajadores] = useState<Trabajador[] | null>(null);
   const [busquedaTrabajador, setBusquedaTrabajador] = useState("");
   const [trabajadorId, setTrabajadorId] = useState<string | null>(null);
-  const [historico, setHistorico] = useState<HistoricoTrabajador | null>(null);
-  const [cargandoHistorico, setCargandoHistorico] = useState(false);
+  const [estadoHistorico, setEstadoHistorico] = useState<EstadoHistorico>({ clave: null, datos: null });
 
   useEffect(() => {
     listarSecciones(token).then((r) => setSecciones(r.secciones)).catch(() => setSecciones([]));
@@ -131,24 +135,22 @@ function PanelReporteAsistencia() {
   }, [token, desde, hasta, seccionId]);
 
   useEffect(() => {
-    if (!trabajadorId) {
-      setHistorico(null);
-      return;
-    }
+    if (!trabajadorId) return;
     let cancelado = false;
-    setCargandoHistorico(true);
+    const clave = `${trabajadorId}:${desde}:${hasta}`;
     obtenerHistoricoTrabajador(token, trabajadorId, desde, hasta)
       .then((resultado) => {
-        if (!cancelado) setHistorico(resultado);
+        if (!cancelado) setEstadoHistorico({ clave, datos: resultado });
       })
       .catch(() => {
-        if (!cancelado) setHistorico(null);
-      })
-      .finally(() => {
-        if (!cancelado) setCargandoHistorico(false);
+        if (!cancelado) setEstadoHistorico({ clave, datos: null });
       });
     return () => { cancelado = true; };
   }, [token, trabajadorId, desde, hasta]);
+
+  const claveHistorico = trabajadorId ? `${trabajadorId}:${desde}:${hasta}` : null;
+  const historico = estadoHistorico.clave === claveHistorico ? estadoHistorico.datos : null;
+  const cargandoHistorico = claveHistorico !== null && estadoHistorico.clave !== claveHistorico;
 
   const trabajadoresFiltrados = useMemo(() => {
     const q = busquedaTrabajador.trim().toLowerCase();

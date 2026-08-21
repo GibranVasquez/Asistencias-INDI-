@@ -41,13 +41,21 @@ function contarDiasHabiles(inicio: Date, fin: Date): number {
   return cuenta;
 }
 
+interface EstadoResumenSeccion {
+  seccionId: string | null;
+  resumen: ResumenSeccionHoy | null;
+  error: string | null;
+}
+
 function MiFrentePage() {
   const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const rol = sesion!.usuario.rol;
-  const [resumen, setResumen] = useState<ResumenSeccionHoy | null>(null);
-  const [errorResumen, setErrorResumen] = useState<string | null>(null);
-  const [cargandoResumen, setCargandoResumen] = useState(true);
+  const [estadoResumen, setEstadoResumen] = useState<EstadoResumenSeccion>({
+    seccionId: null,
+    resumen: null,
+    error: null,
+  });
   const [modoCarga, setModoCarga] = useState(false);
   const [avisoMovidos, setAvisoMovidos] = useState<TrabajadorMovido[] | null>(null);
 
@@ -60,8 +68,11 @@ function MiFrentePage() {
         .then((r) => setSeccionesRh(r.secciones))
         .catch((err) => {
           setSeccionesRh([]);
-          setErrorResumen(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.");
-          setCargandoResumen(false);
+          setEstadoResumen({
+            seccionId: null,
+            resumen: null,
+            error: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.",
+          });
         });
     }
   }, [rol, token]);
@@ -74,12 +85,10 @@ function MiFrentePage() {
     [rol, seccionesRh, sesion]
   );
 
-  const [seccionId, setSeccionId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!seccionId && seccionesDisponibles.length > 0) {
-      setSeccionId(seccionesDisponibles[0].id);
-    }
-  }, [seccionesDisponibles, seccionId]);
+  const [seccionElegidaId, setSeccionElegidaId] = useState<string | null>(null);
+  const seccionId = seccionesDisponibles.some((seccion) => seccion.id === seccionElegidaId)
+    ? seccionElegidaId
+    : seccionesDisponibles[0]?.id ?? null;
 
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => {
@@ -89,18 +98,25 @@ function MiFrentePage() {
 
   const cargarResumen = useCallback(() => {
     if (!seccionId) return;
-    setErrorResumen(null);
     obtenerResumenHoy(token, seccionId)
-      .then((r) => setResumen(r))
-      .catch((err) => setErrorResumen(err instanceof ApiError ? err.message : "No se pudo conectar con el servidor."))
-      .finally(() => setCargandoResumen(false));
+      .then((resumen) => setEstadoResumen({ seccionId, resumen, error: null }))
+      .catch((err) =>
+        setEstadoResumen({
+          seccionId,
+          resumen: null,
+          error: err instanceof ApiError ? err.message : "No se pudo conectar con el servidor.",
+        })
+      );
   }, [token, seccionId]);
 
   useEffect(() => {
-    setCargandoResumen(true);
-    setResumen(null);
-    cargarResumen();
-  }, [seccionId, cargarResumen]);
+    void cargarResumen();
+  }, [cargarResumen]);
+
+  const resumenCorresponde = estadoResumen.seccionId === seccionId;
+  const resumen = resumenCorresponde ? estadoResumen.resumen : null;
+  const errorResumen = resumenCorresponde ? estadoResumen.error : null;
+  const cargandoResumen = seccionId !== null && !resumenCorresponde;
 
   // Refresco "en vivo" — pausado mientras se esta editando la asignacion
   // para no pisar lo que el encargado esta armando.
@@ -178,7 +194,7 @@ function MiFrentePage() {
           {seccionesDisponibles.length > 1 ? (
             <select
               value={seccionId ?? ""}
-              onChange={(e) => setSeccionId(e.target.value)}
+              onChange={(e) => setSeccionElegidaId(e.target.value)}
               style={{ marginTop: 6, padding: "8px 12px", borderRadius: 8, border: "1.5px solid var(--line)", fontSize: 14, fontWeight: 600, background: "var(--surface)", color: "var(--ink)" }}
             >
               {seccionesDisponibles.map((s) => (
