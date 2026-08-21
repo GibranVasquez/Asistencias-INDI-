@@ -4,6 +4,7 @@ import { esAuthTokenPayload } from "../types/auth";
 import { esAuthTerminalTokenPayload } from "../types/authTerminal";
 import { verificarTokenJWT } from "../utils/jwt";
 import { prisma } from "../utils/prisma";
+import { usuarioSigueActivo } from "./usuarioActivo";
 
 const MENSAJE_NO_AUTORIZADO = "No autorizado.";
 const MENSAJE_SIN_PERMISO = "No tienes permiso para realizar esta acción.";
@@ -50,6 +51,10 @@ export function permitirTerminalOUsuarioConRol(...rolesUsuario: RolUsuario[]) {
     }
 
     if (esAuthTokenPayload(resultado.payload)) {
+      if (!(await usuarioSigueActivo(resultado.payload.usuarioId))) {
+        rechazar(res, "el usuario no existe o fue dado de baja");
+        return;
+      }
       if (!rolesUsuario.includes(resultado.payload.rol)) {
         rechazar(res, `rol ${resultado.payload.rol} no autorizado para este recurso`, 403);
         return;

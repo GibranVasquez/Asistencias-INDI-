@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { esAuthTokenPayload } from "../types/auth";
-import { prisma } from "../utils/prisma";
 import { verificarTokenJWT } from "../utils/jwt";
+import { usuarioSigueActivo } from "./usuarioActivo";
 
 const MENSAJE_NO_AUTORIZADO = "No autorizado.";
 
@@ -38,8 +38,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   // natural. Distinto del trade-off ya aceptado de "logout no invalida el
   // JWT" (ver CLAUDE.md): ese es sobre el propio usuario cerrando su
   // sesión; esto es sobre una acción administrativa explícita de un tercero.
-  const usuario = await prisma.usuario.findUnique({ where: { id: resultado.payload.usuarioId } });
-  if (!usuario || !usuario.activo) {
+  if (!(await usuarioSigueActivo(resultado.payload.usuarioId))) {
     rechazar(res, "el usuario no existe o fue dado de baja");
     return;
   }
