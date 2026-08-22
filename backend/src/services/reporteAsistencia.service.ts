@@ -1,56 +1,24 @@
 import { TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
-
-const UN_DIA_MS = 24 * 60 * 60 * 1000;
+import {
+  aClaveDia,
+  bucketsDelRango,
+  calcularResumen,
+  diasHabilesEnRango,
+  granularidadPara,
+  etiquetaBucket,
+  llegoATiempo,
+  type AsistenciaCruda,
+  type MapaHorarios,
+  type ResumenAsistencia,
+} from "./analiticaAsistencia";
 
 function aFechaUTC(fechaISO: string): Date {
   return new Date(`${fechaISO}T00:00:00Z`);
 }
 
-function aClaveDia(fecha: Date): string {
-  return fecha.toISOString().slice(0, 10);
-}
-
-function sumarDias(fecha: Date, dias: number): Date {
-  return new Date(fecha.getTime() + dias * UN_DIA_MS);
-}
-
-// Días hábiles = lunes a viernes, mismo criterio que ya usa
-// asignacion.service.ts ("salta fin de semana") para no inflar "ausentes"
-// contando sábados/domingos donde nadie marca porque no se trabaja, no
-// porque falten.
-function esDiaHabil(fecha: Date): boolean {
-  const dia = fecha.getUTCDay();
-  return dia !== 0 && dia !== 6;
-}
-
-function diasHabilesEnRango(inicio: Date, fin: Date): Date[] {
-  const dias: Date[] = [];
-  for (let t = inicio.getTime(); t <= fin.getTime(); t += UN_DIA_MS) {
-    const d = new Date(t);
-    if (esDiaHabil(d)) dias.push(d);
-  }
-  return dias;
-}
-
-// Misma regla que llegoATiempo en PanelPrincipalPage.tsx (frontend): la hora
-// marcada vs. horaEntrada + toleranciaMinutos del Horario de la Sección
-// donde se marcó esa asistencia — replicada aquí para que el reporte no
-// dependa de traer registros crudos al cliente para calcularlo.
-function llegoATiempo(hora: Date, horario: { horaEntrada: Date; toleranciaMinutos: number }): boolean {
-  const limite = horario.horaEntrada.getTime() + horario.toleranciaMinutos * 60_000;
-  return hora.getTime() <= limite;
-}
-
-export interface ResumenAsistencia {
-  presentes: number;
-  ausentes: number | null;
-  tardanzas: number;
-  aTiempo: number;
-  porcentajePuntualidad: number | null;
-  diasHabiles: number;
-}
+export type { ResumenAsistencia } from "./analiticaAsistencia";
 
 export interface FilaSeccionAsistencia {
   seccionId: string;
@@ -75,17 +43,6 @@ export interface ReporteAsistencia {
   tendencia: FilaTendenciaAsistencia[];
 }
 
-interface AsistenciaCruda {
-  fecha: Date;
-  hora: Date;
-  seccionId: string;
-  trabajadorId: string;
-}
-
-interface MapaHorarios {
-  seccionHorario: Map<string, { horaEntrada: Date; toleranciaMinutos: number } | null>;
-}
-
 async function cargarMapaHorarios(): Promise<MapaHorarios> {
   const [secciones, horarios] = await Promise.all([
     prisma.seccion.findMany({ select: { id: true, horarioId: true } }),
@@ -96,125 +53,6 @@ async function cargarMapaHorarios(): Promise<MapaHorarios> {
     secciones.map((s) => [s.id, s.horarioId ? horarioPorId.get(s.horarioId) ?? null : null])
   );
   return { seccionHorario };
-}
-
-// Un trabajador puede tener más de una AsistenciaDiaria el mismo día (dos
-// escaneos, entrada+salida, etc.) — sin esto, "presentes" contaría marcas
-// en vez de días, e inconsistiría con la vista día-por-día (que solo
-// muestra un renglón por día). Se queda con la marca más temprana de cada
-// (trabajador, día) para clasificar puntualidad por la llegada real, no
-// por un segundo escaneo posterior.
-function unaMarcaPorDia(asistencias: AsistenciaCruda[]): AsistenciaCruda[] {
-  const porClave = new Map<string, AsistenciaCruda>();
-  for (const a of asistencias) {
-    const clave = `${a.trabajadorId}|${aClaveDia(a.fecha)}`;
-    const existente = porClave.get(clave);
-    if (!existente || a.hora.getTime() < existente.hora.getTime()) {
-      porClave.set(clave, a);
-    }
-  }
-  return [...porClave.values()];
-}
-
-function calcularResumen(
-  asistenciasCrudas: AsistenciaCruda[],
-  mapas: MapaHorarios,
-  diasHabiles: Date[],
-  totalActivos: number,
-  seccionFiltrada: boolean
-): ResumenAsistencia {
-  const asistencias = unaMarcaPorDia(asistenciasCrudas);
-  let aTiempo = 0;
-  let tardanzas = 0;
-
-  for (const a of asistencias) {
-    const horario = mapas.seccionHorario.get(a.seccionId);
-    if (!horario) {
-      continue;
-    }
-    if (llegoATiempo(a.hora, horario)) aTiempo++;
-    else tardanzas++;
-  }
-
-  const totalClasificable = aTiempo + tardanzas;
-  const porcentajePuntualidad = totalClasificable > 0 ? Math.round((aTiempo / totalClasificable) * 100) : null;
-
-  // "ausentes" (persona-días) solo tiene sentido a nivel obra completa: sin
-  // AsignacionDiaria no hay un roster esperado POR SECCIÓN, así que filtrar
-  // por seccionId invalida ese cálculo (no sabemos cuántos trabajadores
-  // "debían" estar en esa sección cada día).
-  let ausentes: number | null = null;
-  if (!seccionFiltrada) {
-    const presentesPorDia = new Map<string, Set<string>>();
-    for (const a of asistencias) {
-      const clave = aClaveDia(a.fecha);
-      if (!presentesPorDia.has(clave)) presentesPorDia.set(clave, new Set());
-      presentesPorDia.get(clave)!.add(a.trabajadorId);
-    }
-    ausentes = diasHabiles.reduce((acc, dia) => {
-      const presentesEseDia = presentesPorDia.get(aClaveDia(dia))?.size ?? 0;
-      return acc + Math.max(totalActivos - presentesEseDia, 0);
-    }, 0);
-  }
-
-  return {
-    presentes: asistencias.length,
-    ausentes,
-    tardanzas,
-    aTiempo,
-    porcentajePuntualidad,
-    diasHabiles: diasHabiles.length,
-  };
-}
-
-function granularidadPara(desde: Date, hasta: Date): "dia" | "semana" | "mes" {
-  const dias = (hasta.getTime() - desde.getTime()) / UN_DIA_MS + 1;
-  if (dias <= 45) return "dia";
-  if (dias <= 180) return "semana";
-  return "mes";
-}
-
-function bucketsDelRango(desde: Date, hasta: Date, granularidad: "dia" | "semana" | "mes"): { inicio: Date; fin: Date }[] {
-  const buckets: { inicio: Date; fin: Date }[] = [];
-
-  if (granularidad === "dia") {
-    for (let t = desde.getTime(); t <= hasta.getTime(); t += UN_DIA_MS) {
-      const dia = new Date(t);
-      buckets.push({ inicio: dia, fin: dia });
-    }
-    return buckets;
-  }
-
-  if (granularidad === "semana") {
-    let cursor = new Date(desde);
-    while (cursor.getTime() <= hasta.getTime()) {
-      const finSemana = sumarDias(cursor, 6);
-      buckets.push({ inicio: cursor, fin: finSemana.getTime() > hasta.getTime() ? hasta : finSemana });
-      cursor = sumarDias(finSemana, 1);
-    }
-    return buckets;
-  }
-
-  // mes: por mes calendario, recortado a [desde, hasta].
-  let cursor = new Date(Date.UTC(desde.getUTCFullYear(), desde.getUTCMonth(), 1));
-  while (cursor.getTime() <= hasta.getTime()) {
-    const finMes = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0));
-    const inicioBucket = cursor.getTime() < desde.getTime() ? desde : cursor;
-    const finBucket = finMes.getTime() > hasta.getTime() ? hasta : finMes;
-    buckets.push({ inicio: inicioBucket, fin: finBucket });
-    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
-  }
-  return buckets;
-}
-
-function etiquetaBucket(inicio: Date, fin: Date, granularidad: "dia" | "semana" | "mes"): string {
-  if (granularidad === "dia") return aClaveDia(inicio);
-  if (granularidad === "semana") return `${aClaveDia(inicio)} – ${aClaveDia(fin)}`;
-  const MESES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-  ];
-  return `${MESES[inicio.getUTCMonth()]} ${inicio.getUTCFullYear()}`;
 }
 
 export async function obtenerReporteAsistencia(
