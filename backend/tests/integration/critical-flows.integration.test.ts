@@ -209,6 +209,26 @@ describe("PostgreSQL real: nómina y snapshots", () => {
     expect(ultima.totalAPagar.toFixed(2)).toBe("25.00");
     expect(await prisma.auditLog.count({ where: { accion: "corregir_nomina", entidadId: original.id } })).toBe(2);
   });
+
+  it("conserva la corrección con sueldo y tarifa vigentes al momento de corregir", async () => {
+    const { seccion, terminal, trabajadores, usuarios } = await escenarioBase();
+    const trabajador = trabajadores[0];
+    await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella } });
+    await prisma.tarifaHoraExtra.create({ data: { valor: 100, vigenteDesde: FECHA("2026-01-01") } });
+    const original = await generarNominaSemanal(usuarios.get(RolUsuario.rh)!.id, trabajador.id, {
+      periodoInicio: "2026-08-03", periodoFin: "2026-08-09", horasExtra: 0, viaticosSemanal: 0, viaticosMensual: 0, descuentosVarios: 0,
+    });
+
+    await prisma.trabajador.update({ where: { id: trabajador.id }, data: { sueldoBase: 1400 } });
+    await prisma.tarifaHoraExtra.create({ data: { valor: 200, vigenteDesde: FECHA("2026-08-01") } });
+    const corregida = await corregirNominaSemanal(usuarios.get(RolUsuario.rh)!.id, original.id, {
+      horasExtra: 1, viaticosSemanal: 0, viaticosMensual: 0, descuentosVarios: 0,
+    });
+
+    expect(corregida.montoSueldo.toFixed(2)).toBe("200.00");
+    expect(corregida.montoHorasExtra.toFixed(2)).toBe("200.00");
+    expect(corregida.totalAPagar.toFixed(2)).toBe("400.00");
+  });
 });
 
 describe("HTTP real: autenticación, roles y sueldo masivo", () => {
