@@ -8,6 +8,7 @@ import { MetodoAsistencia, RolUsuario, TrabajadorEstatus } from "@prisma/client"
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { app } from "../../src/app";
 import { corregirNominaSemanal, generarNominaSemanal } from "../../src/services/nomina.service";
+import { obtenerHistoricoTrabajador, obtenerReporteAsistencia } from "../../src/services/reporteAsistencia.service";
 import { obtenerReporteNomina } from "../../src/services/reporteNomina.service";
 import { generarExcelNomina, generarPdfNomina } from "../../src/utils/exportadores/nominaExport";
 import { prisma } from "../../src/utils/prisma";
@@ -228,6 +229,56 @@ describe("PostgreSQL real: nómina y snapshots", () => {
     expect(corregida.montoSueldo.toFixed(2)).toBe("200.00");
     expect(corregida.montoHorasExtra.toFixed(2)).toBe("200.00");
     expect(corregida.totalAPagar.toFixed(2)).toBe("400.00");
+  });
+});
+
+describe("PostgreSQL real: analítica de asistencia", () => {
+  it("caracteriza el límite inclusivo de puntualidad y los días hábiles", async () => {
+    const { seccion, trabajadores } = await escenarioBase();
+    const horario = await prisma.horario.create({ data: { nombre: "Turno analítico", horaEntrada: HORA("08:00:00"), horaSalida: HORA("17:00:00"), toleranciaMinutos: 10 } });
+    await prisma.seccion.update({ where: { id: seccion.id }, data: { horarioId: horario.id } });
+    for (const [trabajador, fecha, hora] of [
+      [trabajadores[0], "2026-08-03", "08:09:00"],
+      [trabajadores[1], "2026-08-04", "08:10:00"],
+      [trabajadores[0], "2026-08-05", "08:11:00"],
+    ] as const) {
+      await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: (await prisma.terminal.findFirstOrThrow()).id, seccionId: seccion.id, fecha: FECHA(fecha), hora: HORA(hora), turno: "Día", metodoUsado: MetodoAsistencia.huella } });
+    }
+    const reporte = await obtenerReporteAsistencia("2026-08-03", "2026-08-07");
+    expect(reporte.resumen).toMatchObject({ presentes: 3, aTiempo: 2, tardanzas: 1, ausentes: 7, diasHabiles: 5, porcentajePuntualidad: 67 });
+  });
+
+  it("clasifica después del límite, separa frentes y conserva periodos vacíos", async () => {
+    const { seccion, terminal, trabajadores } = await escenarioBase();
+    const horarioA = await prisma.horario.create({ data: { nombre: "Turno A", horaEntrada: HORA("08:00:00"), horaSalida: HORA("17:00:00"), toleranciaMinutos: 10 } });
+    const horarioB = await prisma.horario.create({ data: { nombre: "Turno B", horaEntrada: HORA("09:00:00"), horaSalida: HORA("18:00:00"), toleranciaMinutos: 0 } });
+    const seccionB = await prisma.seccion.create({ data: { nombre: "Frente B", obraId: seccion.obraId, horarioId: horarioB.id } });
+    await prisma.seccion.update({ where: { id: seccion.id }, data: { horarioId: horarioA.id } });
+    await prisma.asistenciaDiaria.createMany({ data: [
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+      { trabajadorId: trabajadores[1].id, terminalOrigenId: terminal.id, seccionId: seccionB.id, fecha: FECHA("2026-08-05"), hora: HORA("09:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+    ] });
+    const reporte = await obtenerReporteAsistencia("2026-08-05", "2026-08-05");
+    expect(reporte.resumen).toMatchObject({ presentes: 2, aTiempo: 1, tardanzas: 1, porcentajePuntualidad: 50, diasHabiles: 1 });
+    expect(reporte.porSeccion.map((fila) => fila.seccionNombre)).toEqual(["Frente B", "Oficina"]);
+    const vacio = await obtenerReporteAsistencia("2026-08-08", "2026-08-09");
+    expect(vacio.resumen).toMatchObject({ presentes: 0, aTiempo: 0, tardanzas: 0, ausentes: 0, porcentajePuntualidad: null, diasHabiles: 0 });
+    expect(vacio.tendencia).toHaveLength(2);
+  });
+
+  it("construye el histórico individual con orden, ausencias y clasificación", async () => {
+    const { seccion, terminal, trabajadores } = await escenarioBase();
+    const horario = await prisma.horario.create({ data: { nombre: "Turno histórico", horaEntrada: HORA("08:00:00"), horaSalida: HORA("17:00:00"), toleranciaMinutos: 10 } });
+    await prisma.seccion.update({ where: { id: seccion.id }, data: { horarioId: horario.id } });
+    await prisma.asistenciaDiaria.createMany({ data: [
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+    ] });
+    const historico = await obtenerHistoricoTrabajador(trabajadores[0].id, "2026-08-03", "2026-08-07");
+    expect(historico.dias.map((dia) => dia.fecha)).toEqual(["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07"]);
+    expect(historico.dias.map((dia) => dia.presente)).toEqual([true, false, true, false, false]);
+    expect(historico.dias.map((dia) => dia.aTiempo)).toEqual([true, null, false, null, null]);
+    expect(historico.resumen).toMatchObject({ presentes: 2, aTiempo: 1, tardanzas: 1, ausentes: 3, diasHabiles: 5 });
   });
 });
 
