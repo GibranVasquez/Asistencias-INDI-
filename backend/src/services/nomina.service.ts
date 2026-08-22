@@ -2,8 +2,7 @@ import { MovimientoTrabajador, NominaEstatus, NominaSemanal, Prisma, Trabajador,
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { conManejoDeUnicidad } from "../utils/erroresPrisma";
-
-const DIAS_POR_PERIODO = 7;
+import { calcularNomina } from "./calculoNomina";
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 
 export interface VistaPreviaTrabajador {
@@ -226,11 +225,8 @@ export async function generarNominaSemanal(
   const aguinaldo = datos.aguinaldo != null ? new Prisma.Decimal(datos.aguinaldo) : null;
   const infonavitDescuento = trabajador.infonavitMontoPorPeriodo ?? new Prisma.Decimal(0);
 
-  const montoSueldo = trabajador.sueldoBase.dividedBy(DIAS_POR_PERIODO).times(diasLaborados);
-
-  const devengado = montoSueldo.plus(montoHorasExtra).plus(viaticosSemanal).plus(viaticosMensual).plus(aguinaldo ?? new Prisma.Decimal(0));
-  const descontado = infonavitDescuento.plus(descuentosVarios);
-  const totalAPagar = devengado.minus(descontado);
+  const calculo = calcularNomina({ sueldoBase: trabajador.sueldoBase, diasLaborados, viaticosSemanal, viaticosMensual, infonavitDescuento, descuentosVarios, aguinaldo, montoHorasExtra });
+  const { montoSueldo, devengado, descontado, totalAPagar } = calculo;
   verificarTotalNoNegativo(devengado, descontado, totalAPagar);
 
   return conManejoDeUnicidad(
@@ -389,11 +385,8 @@ export async function corregirNominaSemanal(
   const aguinaldo = datos.aguinaldo != null ? new Prisma.Decimal(datos.aguinaldo) : null;
   const infonavitDescuento = trabajador.infonavitMontoPorPeriodo ?? new Prisma.Decimal(0);
 
-  const montoSueldo = trabajador.sueldoBase.dividedBy(DIAS_POR_PERIODO).times(diasLaborados);
-
-  const devengado = montoSueldo.plus(montoHorasExtra).plus(viaticosSemanal).plus(viaticosMensual).plus(aguinaldo ?? new Prisma.Decimal(0));
-  const descontado = infonavitDescuento.plus(descuentosVarios);
-  const totalAPagar = devengado.minus(descontado);
+  const calculo = calcularNomina({ sueldoBase: trabajador.sueldoBase, diasLaborados, viaticosSemanal, viaticosMensual, infonavitDescuento, descuentosVarios, aguinaldo, montoHorasExtra });
+  const { montoSueldo, devengado, descontado, totalAPagar } = calculo;
   verificarTotalNoNegativo(devengado, descontado, totalAPagar);
 
   return prisma.$transaction(async (tx) => {
