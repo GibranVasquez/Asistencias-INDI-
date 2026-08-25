@@ -44,7 +44,8 @@ export default function PanelPrincipalPage() {
   const tarde = puntualidad?.tarde ?? null;
 
   const totalPeriodo = asistenciasPeriodo.datos?.length ?? null;
-  const porcentajeATiempo = aTiempo !== null && totalPeriodo ? Math.round((aTiempo / totalPeriodo) * 100) : null;
+  const totalClasificable = aTiempo !== null && tarde !== null ? aTiempo + tarde : 0;
+  const porcentajeATiempo = totalClasificable > 0 ? Math.round((aTiempo! / totalClasificable) * 100) : null;
 
   const barras = useMemo(() => {
     if (!asistenciasPeriodo.datos) return [];
