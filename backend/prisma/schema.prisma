@@ -205,9 +205,10 @@ model CategoriaTrabajador {
 // ---------------------------------------------------------------------
 
 model Obra {
-  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre   String
-  creadoEn DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre       String
+  timezoneObra String?  @map("timezone_obra")
+  creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   secciones Seccion[]
 
