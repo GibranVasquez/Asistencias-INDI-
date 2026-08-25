@@ -183,3 +183,21 @@ test("Configuración modular conserva tabs, modales, temas, responsive y CRUD lo
     await cerrar(app);
   }
 });
+
+test("Administrador puede configurar y recargar la timezone IANA de la obra", async () => {
+  const app = await lanzarElectron("configuracion-timezone");
+  try {
+    await login(app.page, "administrador");
+    await app.page.getByRole("link", { name: "Configuración" }).click();
+    await app.page.getByRole("button", { name: "Datos de la obra" }).click();
+    const selector = app.page.getByLabel("Zona horaria de la obra");
+    await expect(selector).toBeVisible();
+    await selector.selectOption("America/Matamoros");
+    await app.page.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(app.page.getByText("Datos de la obra guardados.")).toBeVisible();
+    await app.page.reload();
+    await expect(app.page.getByLabel("Zona horaria de la obra")).toHaveValue("America/Matamoros");
+  } finally {
+    await cerrar(app);
+  }
+});

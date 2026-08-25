@@ -10,6 +10,7 @@ import {
   listarSecciones,
   retirarResponsableTramo,
 } from "@/core/api/resources/secciones";
+import { editarObraActual } from "@/core/api/resources/obras";
 
 const estado = vi.hoisted(() => ({ rol: "rh" }));
 
@@ -20,7 +21,7 @@ vi.mock("@/features/auth/ContextoAutenticacion", () => ({
 }));
 
 vi.mock("@/core/api/resources/obras", () => ({
-  obtenerObraActual: vi.fn().mockResolvedValue({ obra: { id: "obra-1", nombre: "Obra ficticia" } }),
+  obtenerObraActual: vi.fn().mockResolvedValue({ obra: { id: "obra-1", nombre: "Obra ficticia", timezoneObra: null } }),
   editarObraActual: vi.fn(),
 }));
 
@@ -203,5 +204,18 @@ describe("Configuración", () => {
     expect(screen.getByRole("button", { name: "Datos de la obra" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Horarios" })).toBeNull();
     await waitFor(() => expect((screen.getByRole("button", { name: "Guardar cambios" }) as HTMLButtonElement).disabled).toBe(true));
+  });
+
+  it("permite al Administrador seleccionar la timezone de la obra", async () => {
+    estado.rol = "administrador";
+    vi.mocked(editarObraActual).mockResolvedValueOnce({ obra: { id: "obra-1", nombre: "Obra ficticia", creadoEn: "2026-08-25T00:00:00.000Z", timezoneObra: "America/Matamoros" } });
+    const user = userEvent.setup();
+    render(<ConfiguracionPage />);
+
+    const selector = await screen.findByLabelText("Zona horaria de la obra") as HTMLSelectElement;
+    await user.selectOptions(selector, "America/Matamoros");
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(editarObraActual).toHaveBeenCalledWith("token-ficticio", "Obra ficticia", "America/Matamoros"));
   });
 });

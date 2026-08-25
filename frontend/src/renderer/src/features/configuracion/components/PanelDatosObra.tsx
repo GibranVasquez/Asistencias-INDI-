@@ -4,6 +4,7 @@ import { editarObraActual, obtenerObraActual, ObraActual } from "@/core/api/reso
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import Boton from "@/shared/components/Boton";
 import { Campo, ErrorInline, estilosCampo } from "./configuracionCompartida";
+import { etiquetaTimezoneObra, zonasIANAConfigurables } from "../timezoneObra";
 
 export default function PanelDatosObra() {
   const { sesion } = useAutenticacion();
@@ -11,6 +12,7 @@ export default function PanelDatosObra() {
   const puedeEditar = sesion!.usuario.rol === "administrador";
   const [obra, setObra] = useState<ObraActual | null>(null);
   const [nombre, setNombre] = useState("");
+  const [timezoneObra, setTimezoneObra] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function PanelDatosObra() {
 
   useEffect(() => {
     obtenerObraActual(token)
-      .then((respuesta) => { setObra(respuesta.obra); setNombre(respuesta.obra.nombre); })
+      .then((respuesta) => { setObra(respuesta.obra); setNombre(respuesta.obra.nombre); setTimezoneObra(respuesta.obra.timezoneObra); })
       .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo cargar la obra."))
       .finally(() => setCargando(false));
   }, [token]);
@@ -27,8 +29,8 @@ export default function PanelDatosObra() {
     evento.preventDefault();
     setMensaje(null); setError(null); setGuardando(true);
     try {
-      const respuesta = await editarObraActual(token, nombre.trim());
-      setObra(respuesta.obra); setNombre(respuesta.obra.nombre); setMensaje("Datos de la obra guardados.");
+      const respuesta = await editarObraActual(token, nombre.trim(), timezoneObra ?? undefined);
+      setObra(respuesta.obra); setNombre(respuesta.obra.nombre); setTimezoneObra(respuesta.obra.timezoneObra); setMensaje("Datos de la obra guardados.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo guardar la obra.");
     } finally { setGuardando(false); }
@@ -44,9 +46,16 @@ export default function PanelDatosObra() {
           <Campo etiqueta="Área / proyecto">
             <input value={nombre} onChange={(evento) => setNombre(evento.target.value)} disabled={!puedeEditar || guardando} maxLength={200} style={{ ...estilosCampo, width: "100%", boxSizing: "border-box" }} />
           </Campo>
+          <Campo etiqueta="Zona horaria de la obra">
+            <select value={timezoneObra ?? ""} onChange={(evento) => setTimezoneObra(evento.target.value || null)} disabled={!puedeEditar || guardando} style={{ ...estilosCampo, width: "100%", boxSizing: "border-box" }}>
+              <option value="">{timezoneObra ? "Selecciona una zona IANA" : etiquetaTimezoneObra(timezoneObra)}</option>
+              {timezoneObra && <option value={timezoneObra}>{timezoneObra}</option>}
+              {zonasIANAConfigurables().filter((zona) => zona !== timezoneObra).map((zona) => <option key={zona} value={zona}>{zona}</option>)}
+            </select>
+          </Campo>
           {!puedeEditar && <p style={{ color: "var(--muted)", fontSize: 12.5 }}>Solo un Administrador puede modificar este dato.</p>}
           {mensaje && <p style={{ color: "var(--ok, #18794e)", fontSize: 13 }}>{mensaje}</p>}
-          {puedeEditar && <Boton type="submit" disabled={guardando || !nombre.trim() || nombre.trim() === obra?.nombre}>{guardando ? "Guardando…" : "Guardar cambios"}</Boton>}
+          {puedeEditar && <Boton type="submit" disabled={guardando || !nombre.trim() || (nombre.trim() === obra?.nombre && timezoneObra === obra?.timezoneObra)}>{guardando ? "Guardando…" : "Guardar cambios"}</Boton>}
         </form>
       )}
     </section>
