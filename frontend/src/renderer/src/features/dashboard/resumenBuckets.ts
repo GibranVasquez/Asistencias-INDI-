@@ -1,3 +1,5 @@
+import { fechaCivilAsistencia } from "@/features/dashboard/panelPrincipalViewModel";
+
 interface AsistenciaConFecha {
   fecha: string;
 }
@@ -27,7 +29,7 @@ export function bucketsPorSemanaDelMes(
     const finSemana = sumarDias(cursor, 6);
     let cuenta = 0;
     for (const asistencia of asistencias) {
-      const fecha = asistencia.fecha.slice(0, 10);
+      const fecha = fechaCivilAsistencia(asistencia.fecha);
       if (fecha >= aFechaISO(cursor) && fecha <= aFechaISO(finSemana)) cuenta++;
     }
     conteos.push({ valor: cuenta, esFuturo: aFechaISO(cursor) > hoyISO });

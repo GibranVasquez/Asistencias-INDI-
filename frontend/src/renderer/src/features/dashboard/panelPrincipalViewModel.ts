@@ -22,6 +22,22 @@ export function aFechaISO(fecha: Date): string {
   return `${anio}-${mes}-${dia}`;
 }
 
+/** Fecha civil que llega en la respuesta de asistencias (DATE serializado). */
+export function fechaCivilAsistencia(fechaISO: string): string {
+  return fechaISO.slice(0, 10);
+}
+
+/** Hora civil que llega en la respuesta de asistencias (TIME serializado). */
+export function horaCivilAsistencia(horaISO: string): string {
+  const coincidencia = horaISO.match(/T(\d{2}:\d{2}(?::\d{2})?)/);
+  return coincidencia?.[1] ?? horaISO.slice(0, 8);
+}
+
+function segundosHoraCivil(horaISO: string): number {
+  const [horas, minutos, segundos = "0"] = horaCivilAsistencia(horaISO).split(":");
+  return Number(horas) * 3600 + Number(minutos) * 60 + Number(segundos);
+}
+
 export function inicioDeSemana(fecha: Date): Date {
   const copia = new Date(fecha);
   const dia = copia.getDay();
@@ -43,14 +59,29 @@ export function rangoConsulta(rango: Rango, hoy: Date): { inicio: Date; fin: Dat
 }
 
 export function llegoATiempo(horaISO: string, horario: Pick<Horario, "horaEntrada" | "toleranciaMinutos">): boolean {
-  const marcada = new Date(horaISO).getTime();
-  const entrada = new Date(horario.horaEntrada).getTime();
-  const limite = entrada + horario.toleranciaMinutos * 60_000;
+  const marcada = segundosHoraCivil(horaISO);
+  const entrada = segundosHoraCivil(horario.horaEntrada);
+  const limite = entrada + horario.toleranciaMinutos * 60;
   return marcada <= limite;
 }
 
+type AsistenciaParaPuntualidad = Pick<AsistenciaListada, "trabajadorId" | "fecha" | "seccionId" | "hora">;
+
+/** Selecciona la entrada cronológica de cada trabajador en su fecha civil. */
+export function primeraMarcacionPorTrabajadorDia<T extends AsistenciaParaPuntualidad>(asistencias: T[]): T[] {
+  const primeras = new Map<string, T>();
+  for (const asistencia of asistencias) {
+    const clave = `${asistencia.trabajadorId}|${fechaCivilAsistencia(asistencia.fecha)}`;
+    const existente = primeras.get(clave);
+    if (!existente || segundosHoraCivil(asistencia.hora) < segundosHoraCivil(existente.hora)) {
+      primeras.set(clave, asistencia);
+    }
+  }
+  return [...primeras.values()];
+}
+
 export function calcularPuntualidad(
-  asistencias: Pick<AsistenciaListada, "seccionId" | "hora">[],
+  asistencias: AsistenciaParaPuntualidad[],
   secciones: Pick<Seccion, "id" | "horarioId">[],
   horarios: Pick<Horario, "id" | "horaEntrada" | "toleranciaMinutos">[]
 ): { aTiempo: number; tarde: number } {
@@ -58,7 +89,7 @@ export function calcularPuntualidad(
   const mapaSecciones = new Map(secciones.map((seccion) => [seccion.id, seccion]));
   let aTiempo = 0;
   let tarde = 0;
-  for (const asistencia of asistencias) {
+  for (const asistencia of primeraMarcacionPorTrabajadorDia(asistencias)) {
     const horarioId = mapaSecciones.get(asistencia.seccionId)?.horarioId;
     const horario = horarioId ? mapaHorarios.get(horarioId) : undefined;
     if (!horario) continue;
@@ -75,7 +106,7 @@ export function bucketsPorDia(
 ): { etiqueta: string; valor: number; esFuturo: boolean }[] {
   const conteos = new Map<string, number>();
   for (const asistencia of asistencias) {
-    const clave = asistencia.fecha.slice(0, 10);
+    const clave = fechaCivilAsistencia(asistencia.fecha);
     conteos.set(clave, (conteos.get(clave) ?? 0) + 1);
   }
   const dias: { etiqueta: string; valor: number; esFuturo: boolean }[] = [];
