@@ -371,11 +371,18 @@ describe("HTTP real: configuración de la obra", () => {
 
     expect((await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenRh}`)).status).toBe(200);
     expect((await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`)).status).toBe(200);
+    const inicial = await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`);
+    expect(inicial.body.obra.timezoneObra).toBeNull();
     expect((await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenRh}`).send({ nombre: "No permitido" })).status).toBe(403);
-    const actualizada = await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`).send({ nombre: "Obra integración actualizada" });
+    expect((await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`).send({ nombre: "Obra inválida", timezoneObra: "CST" })).status).toBe(400);
+    const actualizada = await request(app).patch("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`).send({ nombre: "Obra integración actualizada", timezoneObra: "America/Matamoros" });
     expect(actualizada.status).toBe(200);
     expect(actualizada.body.obra.nombre).toBe("Obra integración actualizada");
+    expect(actualizada.body.obra.timezoneObra).toBe("America/Matamoros");
+    const persistida = await request(app).get("/obras/actual").set("Authorization", `Bearer ${tokenAdministrador}`);
+    expect(persistida.body.obra.timezoneObra).toBe("America/Matamoros");
     expect(await prisma.auditLog.count({ where: { accion: "editar_obra", usuarioId: usuarios.get(RolUsuario.administrador)!.id } })).toBe(1);
+    expect((await prisma.auditLog.findFirst({ where: { accion: "editar_obra", usuarioId: usuarios.get(RolUsuario.administrador)!.id } }))?.detalle).toMatchObject({ timezoneObraAnterior: null, timezoneObraNueva: "America/Matamoros" });
   });
 });
 

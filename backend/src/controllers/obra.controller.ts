@@ -6,5 +6,5 @@ export async function obtenerActual(_req: Request, res: Response): Promise<void>
 }
 
 export async function editarActual(req: Request, res: Response): Promise<void> {
-  res.json({ obra: await editarObraActual(req.user!.usuarioId, req.body.nombre.trim()) });
+  res.json({ obra: await editarObraActual(req.user!.usuarioId, req.body.nombre.trim(), req.body.timezoneObra) });
 }

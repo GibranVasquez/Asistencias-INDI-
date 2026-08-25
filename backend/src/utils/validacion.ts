@@ -18,6 +18,25 @@ export function esHora(valor: unknown): valor is string {
   return typeof valor === "string" && REGEX_HORA.test(valor);
 }
 
+const zonasIANA = new Set(
+  typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []
+);
+
+/** Valida identificadores IANA sin aceptar offsets ni abreviaturas ambiguas. */
+export function esTimezoneIANA(valor: unknown): valor is string {
+  if (typeof valor !== "string" || valor.length === 0 || valor.trim() !== valor) return false;
+  if (/^(?:UTC|GMT)?[+-]\d{1,2}(?::?\d{2})?$/.test(valor) || /^(?:CST|CDT|EST|EDT|MST|MDT)$/.test(valor)) return false;
+  if (valor === "UTC") return true;
+  if (!valor.includes("/") || valor.startsWith("Etc/GMT")) return false;
+  if (zonasIANA.size > 0) return zonasIANA.has(valor);
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: valor }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function esNumeroNoNegativo(valor: unknown): valor is number {
   return typeof valor === "number" && Number.isFinite(valor) && valor >= 0;
 }
