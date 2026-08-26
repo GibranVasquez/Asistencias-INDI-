@@ -37,8 +37,9 @@ export interface DatosEdicionSeccion {
   tramoUbicacion?: string | null;
 }
 
-export function listarSecciones(token: string) {
-  return apiClient.get<{ secciones: Seccion[] }>("/secciones", token);
+export function listarSecciones(token: string, obraId?: string) {
+  const ruta = obraId ? `/secciones?obraId=${encodeURIComponent(obraId)}` : "/secciones";
+  return apiClient.get<{ secciones: Seccion[] }>(ruta, token);
 }
 
 export function crearSeccion(token: string, datos: DatosAltaSeccion) {

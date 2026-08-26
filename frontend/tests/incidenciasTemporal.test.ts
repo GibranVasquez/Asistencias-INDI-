@@ -6,7 +6,7 @@ describe("tiempo civil de incidencias ADMS", () => {
     expect(fechaEventoVisible({
       id: "e1", tipo: "ADMS_NO_RECONCILIADO", estado: "pendiente",
       fechaEvento: "2026-08-25T23:59:59.000Z", fechaMarcacion: "2026-08-25", horaMarcacion: "23:59:59",
-      detectadoEn: "2026-08-25T23:59:59.000Z", identificadorDispositivo: "PIN-FICTICIO", terminal: "ADMS", ubicacion: "Oficina",
+      detectadoEn: "2026-08-25T23:59:59.000Z", identificadorDispositivo: "PIN-FICTICIO", terminal: "ADMS", ubicacion: "Oficina", asistenciaId: null, reconciliadoEn: null,
     })).toBe("25/08/2026 23:59:59");
   });
 
@@ -14,7 +14,7 @@ describe("tiempo civil de incidencias ADMS", () => {
     expect(fechaEventoVisible({
       id: "e2", tipo: "ADMS_NO_RECONCILIADO", estado: "pendiente",
       fechaEvento: "2026-08-25T23:59:59.000Z", fechaMarcacion: null, horaMarcacion: null,
-      detectadoEn: "2026-08-25T23:59:59.000Z", identificadorDispositivo: "PIN-HISTORICO", terminal: "ADMS", ubicacion: "Oficina",
+      detectadoEn: "2026-08-25T23:59:59.000Z", identificadorDispositivo: "PIN-HISTORICO", terminal: "ADMS", ubicacion: "Oficina", asistenciaId: null, reconciliadoEn: null,
     })).toBeTruthy();
   });
 });

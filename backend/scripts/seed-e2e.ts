@@ -51,11 +51,13 @@ async function main(): Promise<void> {
   const seccion = await prisma.seccion.create({
     data: { nombre: "Frente ficticio E2E", obraId: obra.id, horarioId: horario.id },
   });
+  const obraB = await prisma.obra.create({ data: { nombre: "Obra B ficticia E2E" } });
+  await prisma.seccion.create({ data: { nombre: "Frente B ficticio E2E", obraId: obraB.id } });
   await prisma.categoriaTrabajador.create({
     data: { nombre: "Categoría E2E", sueldoBaseDefault: 700, esDefault: true },
   });
   const trabajadores = await Promise.all([
-    prisma.trabajador.create({ data: { nombreCompleto: "Ana Prueba E2E", categoria: "Categoría E2E", jefeInmediato: "Jefatura ficticia", sueldoBase: 700, fechaIngreso: new Date("2026-01-01T00:00:00Z") } }),
+    prisma.trabajador.create({ data: { nombreCompleto: "Ana Prueba E2E", categoria: "Categoría E2E", jefeInmediato: "Jefatura ficticia", sueldoBase: 700, fechaIngreso: new Date("2026-01-01T00:00:00Z"), numeroChecador: 1001 } }),
     prisma.trabajador.create({ data: { nombreCompleto: "Bruno Prueba E2E", categoria: "Categoría E2E", jefeInmediato: "Jefatura ficticia", sueldoBase: 700, fechaIngreso: new Date("2026-01-01T00:00:00Z") } }),
     prisma.trabajador.create({ data: { nombreCompleto: "Control Prueba E2E", categoria: "Otra categoría E2E", jefeInmediato: "Jefatura ficticia", sueldoBase: 800, fechaIngreso: new Date("2026-01-01T00:00:00Z") } }),
   ]);
@@ -77,6 +79,44 @@ async function main(): Promise<void> {
       passwordHash,
       tipo: "kiosco",
       ubicacion: "Ubicación ficticia E2E",
+    },
+  });
+  const terminalAdms = await prisma.terminal.create({
+    data: {
+      username: "e2e-adms-reconciliacion",
+      passwordHash,
+      tipo: "adms",
+      ubicacion: "Ubicación ADMS E2E",
+      numeroSerie: "SN-RECONCILIACION-E2E",
+      obraId: obra.id,
+    },
+  });
+  await prisma.eventoNoReconciliado.create({
+    data: {
+      terminalId: terminalAdms.id,
+      pinDispositivo: "1001",
+      marcadoEn: new Date("2026-08-25T23:59:59Z"),
+      fechaMarcacion: new Date("2026-08-25T00:00:00Z"),
+      horaMarcacion: new Date("1970-01-01T23:59:59Z"),
+      metodoCrudo: "0",
+      obraId: obra.id,
+    },
+  });
+  await prisma.eventoNoReconciliado.create({
+    data: {
+      terminalId: terminalAdms.id,
+      pinDispositivo: "LEGACY-HISTORICO",
+      marcadoEn: new Date("2026-08-24T23:59:59Z"),
+      metodoCrudo: "0",
+      obraId: obra.id,
+    },
+  });
+  await prisma.eventoNoReconciliado.create({
+    data: {
+      terminalId: (await prisma.terminal.findUniqueOrThrow({ where: { username: "e2e-terminal" } })).id,
+      pinDispositivo: "SIN-OBRA",
+      marcadoEn: new Date("2026-08-23T10:00:00Z"),
+      metodoCrudo: "0",
     },
   });
   await prisma.nominaSemanal.create({
