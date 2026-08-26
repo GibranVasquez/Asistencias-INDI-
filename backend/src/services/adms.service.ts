@@ -25,8 +25,48 @@ const MAPA_METODO_VERIFY: Record<string, MetodoAsistencia> = {
 
 export interface RegistroAttlog {
   pin: string;
+  fechaCivil: string;
+  horaCivil: string;
+  /** Representación técnica UTC únicamente para EventoNoReconciliado.marcadoEn. */
   fechaHora: Date;
   metodoVerifyCrudo: string;
+}
+
+export interface FechaHoraCivilAdms {
+  fechaCivil: string;
+  horaCivil: string;
+}
+
+/** Valida y separa el formato civil exacto que entrega ATTLOG. */
+export function parseFechaHoraCivilAdms(valor: string): FechaHoraCivilAdms | null {
+  const coincidencia = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(valor);
+  if (!coincidencia) return null;
+  const [, anioTexto, mesTexto, diaTexto, horaTexto, minutoTexto, segundoTexto] = coincidencia;
+  const anio = Number(anioTexto);
+  const mes = Number(mesTexto);
+  const dia = Number(diaTexto);
+  const hora = Number(horaTexto);
+  const minuto = Number(minutoTexto);
+  const segundo = Number(segundoTexto);
+  if (mes < 1 || mes > 12 || hora > 23 || minuto > 59 || segundo > 59) return null;
+  const calendario = new Date(Date.UTC(anio, mes - 1, dia));
+  if (calendario.getUTCFullYear() !== anio || calendario.getUTCMonth() !== mes - 1 || calendario.getUTCDate() !== dia) return null;
+  return { fechaCivil: `${anioTexto}-${mesTexto}-${diaTexto}`, horaCivil: `${horaTexto}:${minutoTexto}:${segundoTexto}` };
+}
+
+/** Codificación técnica de DATE; no representa un instante de negocio. */
+export function fechaCivilAFechaPrisma(fechaCivil: string): Date {
+  return new Date(`${fechaCivil}T00:00:00.000Z`);
+}
+
+/** Codificación técnica de TIME; no representa una hora UTC de negocio. */
+export function horaCivilAHoraPrisma(horaCivil: string): Date {
+  return new Date(`1970-01-01T${horaCivil}Z`);
+}
+
+/** Solo para el campo histórico TIMESTAMPTZ de EventoNoReconciliado. */
+function fechaHoraCivilATimestampTecnico({ fechaCivil, horaCivil }: FechaHoraCivilAdms): Date {
+  return new Date(`${fechaCivil}T${horaCivil}Z`);
 }
 
 /**
@@ -44,16 +84,9 @@ export function parsearLineaAttlog(linea: string): RegistroAttlog | null {
   const [pin, fechaHoraTexto, , verify] = campos;
   if (!pin?.trim() || !fechaHoraTexto?.trim()) return null;
 
-  // "YYYY-MM-DD HH:MM:SS" — se trata como hora LOCAL de la oficina, igual
-  // que el resto del sistema (ver asistencia.service.ts: la hora se
-  // guarda tal cual, sin conversión real de zona horaria — el servidor
-  // debe correr en la zona horaria real de la obra). El "Z" es solo el
-  // truco para construir un Date sin que el motor de JS le reste su propio
-  // huso horario local.
-  const fechaHora = new Date(`${fechaHoraTexto.trim().replace(" ", "T")}Z`);
-  if (Number.isNaN(fechaHora.getTime())) return null;
-
-  return { pin: pin.trim(), fechaHora, metodoVerifyCrudo: verify?.trim() ?? "" };
+  const civil = parseFechaHoraCivilAdms(fechaHoraTexto.trim());
+  if (!civil) return null;
+  return { pin: pin.trim(), ...civil, fechaHora: fechaHoraCivilATimestampTecnico(civil), metodoVerifyCrudo: verify?.trim() ?? "" };
 }
 
 export async function resolverTerminalPorSN(sn: string | undefined): Promise<Terminal> {
@@ -84,17 +117,7 @@ async function obtenerSeccionOficinaId(): Promise<string> {
   return seccion.id;
 }
 
-function aFechaSolo(fecha: Date): Date {
-  return new Date(Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate()));
-}
-
-function aHoraSolo(fecha: Date): Date {
-  return new Date(
-    Date.UTC(1970, 0, 1, fecha.getUTCHours(), fecha.getUTCMinutes(), fecha.getUTCSeconds())
-  );
-}
-
-async function yaExisteAsistencia(trabajadorId: string, terminalId: string, marcadoEn: Date): Promise<boolean> {
+async function yaExisteAsistencia(trabajadorId: string, terminalId: string, fechaCivil: string, horaCivil: string): Promise<boolean> {
   // Guarda contra duplicados si el equipo reenvía el mismo lote (el
   // protocolo espera que el servidor recuerde el último "Stamp" recibido
   // por terminal para no pedir de nuevo el mismo backlog — no
@@ -104,8 +127,8 @@ async function yaExisteAsistencia(trabajadorId: string, terminalId: string, marc
     where: {
       trabajadorId,
       terminalOrigenId: terminalId,
-      fecha: aFechaSolo(marcadoEn),
-      hora: aHoraSolo(marcadoEn),
+      fecha: fechaCivilAFechaPrisma(fechaCivil),
+      hora: horaCivilAHoraPrisma(horaCivil),
     },
   });
   return existente !== null;
@@ -179,7 +202,7 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
     // única de la base y devuelve el registro existente en silencio en vez
     // de fallar — ese caso raro se cuenta como "procesados", no
     // "duplicados", pero no crea una fila repetida, que es lo que importa.
-    if (await yaExisteAsistencia(trabajador.id, terminal.id, registro.fechaHora)) {
+    if (await yaExisteAsistencia(trabajador.id, terminal.id, registro.fechaCivil, registro.horaCivil)) {
       duplicados++;
       continue;
     }
@@ -197,12 +220,9 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       );
     }
 
-    const fechaISO = registro.fechaHora.toISOString().slice(0, 10);
-    const horaISO = registro.fechaHora.toISOString().slice(11, 19);
-
     await registrarAsistencia(trabajador.id, terminal.id, {
-      fecha: fechaISO,
-      hora: horaISO,
+      fecha: registro.fechaCivil,
+      hora: registro.horaCivil,
       seccionId,
       turno: TURNO_OFICINA,
       metodoUsado: metodoUsado ?? MetodoAsistencia.huella,

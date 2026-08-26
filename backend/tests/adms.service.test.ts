@@ -8,7 +8,7 @@ vi.mock("../src/utils/prisma", () => ({ prisma: {
 } }));
 vi.mock("../src/services/asistencia.service", () => ({ registrarAsistencia: mocks.registrar }));
 
-import { parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
+import { parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
 
 const terminal = { id: "term-adms", numeroSerie: "SN-LOCAL", activo: true } as never;
 
@@ -23,16 +23,37 @@ beforeEach(() => {
 
 describe("ADMS", () => {
   it("parsea un ATTLOG válido", () => {
-    expect(parsearLineaAttlog("42\t2026-08-08 08:15:30\t0\t15")).toEqual({ pin: "42", fechaHora: new Date("2026-08-08T08:15:30Z"), metodoVerifyCrudo: "15" });
+    expect(parsearLineaAttlog("42\t2026-08-08 08:15:30\t0\t15")).toEqual({
+      pin: "42",
+      fechaCivil: "2026-08-08",
+      horaCivil: "08:15:30",
+      fechaHora: new Date("2026-08-08T08:15:30Z"),
+      metodoVerifyCrudo: "15",
+    });
   });
 
-  it("interpreta la fecha civil ATTLOG sin offset como componentes UTC", () => {
+  it("separa fecha y hora civiles sin usar la zona del proceso", () => {
+    expect(parseFechaHoraCivilAdms("2026-08-25 23:59:59")).toEqual({ fechaCivil: "2026-08-25", horaCivil: "23:59:59" });
+    expect(parseFechaHoraCivilAdms("2026-08-26 00:00:00")).toEqual({ fechaCivil: "2026-08-26", horaCivil: "00:00:00" });
     expect(parsearLineaAttlog("42\t2026-08-25 23:59:59\t0\t1")?.fechaHora.toISOString()).toBe("2026-08-25T23:59:59.000Z");
     expect(parsearLineaAttlog("42\t2026-08-26 00:00:00\t0\t1")?.fechaHora.toISOString()).toBe("2026-08-26T00:00:00.000Z");
   });
 
-  it("no acepta un ATTLOG con offset explícito porque el protocolo actual agrega Z", () => {
-    expect(parsearLineaAttlog("42\t2026-08-25T23:59:59-05:00\t0\t1")).toBeNull();
+  it("valida calendario y rechaza offsets o rangos imposibles", () => {
+    for (const valor of [
+      "2026-02-30 08:00:00",
+      "2026-13-01 08:00:00",
+      "2026-00-10 08:00:00",
+      "2026-08-25 24:00:00",
+      "2026-08-25 08:60:00",
+      "2026-08-25 08:00:60",
+      "2026-08-25T08:00:00Z",
+      "2026-08-25 08:00:00-05:00",
+    ]) {
+      expect(parseFechaHoraCivilAdms(valor)).toBeNull();
+      expect(parsearLineaAttlog(`42\t${valor}\t0\t1`)).toBeNull();
+    }
+    expect(parseFechaHoraCivilAdms("2028-02-29 00:00:00")).toEqual({ fechaCivil: "2028-02-29", horaCivil: "00:00:00" });
   });
 
   it("conserva días y horas civiles independientes al cruzar medianoche", async () => {
@@ -75,6 +96,14 @@ describe("ADMS", () => {
   it("detecta un ATTLOG conocido duplicado", async () => {
     mocks.asistencia.mockResolvedValue({ id: "a1" });
     await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 1, noReconciliados: 0 });
+  });
+
+  it("mantiene marcaciones independientes cuando solo cambia la hora civil", async () => {
+    await expect(procesarLoteAttlog(terminal, [
+      "42\t2026-08-08 08:15:30\t0\t1",
+      "42\t2026-08-08 17:00:00\t0\t1",
+    ].join("\n"))).resolves.toEqual({ procesados: 2, duplicados: 0, noReconciliados: 0 });
+    expect(mocks.registrar).toHaveBeenCalledTimes(2);
   });
 
   it("exige número de serie", async () => {
