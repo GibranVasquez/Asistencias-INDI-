@@ -6,6 +6,7 @@ export interface Terminal {
   tipo: string;
   ubicacion: string;
   numeroSerie: string | null;
+  obraId: string | null;
   activo: boolean;
   estadoConexion: string;
   ultimaSincronizacion: string | null;
@@ -23,6 +24,7 @@ export interface DatosAltaTerminal {
   tipo: string;
   ubicacion: string;
   numeroSerie?: string | null;
+  obraId?: string | null;
 }
 
 export function crearTerminal(token: string, datos: DatosAltaTerminal) {
@@ -33,6 +35,7 @@ export interface DatosEdicionTerminal {
   ubicacion?: string;
   numeroSerie?: string | null;
   activo?: boolean;
+  obraId?: string | null;
 }
 
 export function editarTerminal(token: string, id: string, datos: DatosEdicionTerminal) {

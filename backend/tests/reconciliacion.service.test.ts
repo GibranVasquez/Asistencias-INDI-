@@ -22,6 +22,7 @@ const ids = {
   trabajador: "22222222-2222-4222-8222-222222222222",
   seccion: "33333333-3333-4333-8333-333333333333",
   terminal: "44444444-4444-4444-8444-444444444444",
+  obra: "77777777-7777-4777-8777-777777777777",
   asistencia: "55555555-5555-4555-8555-555555555555",
   actor: "66666666-6666-4666-8666-666666666666",
 };
@@ -48,12 +49,13 @@ beforeEach(() => {
     creadoEn: new Date("2026-08-26T06:00:00Z"),
     metodoCrudo: "15",
     terminalId: ids.terminal,
+    obraId: ids.obra,
     reconciliadoEn: null,
     reconciliadoPorId: null,
     asistencia: null,
   });
   mocks.trabajador.mockResolvedValue({ id: ids.trabajador, estatus: "activo", numeroChecador: 1 });
-  mocks.seccion.mockResolvedValue({ id: ids.seccion });
+  mocks.seccion.mockResolvedValue({ id: ids.seccion, obraId: ids.obra });
   mocks.terminal.mockResolvedValue({ id: ids.terminal });
   mocks.createMany.mockResolvedValue({ count: 1 });
   mocks.asistencia.mockResolvedValue({ id: ids.asistencia, trabajadorId: ids.trabajador, seccionId: ids.seccion });
@@ -79,6 +81,18 @@ describe("reconciliarEventoAdms", () => {
   it("rechaza un evento histórico sin fecha civil", async () => {
     mocks.evento.mockResolvedValueOnce({ ...(await mocks.evento()), fechaMarcacion: null });
     await expect(reconciliarEventoAdms(ids.actor, ids.evento, { trabajadorId: ids.trabajador, seccionId: ids.seccion })).rejects.toMatchObject({ status: 422 });
+  });
+
+  it("rechaza un evento sin Obra de origen", async () => {
+    mocks.evento.mockResolvedValueOnce({ ...(await mocks.evento()), obraId: null });
+    await expect(reconciliarEventoAdms(ids.actor, ids.evento, { trabajadorId: ids.trabajador, seccionId: ids.seccion })).rejects.toMatchObject({ status: 422 });
+    expect(mocks.createMany).not.toHaveBeenCalled();
+  });
+
+  it("rechaza una sección de otra Obra", async () => {
+    mocks.seccion.mockResolvedValueOnce({ id: ids.seccion, obraId: "88888888-8888-4888-8888-888888888888" });
+    await expect(reconciliarEventoAdms(ids.actor, ids.evento, { trabajadorId: ids.trabajador, seccionId: ids.seccion })).rejects.toMatchObject({ status: 422 });
+    expect(mocks.createMany).not.toHaveBeenCalled();
   });
 
   it("rechaza un evento histórico sin hora civil y PIN no numérico", async () => {

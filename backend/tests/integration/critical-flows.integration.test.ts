@@ -49,6 +49,7 @@ async function escenarioBase() {
       passwordHash,
       tipo: "kiosco",
       ubicacion: "Local test",
+      obraId: obra.id,
     },
   });
   const adms = await prisma.terminal.create({
@@ -58,6 +59,7 @@ async function escenarioBase() {
       tipo: "adms",
       ubicacion: "Local test",
       numeroSerie: "SN-INTEGRATION-1",
+      obraId: obra.id,
     },
   });
   const trabajadores = await Promise.all([
@@ -511,6 +513,7 @@ describe("PostgreSQL/HTTP real: asistencia y ADMS", () => {
     expect(await prisma.asistenciaDiaria.count({ where: { trabajadorId: trabajadores[0].id } })).toBe(1);
     expect(await prisma.eventoNoReconciliado.count({ where: { pinDispositivo: "999" } })).toBe(1);
     const evento = await prisma.eventoNoReconciliado.findFirstOrThrow({ where: { pinDispositivo: "999" } });
+    expect(evento.obraId).toBe((await prisma.terminal.findUniqueOrThrow({ where: { id: evento.terminalId } })).obraId);
     expect(evento.fechaMarcacion?.toISOString().slice(0, 10)).toBe("2026-08-03");
     expect(evento.horaMarcacion?.toISOString().slice(11, 19)).toBe("08:02:03");
     expect(evento.marcadoEn.toISOString()).toBe("2026-08-03T08:02:03.000Z");
@@ -578,9 +581,11 @@ describe("PostgreSQL/HTTP real: supervisión empresarial", () => {
 
 describe("PostgreSQL/HTTP real: reconciliación ADMS", () => {
   async function crearEvento(admsId: string, pin = "101", fecha = "2026-08-25", hora = "23:59:59") {
+    const terminal = await prisma.terminal.findUniqueOrThrow({ where: { id: admsId }, select: { obraId: true } });
     return prisma.eventoNoReconciliado.create({
       data: {
         terminalId: admsId,
+        obraId: terminal.obraId,
         pinDispositivo: pin,
         fechaMarcacion: FECHA(fecha),
         horaMarcacion: HORA(hora),
@@ -639,6 +644,21 @@ describe("PostgreSQL/HTTP real: reconciliación ADMS", () => {
     expect(respuesta.body.resultado).toBe("ya_existia");
     expect(respuesta.body.asistencia.id).toBe(existente.id);
     expect(await prisma.asistenciaDiaria.count()).toBe(1);
+  });
+
+  it("rechaza reconciliar una incidencia contra un Frente de otra Obra", async () => {
+    const { adms, seccion, trabajadores } = await escenarioBase();
+    const otraObra = await prisma.obra.create({ data: { nombre: "Obra B" } });
+    const frenteOtraObra = await prisma.seccion.create({ data: { obraId: otraObra.id, nombre: "Frente B" } });
+    const evento = await crearEvento(adms.id);
+    const token = await tokenHumano(RolUsuario.rh);
+    const respuesta = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send({ trabajadorId: trabajadores[0].id, seccionId: frenteOtraObra.id });
+    expect(respuesta.status).toBe(422);
+    expect(respuesta.body.error).toContain("no pertenece a la Obra de origen");
+    expect(await prisma.asistenciaDiaria.count()).toBe(0);
+    expect((await prisma.eventoNoReconciliado.findUniqueOrThrow({ where: { id: evento.id } })).asistenciaId).toBeNull();
+    expect(await prisma.auditLog.count({ where: { accion: "reconciliar_evento_adms", entidadId: evento.id } })).toBe(0);
+    expect(seccion.obraId).not.toBe(otraObra.id);
   });
 
   it("dos reconciliaciones concurrentes producen una sola asistencia", async () => {
