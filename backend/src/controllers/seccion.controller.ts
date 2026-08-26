@@ -22,8 +22,8 @@ export async function crear(req: Request, res: Response): Promise<void> {
   res.status(201).json({ seccion });
 }
 
-export async function listar(_req: Request, res: Response): Promise<void> {
-  const secciones = await listarSecciones();
+export async function listar(req: Request, res: Response): Promise<void> {
+  const secciones = await listarSecciones({ obraId: req.query.obraId as string | undefined });
   res.json({ secciones });
 }
 

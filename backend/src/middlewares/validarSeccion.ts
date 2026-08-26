@@ -93,3 +93,17 @@ export function validarTrabajadorResponsable(req: Request, res: Response, next: 
   }
   next();
 }
+
+/** Filtro opcional del catálogo; no cambia el contrato cuando se omite. */
+export function validarFiltroObra(req: Request, res: Response, next: NextFunction): void {
+  const valor = req.query.obraId;
+  if (valor === undefined) {
+    next();
+    return;
+  }
+  if (typeof valor !== "string" || !esUUID(valor)) {
+    res.status(400).json({ error: "obraId debe ser un UUID válido." });
+    return;
+  }
+  next();
+}

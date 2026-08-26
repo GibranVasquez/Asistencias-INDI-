@@ -4,7 +4,7 @@ import { asignarResponsable, borrar, crear, editar, hoy, listar, obtener, respon
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { permitirRoles } from "../middlewares/role.middleware";
 import { permitirTerminalOUsuarioConRol } from "../middlewares/authTerminalOUsuario";
-import { validarAltaSeccion, validarEdicionSeccion, validarIdSeccion, validarTrabajadorResponsable } from "../middlewares/validarSeccion";
+import { validarAltaSeccion, validarEdicionSeccion, validarFiltroObra, validarIdSeccion, validarTrabajadorResponsable } from "../middlewares/validarSeccion";
 
 export const seccionRouter = Router();
 
@@ -24,7 +24,7 @@ seccionRouter.get(
 // necesita para el multi-select de secciones al dar de alta una cuenta
 // encargado_seccion (Usuarios y accesos) — por eso estas dos van antes del
 // blanket de abajo, con su propio middleware combinado.
-seccionRouter.get("/", permitirTerminalOUsuarioConRol(RolUsuario.rh, RolUsuario.administrador), listar);
+seccionRouter.get("/", permitirTerminalOUsuarioConRol(RolUsuario.rh, RolUsuario.administrador), validarFiltroObra, listar);
 seccionRouter.get(
   "/:id",
   permitirTerminalOUsuarioConRol(RolUsuario.rh, RolUsuario.administrador),

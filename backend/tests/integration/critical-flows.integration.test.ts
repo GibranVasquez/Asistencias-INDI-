@@ -389,6 +389,34 @@ describe("HTTP real: configuración de la obra", () => {
 });
 
 describe("HTTP real: responsables operativos del tramo", () => {
+  it("filtra el catálogo de Frentes por Obra sin alterar el listado legacy", async () => {
+    const { seccion } = await escenarioBase();
+    const obraA = seccion.obraId;
+    const obraB = await prisma.obra.create({ data: { nombre: "Obra B catálogo" } });
+    const seccionA2 = await prisma.seccion.create({ data: { obraId: obraA, nombre: "Frente A2" } });
+    const seccionB1 = await prisma.seccion.create({ data: { obraId: obraB.id, nombre: "Frente B1" } });
+    const tokenRh = await tokenHumano(RolUsuario.rh);
+
+    const filtradaA = await request(app).get(`/secciones?obraId=${obraA}`).set("Authorization", `Bearer ${tokenRh}`);
+    expect(filtradaA.status).toBe(200);
+    expect(filtradaA.body.secciones.map((s: { id: string }) => s.id)).toEqual([seccionA2.id, seccion.id]);
+    expect(filtradaA.body.secciones.map((s: { obraId: string }) => s.obraId)).toEqual([obraA, obraA]);
+
+    const filtradaB = await request(app).get(`/secciones?obraId=${obraB.id}`).set("Authorization", `Bearer ${tokenRh}`);
+    expect(filtradaB.body.secciones.map((s: { id: string }) => s.id)).toEqual([seccionB1.id]);
+
+    const inexistente = await request(app).get("/secciones?obraId=77777777-7777-4777-8777-777777777777").set("Authorization", `Bearer ${tokenRh}`);
+    expect(inexistente.status).toBe(200);
+    expect(inexistente.body.secciones).toEqual([]);
+
+    expect((await request(app).get("/secciones?obraId=no-es-uuid").set("Authorization", `Bearer ${tokenRh}`)).status).toBe(400);
+    expect((await request(app).get(`/secciones?obraId=${obraA}&obraId=${obraB.id}`).set("Authorization", `Bearer ${tokenRh}`)).status).toBe(400);
+
+    const legacy = await request(app).get("/secciones").set("Authorization", `Bearer ${tokenRh}`);
+    expect(legacy.status).toBe(200);
+    expect(legacy.body.secciones.map((s: { nombre: string }) => s.nombre)).toEqual(["Frente A2", "Frente B1", "Oficina"]);
+  });
+
   it("permite a RH y Administrador asignar, consultar y retirar trabajadores activos con auditoría", async () => {
     const { seccion, trabajadores, usuarios } = await escenarioBase();
     const [tokenRh, tokenAdmin, tokenRecepcion, tokenEncargado] = await Promise.all([

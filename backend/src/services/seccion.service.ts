@@ -151,8 +151,9 @@ export async function crearSeccion(usuarioActorId: string, datos: DatosAltaSecci
   );
 }
 
-export async function listarSecciones(): Promise<SeccionConEncargados[]> {
+export async function listarSecciones(filtros: { obraId?: string } = {}): Promise<SeccionConEncargados[]> {
   const secciones = await prisma.seccion.findMany({
+    where: filtros.obraId ? { obraId: filtros.obraId } : undefined,
     orderBy: { nombre: "asc" },
     include: {
       encargados: { select: { id: true, username: true, trabajadorId: true, trabajador: { select: { nombreCompleto: true, categoria: true } } } },
