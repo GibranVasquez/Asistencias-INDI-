@@ -388,6 +388,40 @@ describe("HTTP real: configuración de la obra", () => {
   });
 });
 
+describe("HTTP real: candidato de reconciliación ADMS", () => {
+  it("permite solo Administrador/RH y devuelve candidatos activos por PIN", async () => {
+    const { trabajadores, usuarios } = await escenarioBase();
+    await prisma.trabajador.update({ where: { id: trabajadores[1].id }, data: { numeroChecador: 1001 } });
+    await prisma.trabajador.update({ where: { id: trabajadores[0].id }, data: { numeroChecador: 1 } });
+    const inactivo = await prisma.trabajador.create({ data: { nombreCompleto: "Inactivo", categoria: "Operación", jefeInmediato: "Jefe", numeroChecador: 2001, estatus: TrabajadorEstatus.baja } });
+    const [admin, rh, recepcion, encargado] = await Promise.all([
+      tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.recepcion),
+      tokenHumano(RolUsuario.encargado_seccion),
+    ]);
+    const trabajador = jwt.sign({
+      usuarioId: usuarios.get(RolUsuario.trabajador)!.id,
+      rol: RolUsuario.trabajador,
+      trabajadorId: usuarios.get(RolUsuario.trabajador)!.trabajadorId,
+    }, process.env.JWT_SECRET!, { expiresIn: "5m" });
+    for (const token of [admin, rh]) {
+      const encontrado = await request(app).get("/trabajadores/candidato-reconciliacion?pin=001").set("Authorization", `Bearer ${token}`);
+      expect(encontrado.status).toBe(200);
+      expect(encontrado.body).toEqual({ candidato: { id: trabajadores[0].id, nombreCompleto: "Trabajador A", estatus: "activo", numeroChecador: 1 } });
+      expect(Object.keys(encontrado.body.candidato).sort()).toEqual(["estatus", "id", "nombreCompleto", "numeroChecador"]);
+    }
+    expect((await request(app).get("/trabajadores/candidato-reconciliacion?pin=2001").set("Authorization", `Bearer ${rh}`)).body).toEqual({ candidato: null });
+    expect((await request(app).get("/trabajadores/candidato-reconciliacion?pin=9999").set("Authorization", `Bearer ${admin}`)).body).toEqual({ candidato: null });
+    for (const token of [recepcion, encargado, trabajador]) {
+      expect((await request(app).get("/trabajadores/candidato-reconciliacion?pin=1").set("Authorization", `Bearer ${token}`)).status).toBe(403);
+    }
+    for (const pin of ["", "   ", "ABC", "1.5", "-1", "12ABC"]) {
+      expect((await request(app).get(`/trabajadores/candidato-reconciliacion?pin=${encodeURIComponent(pin)}`).set("Authorization", `Bearer ${admin}`)).status).toBe(400);
+    }
+    expect(inactivo.id).toBeTruthy();
+    expect(usuarios.get(RolUsuario.administrador)?.rol).toBe(RolUsuario.administrador);
+  });
+});
+
 describe("HTTP real: responsables operativos del tramo", () => {
   it("filtra el catálogo de Frentes por Obra sin alterar el listado legacy", async () => {
     const { seccion } = await escenarioBase();

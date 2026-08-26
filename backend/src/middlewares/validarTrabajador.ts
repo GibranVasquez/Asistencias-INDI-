@@ -142,6 +142,22 @@ export function validarIdTrabajador(req: Request, res: Response, next: NextFunct
   next();
 }
 
+export function normalizarPinReconciliacion(valor: unknown): number | null {
+  if (typeof valor !== "string") return null;
+  const pin = valor.trim();
+  if (!/^\d+$/.test(pin)) return null;
+  const numero = Number(pin);
+  return Number.isSafeInteger(numero) && numero <= 2_147_483_647 ? numero : null;
+}
+
+export function validarPinCandidato(req: Request, res: Response, next: NextFunction): void {
+  if (normalizarPinReconciliacion(req.query.pin) === null) {
+    res.status(400).json({ error: "pin es requerido y debe ser un entero no negativo." });
+    return;
+  }
+  next();
+}
+
 export function validarAplicarSueldoMasivo(req: Request, res: Response, next: NextFunction): void {
   const { ids, nuevoSueldoBase } = req.body ?? {};
 

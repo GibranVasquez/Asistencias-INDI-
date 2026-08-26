@@ -135,6 +135,21 @@ export async function listarTrabajadoresBasico(): Promise<TrabajadorBasico[]> {
   });
 }
 
+export interface CandidatoReconciliacion {
+  id: string;
+  nombreCompleto: string;
+  estatus: TrabajadorEstatus;
+  numeroChecador: number;
+}
+
+/** Busca únicamente un candidato activo y divulga solo los datos necesarios para reconciliar ADMS. */
+export async function buscarCandidatoReconciliacion(numeroChecador: number): Promise<CandidatoReconciliacion | null> {
+  return prisma.trabajador.findFirst({
+    where: { numeroChecador, estatus: TrabajadorEstatus.activo },
+    select: { id: true, nombreCompleto: true, estatus: true, numeroChecador: true },
+  }) as Promise<CandidatoReconciliacion | null>;
+}
+
 export async function obtenerTrabajador(id: string): Promise<Trabajador> {
   const trabajador = await prisma.trabajador.findUnique({ where: { id } });
   if (!trabajador) {
