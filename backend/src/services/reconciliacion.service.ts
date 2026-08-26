@@ -68,6 +68,10 @@ export async function reconciliarEventoAdms(
       errorValidacion("El evento no tiene fecha y hora civiles; requiere revisión especial.");
     }
 
+    if (!evento.obraId) {
+      errorValidacion("El evento no tiene una Obra de origen configurada; requiere revisión especial.");
+    }
+
     const pinTexto = evento.pinDispositivo.trim();
     const pinNumerico = Number(pinTexto);
     if (!pinTexto || !Number.isInteger(pinNumerico) || pinNumerico < 0) {
@@ -76,12 +80,13 @@ export async function reconciliarEventoAdms(
 
     const [trabajador, seccion, terminal] = await Promise.all([
       tx.trabajador.findUnique({ where: { id: datos.trabajadorId }, select: { id: true, estatus: true, numeroChecador: true } }),
-      tx.seccion.findUnique({ where: { id: datos.seccionId }, select: { id: true } }),
+      tx.seccion.findUnique({ where: { id: datos.seccionId }, select: { id: true, obraId: true } }),
       tx.terminal.findUnique({ where: { id: evento.terminalId }, select: { id: true } }),
     ]);
     if (!trabajador) throw new AppError(404, "Trabajador no encontrado.");
     if (!seccion) throw new AppError(404, "Sección no encontrada.");
     if (!terminal) throw new AppError(404, "Terminal de origen no encontrada.");
+    if (seccion.obraId !== evento.obraId) errorValidacion("El Frente seleccionado no pertenece a la Obra de origen de la incidencia.");
     if (trabajador.estatus !== TrabajadorEstatus.activo) errorValidacion("El trabajador no está activo; requiere revisión especial.");
     if (trabajador.numeroChecador == null || trabajador.numeroChecador !== pinNumerico) {
       errorValidacion("El número de checador no coincide con el PIN del evento.");

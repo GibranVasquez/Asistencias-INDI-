@@ -20,6 +20,7 @@ export interface DatosAltaTerminal {
   tipo: string;
   ubicacion: string;
   numeroSerie?: string | null;
+  obraId?: string | null;
 }
 
 // tipo no es editable a proposito (la naturaleza del dispositivo no deberia
@@ -30,6 +31,7 @@ export interface DatosEdicionTerminal {
   ubicacion?: string;
   numeroSerie?: string | null;
   activo?: boolean;
+  obraId?: string | null;
 }
 
 export async function listarTerminales(): Promise<TerminalPublico[]> {
@@ -48,6 +50,11 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
     if (conNumeroSerie) {
       throw new AppError(409, "Ya existe un terminal dado de alta con ese número de serie.");
     }
+  }
+
+  if (datos.obraId !== undefined && datos.obraId !== null) {
+    const obra = await prisma.obra.findUnique({ where: { id: datos.obraId }, select: { id: true } });
+    if (!obra) throw new AppError(404, "La obra indicada no existe.");
   }
 
   // tipo="adms" nunca puede iniciar sesión (ver terminalAuth.service.ts,
@@ -73,6 +80,7 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
             tipo: datos.tipo,
             ubicacion: datos.ubicacion,
             numeroSerie: datos.numeroSerie ?? null,
+            obraId: datos.obraId ?? null,
           },
         });
 
@@ -82,7 +90,7 @@ export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTe
             accion: "crear_terminal",
             entidad: "Terminal",
             entidadId: nuevo.id,
-            detalle: { username: nuevo.username, tipo: nuevo.tipo, ubicacion: nuevo.ubicacion },
+            detalle: { username: nuevo.username, tipo: nuevo.tipo, ubicacion: nuevo.ubicacion, obraId: nuevo.obraId },
           },
         });
 
@@ -114,10 +122,16 @@ export async function editarTerminal(
 
   await verificarNumeroSerieDisponible(datos.numeroSerie, id);
 
+  if (datos.obraId !== undefined && datos.obraId !== null) {
+    const obra = await prisma.obra.findUnique({ where: { id: datos.obraId }, select: { id: true } });
+    if (!obra) throw new AppError(404, "La obra indicada no existe.");
+  }
+
   const data: Prisma.TerminalUpdateInput = {};
   if (datos.ubicacion !== undefined) data.ubicacion = datos.ubicacion;
   if (datos.numeroSerie !== undefined) data.numeroSerie = datos.numeroSerie;
   if (datos.activo !== undefined) data.activo = datos.activo;
+  if (datos.obraId !== undefined) data.obra = datos.obraId === null ? { disconnect: true } : { connect: { id: datos.obraId } };
 
   const camposEditados = Object.keys(datos).filter((k) => (datos as Record<string, unknown>)[k] !== undefined);
 

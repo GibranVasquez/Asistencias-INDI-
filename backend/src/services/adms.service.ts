@@ -148,11 +148,13 @@ async function yaExisteEventoNoReconciliado(terminalId: string, registro: Regist
 
 async function registrarEventoNoReconciliado(
   terminalId: string,
+  obraId: string | null,
   registro: RegistroAttlog
 ): Promise<void> {
   await prisma.eventoNoReconciliado.create({
     data: {
       terminalId,
+      obraId,
       pinDispositivo: registro.pin,
       fechaMarcacion: fechaCivilAFechaPrisma(registro.fechaCivil),
       horaMarcacion: horaCivilAHoraPrisma(registro.horaCivil),
@@ -192,7 +194,7 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
         duplicados++;
         continue;
       }
-      await registrarEventoNoReconciliado(terminal.id, registro);
+      await registrarEventoNoReconciliado(terminal.id, terminal.obraId ?? null, registro);
       noReconciliados++;
       continue;
     }

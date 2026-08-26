@@ -10,6 +10,7 @@ export interface TerminalPublico {
   tipo: string;
   ubicacion: string;
   numeroSerie: string | null;
+  obraId: string | null;
   activo: boolean;
   estadoConexion: string;
   // Solo se actualiza para terminales tipo="adms" (ver adms.controller.ts,
@@ -27,6 +28,7 @@ export function serializarTerminal(terminal: Terminal): TerminalPublico {
     tipo: terminal.tipo,
     ubicacion: terminal.ubicacion,
     numeroSerie: terminal.numeroSerie,
+    obraId: terminal.obraId,
     activo: terminal.activo,
     estadoConexion: terminal.estadoConexion,
     ultimaSincronizacion: terminal.ultimaSincronizacion ? terminal.ultimaSincronizacion.toISOString() : null,

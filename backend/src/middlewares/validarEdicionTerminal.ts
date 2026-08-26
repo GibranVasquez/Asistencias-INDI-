@@ -10,7 +10,7 @@ export function validarEdicionTerminal(req: Request, res: Response, next: NextFu
   }
 
   const body = req.body ?? {};
-  const { ubicacion, numeroSerie, activo } = body;
+  const { ubicacion, numeroSerie, activo, obraId } = body;
 
   if (ubicacion !== undefined && !esStringNoVacia(ubicacion, LONGITUD_MAXIMA_TEXTO)) {
     res.status(400).json({ error: "ubicacion debe ser un texto válido." });
@@ -24,6 +24,11 @@ export function validarEdicionTerminal(req: Request, res: Response, next: NextFu
 
   if (activo !== undefined && typeof activo !== "boolean") {
     res.status(400).json({ error: "activo debe ser true o false." });
+    return;
+  }
+
+  if (obraId !== undefined && obraId !== null && !esUUID(obraId)) {
+    res.status(400).json({ error: "obraId debe ser un UUID válido si se envía." });
     return;
   }
 
