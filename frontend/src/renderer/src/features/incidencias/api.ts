@@ -2,7 +2,7 @@ import { apiClient } from "@/core/api/client";
 
 export interface Incidencia {
   id: string; tipo: "ADMS_NO_RECONCILIADO"; estado: "pendiente";
-  fechaEvento: string; detectadoEn: string; identificadorDispositivo: string;
+  fechaEvento: string; fechaMarcacion: string | null; horaMarcacion: string | null; detectadoEn: string; identificadorDispositivo: string;
   terminal: string; ubicacion: string;
 }
 export interface PaginaIncidencias { items: Incidencia[]; total: number; pagina: number; limite: number }

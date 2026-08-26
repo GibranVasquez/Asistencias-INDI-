@@ -510,6 +510,11 @@ describe("PostgreSQL/HTTP real: asistencia y ADMS", () => {
     }
     expect(await prisma.asistenciaDiaria.count({ where: { trabajadorId: trabajadores[0].id } })).toBe(1);
     expect(await prisma.eventoNoReconciliado.count({ where: { pinDispositivo: "999" } })).toBe(1);
+    const evento = await prisma.eventoNoReconciliado.findFirstOrThrow({ where: { pinDispositivo: "999" } });
+    expect(evento.fechaMarcacion?.toISOString().slice(0, 10)).toBe("2026-08-03");
+    expect(evento.horaMarcacion?.toISOString().slice(11, 19)).toBe("08:02:03");
+    expect(evento.marcadoEn.toISOString()).toBe("2026-08-03T08:02:03.000Z");
+    expect(evento.creadoEn).toBeInstanceOf(Date);
     expect(await prisma.trabajador.count()).toBe(2);
     expect((await request(app).get("/iclock/cdata?SN=SN-FALSO")).status).toBe(403);
   });
@@ -546,11 +551,12 @@ describe("exportaciones integradas desde PostgreSQL", () => {
 describe("PostgreSQL/HTTP real: supervisión empresarial", () => {
   it("expone incidencias reales solo a roles autorizados", async () => {
     const { adms } = await escenarioBase();
-    await prisma.eventoNoReconciliado.create({ data: { terminalId: adms.id, pinDispositivo: "PIN-FICTICIO", marcadoEn: new Date("2026-08-14T10:00:00Z"), metodoCrudo: "1" } });
+    await prisma.eventoNoReconciliado.create({ data: { terminalId: adms.id, pinDispositivo: "PIN-FICTICIO", fechaMarcacion: new Date("2026-08-14T00:00:00Z"), horaMarcacion: new Date("1970-01-01T10:00:00Z"), marcadoEn: new Date("2026-08-14T10:00:00Z"), metodoCrudo: "1" } });
     const [tokenRh, tokenAdmin, tokenRecepcion] = await Promise.all([tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.administrador), tokenHumano(RolUsuario.recepcion)]);
     for (const token of [tokenRh, tokenAdmin]) {
       const respuesta = await request(app).get("/incidencias?limite=10").set("Authorization", `Bearer ${token}`);
       expect(respuesta.status).toBe(200); expect(respuesta.body.total).toBe(1);
+      expect(respuesta.body.items[0]).toMatchObject({ fechaMarcacion: "2026-08-14", horaMarcacion: "10:00:00", fechaEvento: "2026-08-14T10:00:00.000Z" });
       expect(respuesta.body.items[0]).toMatchObject({ tipo: "ADMS_NO_RECONCILIADO", identificadorDispositivo: "PIN-FICTICIO" });
       expect(JSON.stringify(respuesta.body)).not.toMatch(/password|token|hash/i);
     }

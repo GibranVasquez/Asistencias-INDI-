@@ -449,6 +449,9 @@ model EventoNoReconciliado {
   // que un PIN no-numerico (formato distinto en otro modelo/firmware)
   // tumbe la reconciliacion en vez de solo quedar sin poder resolverse.
   pinDispositivo String   @map("pin_dispositivo")
+  // Tiempo civil reportado por ADMS; no representa un instante UTC.
+  fechaMarcacion DateTime? @map("fecha_marcacion") @db.Date
+  horaMarcacion  DateTime? @map("hora_marcacion") @db.Time(0)
   marcadoEn      DateTime @map("marcado_en") @db.Timestamptz(6)
   // Codigo de metodo de verificacion tal cual vino (0/1/2/4/15/...), sin
   // mapear — el mapeo a huella/rostro puede no cubrir todos los valores

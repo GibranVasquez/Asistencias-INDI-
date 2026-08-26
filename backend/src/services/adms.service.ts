@@ -154,6 +154,8 @@ async function registrarEventoNoReconciliado(
     data: {
       terminalId,
       pinDispositivo: registro.pin,
+      fechaMarcacion: fechaCivilAFechaPrisma(registro.fechaCivil),
+      horaMarcacion: horaCivilAHoraPrisma(registro.horaCivil),
       marcadoEn: registro.fechaHora,
       metodoCrudo: registro.metodoVerifyCrudo,
     },
