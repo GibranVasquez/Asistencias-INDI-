@@ -521,6 +521,22 @@ describe("PostgreSQL/HTTP real: asistencia y ADMS", () => {
     expect(await prisma.trabajador.count()).toBe(2);
     expect((await request(app).get("/iclock/cdata?SN=SN-FALSO")).status).toBe(403);
   });
+
+  it("conserva el snapshot de Obra al cambiar la terminal y deja null en terminal legacy", async () => {
+    const { adms } = await escenarioBase();
+    const obraA = (await prisma.terminal.findUniqueOrThrow({ where: { id: adms.id }, select: { obraId: true } })).obraId;
+    const obraB = await prisma.obra.create({ data: { nombre: "Obra B snapshot" } });
+    await request(app).post("/iclock/cdata?SN=SN-INTEGRATION-1&table=ATTLOG").set("Content-Type", "text/plain").send("900\t2026-08-04 08:00:00\t0\t1");
+    await prisma.terminal.update({ where: { id: adms.id }, data: { obraId: obraB.id } });
+    await request(app).post("/iclock/cdata?SN=SN-INTEGRATION-1&table=ATTLOG").set("Content-Type", "text/plain").send("901\t2026-08-04 08:01:00\t0\t1");
+    const eventos = await prisma.eventoNoReconciliado.findMany({ where: { pinDispositivo: { in: ["900", "901"] } }, orderBy: { pinDispositivo: "asc" } });
+    expect(eventos.map((e) => e.obraId)).toEqual([obraA, obraB.id]);
+
+    const passwordHash = await bcrypt.hash(PASSWORD, 4);
+    await prisma.terminal.create({ data: { username: "adms-legacy-20a", passwordHash, tipo: "adms", ubicacion: "Legacy", numeroSerie: "SN-LEGACY-20A" } });
+    await request(app).post("/iclock/cdata?SN=SN-LEGACY-20A&table=ATTLOG").set("Content-Type", "text/plain").send("902\t2026-08-04 08:02:00\t0\t1");
+    expect((await prisma.eventoNoReconciliado.findFirstOrThrow({ where: { pinDispositivo: "902" } })).obraId).toBeNull();
+  });
 });
 
 describe("exportaciones integradas desde PostgreSQL", () => {
