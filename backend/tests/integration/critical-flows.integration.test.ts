@@ -575,3 +575,99 @@ describe("PostgreSQL/HTTP real: supervisión empresarial", () => {
     expect((await request(app).get("/auditoria?limite=500").set("Authorization", `Bearer ${tokenAdmin}`)).status).toBe(400);
   });
 });
+
+describe("PostgreSQL/HTTP real: reconciliación ADMS", () => {
+  async function crearEvento(admsId: string, pin = "101", fecha = "2026-08-25", hora = "23:59:59") {
+    return prisma.eventoNoReconciliado.create({
+      data: {
+        terminalId: admsId,
+        pinDispositivo: pin,
+        fechaMarcacion: FECHA(fecha),
+        horaMarcacion: HORA(hora),
+        // Deliberadamente distinto: la reconciliación no debe usar marcadoEn.
+        marcadoEn: new Date("2026-08-26T05:59:59Z"),
+        metodoCrudo: "15",
+      },
+    });
+  }
+
+  it("crea asistencia civil, vincula evento y registra auditoría", async () => {
+    const { adms, seccion, trabajadores, usuarios } = await escenarioBase();
+    const evento = await crearEvento(adms.id);
+    const token = await tokenHumano(RolUsuario.rh);
+    const respuesta = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send({ trabajadorId: trabajadores[0].id, seccionId: seccion.id });
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.resultado).toBe("reconciliado");
+    const asistencia = await prisma.asistenciaDiaria.findFirstOrThrow({ where: { trabajadorId: trabajadores[0].id } });
+    expect(asistencia.fecha.toISOString().slice(0, 10)).toBe("2026-08-25");
+    expect(asistencia.hora.toISOString().slice(11, 19)).toBe("23:59:59");
+    expect(asistencia.terminalOrigenId).toBe(adms.id);
+    expect(asistencia.seccionId).toBe(seccion.id);
+    const actualizado = await prisma.eventoNoReconciliado.findUniqueOrThrow({ where: { id: evento.id } });
+    expect(actualizado.asistenciaId).toBe(asistencia.id);
+    expect(actualizado.reconciliadoPorId).toBe(usuarios.get(RolUsuario.rh)!.id);
+    expect(actualizado.reconciliadoEn).toBeInstanceOf(Date);
+    expect(await prisma.auditLog.count({ where: { accion: "reconciliar_evento_adms", entidadId: evento.id } })).toBe(1);
+  });
+
+  it("es idempotente y rechaza cambiar el objetivo de un evento ya reconciliado", async () => {
+    const { adms, seccion, trabajadores } = await escenarioBase();
+    const evento = await crearEvento(adms.id);
+    const token = await tokenHumano(RolUsuario.administrador);
+    const payload = { trabajadorId: trabajadores[0].id, seccionId: seccion.id };
+    const primera = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send(payload);
+    const segunda = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send(payload);
+    expect(primera.status).toBe(200);
+    expect(segunda.status).toBe(200);
+    expect(segunda.body.resultado).toBe("ya_reconciliado");
+    expect(await prisma.asistenciaDiaria.count()).toBe(1);
+
+    const otraSeccion = await prisma.seccion.create({ data: { obraId: (await prisma.obra.findFirstOrThrow()).id, nombre: "Frente alterno" } });
+    const conflicto = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send({ ...payload, seccionId: otraSeccion.id });
+    expect(conflicto.status).toBe(409);
+    expect(await prisma.asistenciaDiaria.count()).toBe(1);
+  });
+
+  it("reutiliza una asistencia exacta ya existente sin duplicarla", async () => {
+    const { adms, seccion, trabajadores } = await escenarioBase();
+    const evento = await crearEvento(adms.id, "101", "2026-08-25", "08:00:00");
+    const existente = await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajadores[0].id, terminalOrigenId: adms.id, seccionId: seccion.id, fecha: FECHA("2026-08-25"), hora: HORA("08:00:00"), turno: "Oficina", metodoUsado: MetodoAsistencia.huella } });
+    const token = await tokenHumano(RolUsuario.rh);
+    const respuesta = await request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send({ trabajadorId: trabajadores[0].id, seccionId: seccion.id });
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.resultado).toBe("ya_existia");
+    expect(respuesta.body.asistencia.id).toBe(existente.id);
+    expect(await prisma.asistenciaDiaria.count()).toBe(1);
+  });
+
+  it("dos reconciliaciones concurrentes producen una sola asistencia", async () => {
+    const { adms, seccion, trabajadores } = await escenarioBase();
+    const evento = await crearEvento(adms.id, "101", "2026-08-26", "00:00:00");
+    const token = await tokenHumano(RolUsuario.rh);
+    const payload = { trabajadorId: trabajadores[0].id, seccionId: seccion.id };
+    const respuestas = await Promise.all([
+      request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send(payload),
+      request(app).post(`/incidencias/${evento.id}/reconciliar`).set("Authorization", `Bearer ${token}`).send(payload),
+    ]);
+    expect(respuestas.every((respuesta) => respuesta.status === 200)).toBe(true);
+    expect(respuestas.map((respuesta) => respuesta.body.resultado).sort()).toEqual(["reconciliado", "ya_reconciliado"]);
+    expect(await prisma.asistenciaDiaria.count()).toBe(1);
+    expect(await prisma.eventoNoReconciliado.count({ where: { asistenciaId: { not: null } } })).toBe(1);
+  });
+
+  it("rechaza históricos ambiguos, PIN reasignado, inactivos y roles no autorizados", async () => {
+    const { adms, seccion, trabajadores } = await escenarioBase();
+    const historico = await prisma.eventoNoReconciliado.create({ data: { terminalId: adms.id, pinDispositivo: "101", marcadoEn: new Date("2026-08-25T23:59:59Z"), metodoCrudo: "1" } });
+    const otro = await crearEvento(adms.id, "999");
+    const inactivoEvento = await crearEvento(adms.id, "999", "2026-08-26", "00:00:00");
+    const inactivo = trabajadores[1];
+    await prisma.trabajador.update({ where: { id: inactivo.id }, data: { estatus: TrabajadorEstatus.baja, numeroChecador: 999 } });
+    const [tokenRh, tokenRecepcion] = await Promise.all([tokenHumano(RolUsuario.rh), tokenHumano(RolUsuario.recepcion)]);
+    expect((await request(app).post(`/incidencias/${historico.id}/reconciliar`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id, seccionId: seccion.id })).status).toBe(422);
+    expect((await request(app).post(`/incidencias/${otro.id}/reconciliar`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[0].id, seccionId: seccion.id })).status).toBe(422);
+    expect((await request(app).post(`/incidencias/${inactivoEvento.id}/reconciliar`).set("Authorization", `Bearer ${tokenRh}`).send({ trabajadorId: trabajadores[1].id, seccionId: seccion.id })).status).toBe(422);
+    expect((await request(app).post(`/incidencias/${otro.id}/reconciliar`).set("Authorization", `Bearer ${tokenRecepcion}`).send({ trabajadorId: trabajadores[1].id, seccionId: seccion.id })).status).toBe(403);
+    expect(await prisma.asistenciaDiaria.count()).toBe(0);
+  });
+});
