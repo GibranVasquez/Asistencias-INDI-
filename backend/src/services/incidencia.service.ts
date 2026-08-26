@@ -14,7 +14,7 @@ export async function listarIncidencias(filtros: FiltrosIncidencias) {
   const [eventos, total] = await Promise.all([
     prisma.eventoNoReconciliado.findMany({
       where,
-      select: { id: true, pinDispositivo: true, obraId: true, fechaMarcacion: true, horaMarcacion: true, marcadoEn: true, creadoEn: true, terminal: { select: { username: true, ubicacion: true } }, obra: { select: { nombre: true } } },
+      select: { id: true, pinDispositivo: true, obraId: true, fechaMarcacion: true, horaMarcacion: true, marcadoEn: true, creadoEn: true, asistenciaId: true, reconciliadoEn: true, terminal: { select: { username: true, ubicacion: true } }, obra: { select: { nombre: true } } },
       orderBy: { creadoEn: "desc" }, skip: (filtros.pagina - 1) * filtros.limite, take: filtros.limite,
     }),
     prisma.eventoNoReconciliado.count({ where }),
@@ -23,7 +23,9 @@ export async function listarIncidencias(filtros: FiltrosIncidencias) {
     items: eventos.map((evento) => ({
       id: evento.id,
       tipo: "ADMS_NO_RECONCILIADO" as const,
-      estado: "pendiente" as const,
+      estado: evento.asistenciaId !== null ? "reconciliada" as const : "pendiente" as const,
+      asistenciaId: evento.asistenciaId,
+      reconciliadoEn: evento.reconciliadoEn?.toISOString() ?? null,
       fechaEvento: evento.marcadoEn.toISOString(),
       fechaMarcacion: evento.fechaMarcacion?.toISOString().slice(0, 10) ?? null,
       horaMarcacion: evento.horaMarcacion?.toISOString().slice(11, 19) ?? null,

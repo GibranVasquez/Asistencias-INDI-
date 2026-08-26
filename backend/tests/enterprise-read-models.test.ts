@@ -5,10 +5,15 @@ import { listarIncidencias } from "../src/services/incidencia.service";
 import { listarAuditoria, sanitizarDetalleAuditoria } from "../src/services/auditoria.service";
 beforeEach(() => { mocks.eventos.mockResolvedValue([]); mocks.eventosCount.mockResolvedValue(0); mocks.auditoria.mockResolvedValue([]); mocks.auditoriaCount.mockResolvedValue(0); });
 describe("modelos empresariales de solo lectura", () => {
-  it("normaliza únicamente eventos ADMS no reconciliados con límite", async () => {
-    mocks.eventos.mockResolvedValue([{ id: "e1", pinDispositivo: "999", marcadoEn: new Date("2026-08-14T10:00:00Z"), creadoEn: new Date("2026-08-14T10:01:00Z"), terminal: { username: "reloj-test", ubicacion: "Oficina test" } }]); mocks.eventosCount.mockResolvedValue(1);
+  it("normaliza eventos ADMS pendientes y reconciliados sin perder compatibilidad", async () => {
+    const reconciliadoEn = new Date("2026-08-14T10:02:00Z");
+    mocks.eventos.mockResolvedValue([
+      { id: "e1", pinDispositivo: "999", asistenciaId: null, reconciliadoEn: null, marcadoEn: new Date("2026-08-14T10:00:00Z"), creadoEn: new Date("2026-08-14T10:01:00Z"), terminal: { username: "reloj-test", ubicacion: "Oficina test" } },
+      { id: "e2", pinDispositivo: "100", asistenciaId: "asistencia-1", reconciliadoEn, marcadoEn: new Date("2026-08-14T11:00:00Z"), creadoEn: new Date("2026-08-14T11:01:00Z"), terminal: { username: "reloj-test", ubicacion: "Oficina test" } },
+    ]); mocks.eventosCount.mockResolvedValue(2);
     const resultado = await listarIncidencias({ pagina: 1, limite: 25 });
-    expect(resultado.items[0]).toMatchObject({ tipo: "ADMS_NO_RECONCILIADO", estado: "pendiente", identificadorDispositivo: "999" });
+    expect(resultado.items[0]).toMatchObject({ tipo: "ADMS_NO_RECONCILIADO", estado: "pendiente", asistenciaId: null, reconciliadoEn: null, identificadorDispositivo: "999" });
+    expect(resultado.items[1]).toMatchObject({ estado: "reconciliada", asistenciaId: "asistencia-1", reconciliadoEn: reconciliadoEn.toISOString() });
     expect(mocks.eventos).toHaveBeenCalledWith(expect.objectContaining({ take: 25, skip: 0, select: expect.any(Object) }));
   });
   it("oculta secretos y cantidades de metadata de auditoría", () => {
