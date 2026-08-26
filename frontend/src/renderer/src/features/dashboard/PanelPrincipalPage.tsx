@@ -4,7 +4,8 @@ import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import { bucketsPorSemanaDelMes } from "@/features/dashboard/resumenBuckets";
 import { navegacionPorId, RutaPanel } from "@/routes/navigationConfig";
 import { useDatosPanelPrincipal } from "@/features/dashboard/hooks/useDatosPanelPrincipal";
-import { bucketsPorDia, calcularPuntualidad, inicioDeSemana, Rango, sumarDias, UMBRAL_HORAS_INACTIVIDAD_ADMS } from "@/features/dashboard/panelPrincipalViewModel";
+import { bucketsPorDia, calcularPuntualidad, fechaDesdeCivil, Rango, sumarDias, UMBRAL_HORAS_INACTIVIDAD_ADMS } from "@/features/dashboard/panelPrincipalViewModel";
+import { fechaLegibleEnTimezone, relojEnTimezone } from "@/features/dashboard/calendarioObra";
 import PanelKpis from "@/features/dashboard/components/PanelKpis";
 import PanelGraficas from "@/features/dashboard/components/PanelGraficas";
 import PanelUltimasMarcaciones from "@/features/dashboard/components/PanelUltimasMarcaciones";
@@ -15,7 +16,8 @@ export default function PanelPrincipalPage() {
   const token = sesion!.token;
   const [rango, setRango] = useState<Rango>("semana");
   const datos = useDatosPanelPrincipal(token, sesion!.usuario.rol, rango);
-  const { hoy, inicio, asistenciasHoy, asistenciasPeriodo, trabajadores, secciones, horarios, obraActual, terminalesAdmsInactivos } = datos;
+  const { hoy, hoyISO, timezoneObra, inicio, asistenciasHoy, asistenciasPeriodo, trabajadores, secciones, horarios, obraActual, terminalesAdmsInactivos } = datos;
+  const hoyCivil = useMemo(() => fechaDesdeCivil(hoyISO), [hoyISO]);
 
   // Puntualidad depende de las dos listas: cuál horario le toca a una
   // seccion (secciones) y los datos de ese horario (horarios). Si CUALQUIERA
@@ -49,9 +51,9 @@ export default function PanelPrincipalPage() {
 
   const barras = useMemo(() => {
     if (!asistenciasPeriodo.datos) return [];
-    if (rango === "mes") return bucketsPorSemanaDelMes(asistenciasPeriodo.datos, inicio, hoy);
-    return bucketsPorDia(asistenciasPeriodo.datos, inicio, rango === "dia" ? hoy : sumarDias(inicioDeSemana(hoy), 4));
-  }, [asistenciasPeriodo.datos, rango, inicio, hoy]);
+    if (rango === "mes") return bucketsPorSemanaDelMes(asistenciasPeriodo.datos, inicio, hoyCivil);
+    return bucketsPorDia(asistenciasPeriodo.datos, inicio, rango === "dia" ? hoyCivil : sumarDias(inicio, 4));
+  }, [asistenciasPeriodo.datos, rango, inicio, hoyCivil]);
 
   const etiquetaPeriodo = rango === "dia" ? "hoy" : rango === "semana" ? "esta semana" : "este mes";
   const ruta = (id: RutaPanel) => navegacionPorId(id)!.path;
@@ -59,8 +61,8 @@ export default function PanelPrincipalPage() {
     <div className="precision-dashboard" style={{ padding: "26px 30px 36px" }}>
       <EncabezadoPagina
         titulo="Panel principal"
-        descripcion={<span style={{ textTransform: "capitalize" }}>{hoy.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>}
-        metadata="Resumen operativo"
+        descripcion={<span style={{ textTransform: "capitalize" }}>{fechaLegibleEnTimezone(hoy, timezoneObra)}</span>}
+        metadata={<span>Resumen operativo · {relojEnTimezone(hoy, timezoneObra)}</span>}
         accion={<div style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4 }}>
           {(["dia", "semana", "mes"] as const).map((r) => (
             <button

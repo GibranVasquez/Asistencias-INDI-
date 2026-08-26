@@ -6,7 +6,8 @@ import { listarSecciones } from "@/core/api/resources/secciones";
 import { listarTerminales } from "@/features/terminales/api";
 import { listarTrabajadores } from "@/features/trabajadores/api";
 import { obtenerObraActual } from "@/core/api/resources/obras";
-import { aFechaISO, Rango, rangoConsulta, terminalAdmsInactivo } from "@/features/dashboard/panelPrincipalViewModel";
+import { aFechaISO, fechaCivilActual, fechaDesdeCivil, Rango, terminalAdmsInactivo } from "@/features/dashboard/panelPrincipalViewModel";
+import { rangoCivil } from "@/features/dashboard/calendarioObra";
 
 export interface EstadoCarga<T> {
   datos: T | null;
@@ -54,12 +55,12 @@ function useCargaProtegida<T>(cargar: () => Promise<T>, deps: readonly unknown[]
 export function useDatosPanelPrincipal(token: string, rol: string, rango: Rango) {
   const tieneAccesoOperativo = rol === "rh";
   const [hoy, setHoy] = useState(() => new Date());
+  const [timezoneObra, setTimezoneObra] = useState<string | null>(null);
+  const [timezoneCargada, setTimezoneCargada] = useState(false);
+  const [obraActual, setObraActual] = useState<string | null>(null);
   useEffect(() => {
     function actualizarSiCambioElDia() {
-      setHoy((actual) => {
-        const ahora = new Date();
-        return aFechaISO(ahora) !== aFechaISO(actual) ? ahora : actual;
-      });
+      setHoy(new Date());
     }
     window.addEventListener("focus", actualizarSiCambioElDia);
     document.addEventListener("visibilitychange", actualizarSiCambioElDia);
@@ -69,10 +70,27 @@ export function useDatosPanelPrincipal(token: string, rol: string, rango: Rango)
       document.removeEventListener("visibilitychange", actualizarSiCambioElDia);
       clearInterval(intervalo);
     };
-  }, []);
+  }, [timezoneObra]);
 
-  const hoyISO = aFechaISO(hoy);
-  const { inicio, fin } = useMemo(() => rangoConsulta(rango, hoy), [rango, hoy]);
+  useEffect(() => {
+    obtenerObraActual(token)
+      .then((respuesta) => {
+        setObraActual(respuesta.obra.nombre);
+        setTimezoneObra(respuesta.obra.timezoneObra);
+        setTimezoneCargada(true);
+      })
+      .catch(() => {
+        setObraActual(null);
+        setTimezoneObra(null);
+        setTimezoneCargada(true);
+      });
+  }, [token]);
+
+  const hoyISO = fechaCivilActual(hoy, timezoneCargada ? timezoneObra : null);
+  const { inicio, fin } = useMemo(() => {
+    const rangoCivilActual = rangoCivil(rango, hoyISO);
+    return { inicio: fechaDesdeCivil(rangoCivilActual.inicio), fin: fechaDesdeCivil(rangoCivilActual.fin) };
+  }, [rango, hoyISO]);
   const asistenciasHoy = useCargaProtegida(
     () => listarAsistencias(token, { fecha: hoyISO }).then((r) => r.asistencias),
     [token, hoyISO, tieneAccesoOperativo],
@@ -95,10 +113,6 @@ export function useDatosPanelPrincipal(token: string, rol: string, rango: Rango)
     tieneAccesoOperativo
   );
   const terminales = useCargaProtegida(() => listarTerminales(token).then((r) => r.terminales), [token]);
-  const [obraActual, setObraActual] = useState<string | null>(null);
-  useEffect(() => {
-    obtenerObraActual(token).then((respuesta) => setObraActual(respuesta.obra.nombre)).catch(() => setObraActual(null));
-  }, [token]);
   const terminalesAdmsInactivos = useMemo(
     () => (terminales.datos ?? []).filter((terminal) => terminalAdmsInactivo(terminal, hoy)),
     [terminales.datos, hoy]
@@ -107,6 +121,7 @@ export function useDatosPanelPrincipal(token: string, rol: string, rango: Rango)
   return {
     hoy,
     hoyISO,
+    timezoneObra: timezoneCargada ? timezoneObra : null,
     inicio,
     fin,
     obraActual,

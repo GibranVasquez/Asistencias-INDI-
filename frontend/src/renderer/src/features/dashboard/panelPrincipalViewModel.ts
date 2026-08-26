@@ -2,6 +2,7 @@ import { AsistenciaListada } from "@/features/asistencias/api";
 import { Horario } from "@/core/api/resources/horarios";
 import { Seccion } from "@/core/api/resources/secciones";
 import { Terminal } from "@/features/terminales/api";
+import { fechaCivilEnTimezone, rangoCivil } from "@/features/dashboard/calendarioObra";
 
 export type Rango = "dia" | "semana" | "mes";
 
@@ -21,6 +22,19 @@ export function aFechaISO(fecha: Date): string {
   const dia = String(fecha.getDate()).padStart(2, "0");
   return `${anio}-${mes}-${dia}`;
 }
+
+/** Construye una fecha local solo como contenedor de un calendario civil. */
+export function fechaDesdeCivil(fecha: string): Date {
+  const [anio, mes, dia] = fecha.split("-").map(Number);
+  return new Date(anio, mes - 1, dia);
+}
+
+export function fechaCivilActual(instante: Date, timezoneObra: string | null): string {
+  if (!timezoneObra) return aFechaISO(instante);
+  return fechaCivilEnTimezone(instante, timezoneObra) ?? aFechaISO(instante);
+}
+
+export { rangoCivil };
 
 /** Fecha civil que llega en la respuesta de asistencias (DATE serializado). */
 export function fechaCivilAsistencia(fechaISO: string): string {
