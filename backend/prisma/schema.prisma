@@ -212,6 +212,8 @@ model Obra {
   creadoEn     DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   secciones Seccion[]
+  terminales Terminal[]
+  eventosNoReconciliados EventoNoReconciliado[]
 
   @@map("obras")
 }
@@ -429,13 +431,17 @@ model Terminal {
   // dimos de alta", no una autenticación fuerte — ver adms.service.ts y
   // CLAUDE.md para el resto de la mitigación real, que es de red).
   numeroSerie          String?                @unique @map("numero_serie")
+  // Obra operativa actual de la terminal; nullable durante expand.
+  obraId               String?                @map("obra_id") @db.Uuid
   estadoConexion       EstadoConexionTerminal @default(desconectado) @map("estado_conexion")
   ultimaSincronizacion DateTime?              @map("ultima_sincronizacion") @db.Timestamptz(6)
   creadoEn             DateTime               @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   asistencias           AsistenciaDiaria[]
   eventosNoReconciliados EventoNoReconciliado[]
+  obra                  Obra?                  @relation(fields: [obraId], references: [id], onDelete: Restrict)
 
+  @@index([obraId], map: "idx_terminales_obra")
   @@map("terminales")
 }
 
@@ -447,6 +453,8 @@ model Terminal {
 model EventoNoReconciliado {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   terminalId     String   @map("terminal_id") @db.Uuid
+  // Snapshot de la Obra de la terminal al recibir el ATTLOG; no seguir a la terminal si cambia de obra.
+  obraId         String?  @map("obra_id") @db.Uuid
   // Texto, no Int: el PIN tal cual lo mandó el equipo — no vale la pena
   // que un PIN no-numerico (formato distinto en otro modelo/firmware)
   // tumbe la reconciliacion en vez de solo quedar sin poder resolverse.
@@ -465,10 +473,12 @@ model EventoNoReconciliado {
   creadoEn       DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   terminal Terminal @relation(fields: [terminalId], references: [id])
+  obra     Obra? @relation(fields: [obraId], references: [id], onDelete: Restrict)
   asistencia AsistenciaDiaria? @relation(fields: [asistenciaId], references: [id], onDelete: SetNull)
   reconciliadoPor Usuario? @relation("EventoReconciliadoPor", fields: [reconciliadoPorId], references: [id], onDelete: SetNull)
 
   @@index([terminalId], map: "idx_eventos_no_reconciliados_terminal")
+  @@index([obraId], map: "idx_eventos_no_reconciliados_obra")
   @@map("eventos_no_reconciliados")
 }
 
