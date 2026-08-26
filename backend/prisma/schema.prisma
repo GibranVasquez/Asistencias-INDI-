@@ -115,6 +115,7 @@ model Usuario {
   seccionesAsignadas  Seccion[]          @relation("SeccionEncargados")
   auditLogs           AuditLog[]
   asignacionesCreadas AsignacionDiaria[]
+  reconciliacionesCreadas EventoNoReconciliado[] @relation("EventoReconciliadoPor")
 
   @@index([rol], map: "idx_usuarios_rol")
   @@map("usuarios")
@@ -285,6 +286,7 @@ model AsistenciaDiaria {
   trabajador     Trabajador @relation(fields: [trabajadorId], references: [id])
   seccion        Seccion    @relation(fields: [seccionId], references: [id])
   terminalOrigen Terminal   @relation(fields: [terminalOrigenId], references: [id])
+  eventosReconciliados EventoNoReconciliado[]
 
   @@index([trabajadorId, fecha], map: "idx_asistencias_trabajador_fecha")
   @@index([seccionId, fecha], map: "idx_asistencias_seccion_fecha")
@@ -452,6 +454,9 @@ model EventoNoReconciliado {
   // Tiempo civil reportado por ADMS; no representa un instante UTC.
   fechaMarcacion DateTime? @map("fecha_marcacion") @db.Date
   horaMarcacion  DateTime? @map("hora_marcacion") @db.Time(0)
+  asistenciaId   String?   @map("asistencia_id") @db.Uuid
+  reconciliadoEn DateTime? @map("reconciliado_en") @db.Timestamptz(6)
+  reconciliadoPorId String? @map("reconciliado_por_id") @db.Uuid
   marcadoEn      DateTime @map("marcado_en") @db.Timestamptz(6)
   // Codigo de metodo de verificacion tal cual vino (0/1/2/4/15/...), sin
   // mapear — el mapeo a huella/rostro puede no cubrir todos los valores
@@ -460,6 +465,8 @@ model EventoNoReconciliado {
   creadoEn       DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   terminal Terminal @relation(fields: [terminalId], references: [id])
+  asistencia AsistenciaDiaria? @relation(fields: [asistenciaId], references: [id], onDelete: SetNull)
+  reconciliadoPor Usuario? @relation("EventoReconciliadoPor", fields: [reconciliadoPorId], references: [id], onDelete: SetNull)
 
   @@index([terminalId], map: "idx_eventos_no_reconciliados_terminal")
   @@map("eventos_no_reconciliados")
