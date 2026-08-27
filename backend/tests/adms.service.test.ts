@@ -102,6 +102,13 @@ describe("ADMS", () => {
     expect(mocks.registrar).not.toHaveBeenCalled();
   });
 
+  it("conserva como no reconciliado un ATTLOG de trabajador inactivo", async () => {
+    mocks.trabajador.mockResolvedValue({ id: "t-inactivo", estatus: TrabajadorEstatus.baja });
+    await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 0, noReconciliados: 1 });
+    expect(mocks.eventoCrear).toHaveBeenCalledWith({ data: expect.objectContaining({ pinDispositivo: "42", obraId: "obra-1" }) });
+    expect(mocks.registrar).not.toHaveBeenCalled();
+  });
+
   it("detecta un ATTLOG conocido duplicado", async () => {
     mocks.asistencia.mockResolvedValue({ id: "a1" });
     await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 1, noReconciliados: 0 });

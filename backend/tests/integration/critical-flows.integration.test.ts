@@ -565,7 +565,13 @@ describe("PostgreSQL/HTTP real: asistencia y ADMS", () => {
   });
 
   it("procesa ATTLOG conocido, conserva desconocido y deduplica ambos por HTTP", async () => {
-    const { trabajadores } = await escenarioBase();
+    const { seccion, trabajadores, usuarios } = await escenarioBase();
+    // ATTLOG resuelve el Frente desde la asignación diaria del trabajador;
+    // el fixture debe declarar explícitamente que este trabajador estaba
+    // asignado ese día, en vez de depender de un Frente "Oficina" implícito.
+    await prisma.asignacionDiaria.create({
+      data: { trabajadorId: trabajadores[0].id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), asignadoPor: usuarios.get(RolUsuario.rh)!.id },
+    });
     const cuerpo = "101\t2026-08-03 08:01:02\t0\t1\n999\t2026-08-03 08:02:03\t0\t15";
     for (let i = 0; i < 2; i++) {
       const res = await request(app).post("/iclock/cdata?SN=SN-INTEGRATION-1&table=ATTLOG").set("Content-Type", "text/plain").send(cuerpo);
