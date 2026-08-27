@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { exigirHostLocal } from "../src/config/hostGuard";
 import { validarVariablesDeEntorno } from "../src/config/env";
+import { obtenerOrigensPermitidos, origenPermitido, ORIGEN_ELECTRON_DESARROLLO } from "../src/config/cors";
 
 const ENTORNO_ORIGINAL = { ...process.env };
 
@@ -142,5 +143,25 @@ describe("validarVariablesDeEntorno — integración del guard", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     validarVariablesDeEntorno();
     expect(process.exit).toHaveBeenCalledWith(1);
+  });
+});
+
+describe("CORS — allowlist explícita", () => {
+  it("permite Electron desarrollo y conserva el origin configurado", () => {
+    expect(obtenerOrigensPermitidos("https://api.example.invalid")).toEqual([
+      ORIGEN_ELECTRON_DESARROLLO,
+      "https://api.example.invalid",
+    ]);
+    expect(origenPermitido(ORIGEN_ELECTRON_DESARROLLO, obtenerOrigensPermitidos("https://api.example.invalid"))).toBe(true);
+  });
+
+  it("rechaza origins no autorizados y no usa wildcard", () => {
+    const permitidos = obtenerOrigensPermitidos("https://api.example.invalid");
+    expect(origenPermitido("https://evil.example.invalid", permitidos)).toBe(false);
+    expect(permitidos).not.toContain("*");
+  });
+
+  it("acepta requests sin Origin para tráfico no-browser", () => {
+    expect(origenPermitido(undefined, obtenerOrigensPermitidos("https://api.example.invalid"))).toBe(true);
   });
 });

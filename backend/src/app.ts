@@ -6,6 +6,7 @@ cargarDotenv({ quiet: true });
 import express from "express";
 import helmet from "helmet";
 import { validarVariablesDeEntorno } from "./config/env";
+import { crearOpcionesCors } from "./config/cors";
 import { errorHandler } from "./middlewares/errorHandler";
 import { limitadorGlobal } from "./middlewares/rateLimit";
 import { bloquearDuranteMantenimiento } from "./middlewares/maintenance";
@@ -29,7 +30,7 @@ export const app = express();
 app.set("trust proxy", 1);
 
 app.use(helmet());
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN }));
+app.use(cors(crearOpcionesCors()));
 app.use(express.json({ limit: "1mb" }));
 // Congelamiento global antes de rate limits, autenticación y routers. GET no
 // implica lectura necesariamente (handshake ADMS y exports escriben), por eso

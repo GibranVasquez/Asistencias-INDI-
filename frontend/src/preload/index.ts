@@ -6,7 +6,7 @@ import { contextBridge, ipcRenderer } from "electron";
 const PREFIJO_API_BASE_URL = "--indi-api-base-url=";
 function leerApiBaseUrl(): string {
   const arg = process.argv.find((a) => a.startsWith(PREFIJO_API_BASE_URL));
-  return arg ? arg.slice(PREFIJO_API_BASE_URL.length) : "http://localhost:4000";
+  return arg ? arg.slice(PREFIJO_API_BASE_URL.length) : (process.env.NODE_ENV === "development" ? "http://localhost:4000" : "https://api.sistemasindi.com");
 }
 
 // Bandera minima expuesta al renderer: si arrancamos en modo kiosco fisico

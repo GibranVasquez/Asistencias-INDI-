@@ -8,7 +8,7 @@ const TIPOS: Record<FormatoExportacion, { extension: "pdf" | "xlsx"; mime: strin
 };
 
 export async function descargarExportacion(token: string, ruta: string, nombreArchivo: string, formato: FormatoExportacion): Promise<void> {
-  const base = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+  const base = window.indiApp?.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.MODE === "production" ? "https://api.sistemasindi.com" : "http://localhost:4000");
   const respuesta = await fetch(`${base}${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!respuesta.ok) {
     const datos = await respuesta.json().catch(() => ({}));

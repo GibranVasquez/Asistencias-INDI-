@@ -1,9 +1,7 @@
 import { app } from "electron";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { extraerApiBaseUrl, validarApiBaseUrl } from "./apiConfigValidation";
-
-const URL_POR_DEFECTO = "http://localhost:4000";
+import { extraerApiBaseUrl, validarApiBaseUrl, urlApiPorDefecto } from "./apiConfigValidation";
 const NOMBRE_ARCHIVO = "config.json";
 
 function rutaConfig(): string {
@@ -11,7 +9,7 @@ function rutaConfig(): string {
 }
 
 // Si el archivo no existe (primer arranque, o tras una reinstalación que no
-// tocó userData), lo crea con el valor de desarrollo — así queda un archivo
+// tocó userData), lo crea con el valor por defecto del entorno — así queda un archivo
 // real y descubrible para que quien instale la app en su destino final solo
 // tenga que editar apiBaseUrl y reiniciar, sin recompilar ni reinstalar.
 function leerConfigArchivo(): unknown {
@@ -20,7 +18,7 @@ function leerConfigArchivo(): unknown {
   if (!existsSync(ruta)) {
     const contenido = {
       _comentario: "URL base del backend Express. Edita apiBaseUrl y reinicia la app -- no hace falta recompilar ni reinstalar.",
-      apiBaseUrl: URL_POR_DEFECTO,
+      apiBaseUrl: urlApiPorDefecto(app.isPackaged),
     };
     try {
       mkdirSync(app.getPath("userData"), { recursive: true });
@@ -43,7 +41,7 @@ function leerConfigArchivo(): unknown {
  * Resuelve la URL base de la API en tiempo de ejecución (nunca horneada en
  * el build): INDI_API_BASE_URL (variable de entorno, override rápido sin
  * tocar archivos) > apiBaseUrl en config.json bajo userData (editable sin
- * recompilar) > URL de desarrollo por defecto.
+ * recompilar) > localhost en desarrollo / API pública en producción.
  */
 export function resolverApiBaseUrl(): string {
   if (process.env.INDI_API_BASE_URL) {
@@ -51,5 +49,5 @@ export function resolverApiBaseUrl(): string {
   }
 
   const config = leerConfigArchivo();
-  return extraerApiBaseUrl(config) ?? URL_POR_DEFECTO;
+  return extraerApiBaseUrl(config) ?? urlApiPorDefecto(app.isPackaged);
 }
