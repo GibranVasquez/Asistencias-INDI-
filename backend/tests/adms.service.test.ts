@@ -1,20 +1,22 @@
 import { MetodoAsistencia, TrabajadorEstatus } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ terminal: vi.fn(), trabajador: vi.fn(), seccion: vi.fn(), asistencia: vi.fn(), eventoBuscar: vi.fn(), eventoCrear: vi.fn(), registrar: vi.fn() }));
+const mocks = vi.hoisted(() => ({ terminal: vi.fn(), trabajador: vi.fn(), seccion: vi.fn(), asignacion: vi.fn(), asistencia: vi.fn(), eventoBuscar: vi.fn(), eventoCrear: vi.fn(), registrar: vi.fn() }));
 vi.mock("../src/utils/prisma", () => ({ prisma: {
   terminal: { findUnique: mocks.terminal }, trabajador: { findUnique: mocks.trabajador }, seccion: { findFirst: mocks.seccion },
+  asignacionDiaria: { findUnique: mocks.asignacion },
   asistenciaDiaria: { findFirst: mocks.asistencia }, eventoNoReconciliado: { findFirst: mocks.eventoBuscar, create: mocks.eventoCrear },
 } }));
 vi.mock("../src/services/asistencia.service", () => ({ registrarAsistencia: mocks.registrar }));
 
 import { parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
 
-const terminal = { id: "term-adms", numeroSerie: "SN-LOCAL", activo: true } as never;
+const terminal = { id: "term-adms", numeroSerie: "SN-LOCAL", activo: true, obraId: "obra-1" } as never;
 
 beforeEach(() => {
   mocks.trabajador.mockResolvedValue({ id: "t1", estatus: TrabajadorEstatus.activo });
-  mocks.seccion.mockResolvedValue({ id: "oficina" });
+  mocks.seccion.mockResolvedValue({ id: "seccion-asignada" });
+  mocks.asignacion.mockResolvedValue({ seccion: { id: "seccion-asignada", obraId: "obra-1" } });
   mocks.asistencia.mockResolvedValue(null);
   mocks.eventoBuscar.mockResolvedValue(null);
   mocks.eventoCrear.mockResolvedValue({});
@@ -81,15 +83,22 @@ describe("ADMS", () => {
     );
   });
 
-  it("registra el PIN conocido con método y sección de oficina", async () => {
+  it("registra el PIN conocido con el Frente de su asignación diaria", async () => {
     await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t15")).resolves.toEqual({ procesados: 1, duplicados: 0, noReconciliados: 0 });
-    expect(mocks.registrar).toHaveBeenCalledWith("t1", "term-adms", expect.objectContaining({ seccionId: "oficina", metodoUsado: MetodoAsistencia.rostro }));
+    expect(mocks.registrar).toHaveBeenCalledWith("t1", "term-adms", expect.objectContaining({ seccionId: "seccion-asignada", metodoUsado: MetodoAsistencia.rostro }));
   });
 
   it("guarda un PIN desconocido como EventoNoReconciliado sin inventar trabajador", async () => {
     mocks.trabajador.mockResolvedValue(null);
     await expect(procesarLoteAttlog(terminal, "999\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 0, noReconciliados: 1 });
     expect(mocks.eventoCrear).toHaveBeenCalledWith({ data: expect.objectContaining({ pinDispositivo: "999", terminalId: "term-adms" }) });
+    expect(mocks.registrar).not.toHaveBeenCalled();
+  });
+
+  it("no inventa un Frente Oficina si falta asignación diaria", async () => {
+    mocks.asignacion.mockResolvedValue(null);
+    await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 0, noReconciliados: 1 });
+    expect(mocks.eventoCrear).toHaveBeenCalledWith({ data: expect.objectContaining({ pinDispositivo: "42", obraId: "obra-1" }) });
     expect(mocks.registrar).not.toHaveBeenCalled();
   });
 

@@ -2,6 +2,7 @@ import { Fragment, FormEvent, useEffect, useMemo, useState } from "react";
 import { RolUsuario } from "@/features/auth/api";
 import { ApiError } from "@/core/api/client";
 import { listarSecciones, Seccion } from "@/core/api/resources/secciones";
+import { listarTrabajadores, Trabajador } from "@/features/trabajadores/api";
 import {
   cambiarEstadoUsuario,
   crearUsuario,
@@ -22,7 +23,7 @@ import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
 const ETIQUETA_ROL: Record<RolUsuario, string> = {
   trabajador: "Trabajador",
   recepcion: "Recepción",
-  encargado_seccion: "Responsable del tramo",
+  encargado_seccion: "Encargado de Frente",
   rh: "Recursos Humanos",
   administrador: "Administrador",
 };
@@ -39,6 +40,7 @@ export default function UsuariosPage() {
 
   const [usuarios, setUsuarios] = useState<UsuarioListado[] | null>(null);
   const [secciones, setSecciones] = useState<Seccion[] | null>(null);
+  const [trabajadores, setTrabajadores] = useState<Trabajador[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,10 +62,11 @@ export default function UsuariosPage() {
   function cargar() {
     setCargando(true);
     setError(null);
-    Promise.all([listarUsuarios(token), listarSecciones(token)])
-      .then(([u, s]) => {
+    Promise.all([listarUsuarios(token), listarSecciones(token), listarTrabajadores(token)])
+      .then(([u, s, t]) => {
         setUsuarios(u.usuarios);
         setSecciones(s.secciones);
+        setTrabajadores(t.trabajadores);
       })
       .catch((err) => {
         const mensaje =
@@ -84,6 +87,7 @@ export default function UsuariosPage() {
         username: formulario.username,
         password: formulario.password,
         rol: formulario.rol,
+        trabajadorId: formulario.rol === "encargado_seccion" ? formulario.trabajadorId || null : undefined,
         seccionesAsignadas: formulario.rol === "encargado_seccion" ? formulario.seccionesAsignadas : undefined,
       });
       setMostrarAlta(false);
@@ -301,6 +305,22 @@ export default function UsuariosPage() {
                 ))}
               </select>
             </label>
+
+            {formulario.rol === "encargado_seccion" && (
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
+                Trabajador asociado (opcional)
+                <select
+                  value={formulario.trabajadorId ?? ""}
+                  onChange={(e) => setFormulario((f) => ({ ...f, trabajadorId: e.target.value || null }))}
+                  style={estilosCampo}
+                >
+                  <option value="">Sin vínculo de trabajador</option>
+                  {trabajadores?.filter((t) => t.estatus === "activo").map((t) => (
+                    <option key={t.id} value={t.id}>{t.nombreCompleto}</option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             {formulario.rol === "encargado_seccion" && (
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>

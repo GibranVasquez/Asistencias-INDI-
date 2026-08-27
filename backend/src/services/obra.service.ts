@@ -8,6 +8,13 @@ export async function obtenerObraActual(): Promise<Pick<Obra, "id" | "nombre" | 
   return obra;
 }
 
+export async function listarObras(): Promise<Pick<Obra, "id" | "nombre" | "creadoEn" | "timezoneObra">[]> {
+  return prisma.obra.findMany({
+    orderBy: { creadoEn: "asc" },
+    select: { id: true, nombre: true, creadoEn: true, timezoneObra: true },
+  });
+}
+
 export async function editarObraActual(usuarioActorId: string, nombre: string, timezoneObra?: string): Promise<Pick<Obra, "id" | "nombre" | "creadoEn" | "timezoneObra">> {
   const obra = await prisma.obra.findFirst({ orderBy: { creadoEn: "asc" }, select: { id: true, nombre: true, creadoEn: true, timezoneObra: true } });
   if (!obra) throw new AppError(404, "No hay una obra configurada.");

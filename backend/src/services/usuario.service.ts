@@ -74,7 +74,7 @@ export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsu
     throw new AppError(409, "Ya existe una cuenta con ese username.");
   }
 
-  if (datos.rol === RolUsuario.trabajador) {
+  if (datos.trabajadorId) {
     const trabajador = await prisma.trabajador.findUnique({ where: { id: datos.trabajadorId! } });
     if (!trabajador) {
       throw new AppError(404, "El trabajador indicado no existe.");
@@ -103,7 +103,7 @@ export async function crearUsuario(usuarioCreadorId: string, datos: DatosAltaUsu
             username: datos.username,
             passwordHash,
             rol: datos.rol,
-            trabajadorId: datos.rol === RolUsuario.trabajador ? datos.trabajadorId : null,
+            trabajadorId: datos.trabajadorId ?? null,
             seccionesAsignadas: datos.seccionesAsignadas?.length
               ? { connect: datos.seccionesAsignadas.map((id) => ({ id })) }
               : undefined,

@@ -1,6 +1,7 @@
 import { Fragment, FormEvent, useEffect, useState } from "react";
 import { ApiError } from "@/core/api/client";
 import { listarEncargados, EncargadoBasico } from "@/core/api/resources/encargados";
+import { listarObras, ObraResumen } from "@/core/api/resources/obras";
 import { Horario, listarHorarios } from "@/core/api/resources/horarios";
 import {
   crearSeccion,
@@ -24,6 +25,7 @@ export default function PanelFrentes() {
   const token = sesion!.token;
 
   const [secciones, setSecciones] = useState<Seccion[] | null>(null);
+  const [obras, setObras] = useState<ObraResumen[] | null>(null);
   const [horarios, setHorarios] = useState<Horario[] | null>(null);
   const [encargados, setEncargados] = useState<EncargadoBasico[] | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -31,6 +33,7 @@ export default function PanelFrentes() {
 
   const [modal, setModal] = useState<{ editando: Seccion | null } | null>(null);
   const [nombre, setNombre] = useState("");
+  const [obraId, setObraId] = useState("");
   const [tramoUbicacion, setTramoUbicacion] = useState("");
   const [horarioId, setHorarioId] = useState("");
   const [encargadoIds, setEncargadoIds] = useState<string[]>([]);
@@ -45,9 +48,10 @@ export default function PanelFrentes() {
   function cargar() {
     setCargando(true);
     setError(null);
-    Promise.all([listarSecciones(token), listarHorarios(token), listarEncargados(token), listarTrabajadoresResponsables(token)])
-      .then(([s, h, e, t]) => {
+    Promise.all([listarSecciones(token), listarHorarios(token), listarEncargados(token), listarTrabajadoresResponsables(token), listarObras(token)])
+      .then(([s, h, e, t, o]) => {
         setSecciones(s.secciones);
+        setObras(o.obras);
         setHorarios(h.horarios);
         setEncargados(e.usuarios);
         setTrabajadoresResponsables(t.trabajadores);
@@ -59,6 +63,7 @@ export default function PanelFrentes() {
 
   function abrirAlta() {
     setNombre("");
+    setObraId(obras?.[0]?.id ?? "");
     setTramoUbicacion("");
     setHorarioId("");
     setEncargadoIds([]);
@@ -89,14 +94,13 @@ export default function PanelFrentes() {
         const datos: DatosEdicionSeccion = { nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
         seccionGuardada = (await editarSeccion(token, modal.editando.id, datos)).seccion;
       } else {
-        // Un único Obra en todo el sistema hoy (Tren Golfo de México); no
-        // existe GET /obras, así que se reutiliza el obraId de una sección
-        // ya existente en vez de construir un endpoint nuevo para esto.
-        const obraId = secciones?.[0]?.obraId;
-        if (!obraId) {
-          throw new Error("No se pudo determinar la obra: crea el primer frente directamente en la base o contacta soporte.");
+        // El Frente pertenece a una Obra real; se selecciona dinámicamente
+        // cuando hay varias y se usa la única disponible como valor inicial.
+        const obraIdSeleccionada = obraId || obras?.[0]?.id;
+        if (!obraIdSeleccionada) {
+          throw new Error("No hay una Obra disponible para crear el Frente.");
         }
-        const datos: DatosAltaSeccion = { obraId, nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
+        const datos: DatosAltaSeccion = { obraId: obraIdSeleccionada, nombre, horarioId: horarioId || null, encargadoIds, tramoUbicacion: tramoUbicacion || null };
         seccionGuardada = (await crearSeccion(token, datos)).seccion;
       }
       const anteriores = modal?.editando?.responsablesTramo?.map((r) => r.id) ?? [];
@@ -155,7 +159,7 @@ export default function PanelFrentes() {
                 <th style={{ padding: "10px 20px" }}>Nombre</th>
                 <th style={{ padding: "10px 12px" }}>Tramo o ubicación</th>
                 <th style={{ padding: "10px 12px" }}>Horario</th>
-                <th style={{ padding: "10px 12px" }}>Responsable(s) del tramo</th>
+                <th style={{ padding: "10px 12px" }}>Encargado(s) de Frente</th>
                 <th style={{ padding: "10px 20px" }}>Acciones</th>
               </tr>
             </thead>
@@ -196,6 +200,14 @@ export default function PanelFrentes() {
             <Campo etiqueta="Nombre">
               <input type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} style={estilosCampo} />
             </Campo>
+            {!modal.editando && (obras?.length ?? 0) > 1 && (
+              <Campo etiqueta="Obra">
+                <select required value={obraId} onChange={(e) => setObraId(e.target.value)} style={estilosCampo}>
+                  <option value="">Selecciona una Obra</option>
+                  {obras?.map((obra) => <option key={obra.id} value={obra.id}>{obra.nombre}</option>)}
+                </select>
+              </Campo>
+            )}
             <Campo etiqueta="Tramo o ubicación de la obra">
               <input type="text" value={tramoUbicacion} onChange={(e) => setTramoUbicacion(e.target.value)} placeholder="No especificado" style={estilosCampo} />
             </Campo>

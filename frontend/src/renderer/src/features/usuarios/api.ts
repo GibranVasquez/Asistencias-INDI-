@@ -27,6 +27,7 @@ export interface DatosAltaUsuario {
   username: string;
   password: string;
   rol: Exclude<RolUsuario, "trabajador">;
+  trabajadorId?: string | null;
   seccionesAsignadas?: string[];
 }
 

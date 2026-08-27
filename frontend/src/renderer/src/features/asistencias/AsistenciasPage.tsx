@@ -135,7 +135,7 @@ export default function AsistenciasPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px 22px", fontSize: 13 }}>
           <div><span className="texto-kicker">Frente</span><strong>{seccionSeleccionada?.seccionNombre ?? "Todos los frentes"}</strong></div>
           <div><span className="texto-kicker">Tramo o ubicación</span><strong>{seccionSeleccionada?.seccionTramoUbicacion || "No especificado"}</strong></div>
-          <div><span className="texto-kicker">Responsable del tramo</span><strong>{responsablesVisibles}</strong></div>
+          <div><span className="texto-kicker">Encargados de Frente</span><strong>{responsablesVisibles}</strong></div>
           <div><span className="texto-kicker">Turno</span><strong>{turnoFiltro || (new Set(asistenciasFiltradas.map((a) => a.turno)).size > 1 ? "Múltiple" : asistenciasFiltradas[0]?.turno || "No especificado")}</strong></div>
           <div><span className="texto-kicker">Categoría</span><strong>{categoriaFiltro || (new Set(asistenciasFiltradas.map((a) => a.trabajadorCategoria)).size > 1 ? "Todas las categorías" : asistenciasFiltradas[0]?.trabajadorCategoria || "No especificada")}</strong></div>
           <div><span className="texto-kicker">Semana</span><strong>{numeroSemana(inicioSemana)}</strong></div>

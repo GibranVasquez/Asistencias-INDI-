@@ -38,14 +38,22 @@ export function validarAltaUsuario(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  if (rol === RolUsuario.trabajador) {
-    if (!esUUID(trabajadorId)) {
+  if (rol === RolUsuario.trabajador || rol === RolUsuario.encargado_seccion) {
+    // Un encargado puede tener además una identidad de Trabajador para
+    // registrar asistencia; son permisos de aplicación independientes.
+    if (rol === RolUsuario.trabajador && !esUUID(trabajadorId)) {
       res.status(400).json({ error: "trabajadorId es requerido y debe ser un UUID válido para cuentas rol=trabajador." });
       return;
     }
-  } else if (trabajadorId !== undefined && trabajadorId !== null) {
-    res.status(400).json({ error: "trabajadorId solo aplica para cuentas rol=trabajador." });
-    return;
+    if (rol === RolUsuario.encargado_seccion && trabajadorId !== undefined && trabajadorId !== null && !esUUID(trabajadorId)) {
+      res.status(400).json({ error: "trabajadorId debe ser un UUID válido cuando se vincula una cuenta." });
+      return;
+    }
+  } else {
+    if (trabajadorId !== undefined && trabajadorId !== null) {
+      res.status(400).json({ error: "trabajadorId solo aplica para cuentas rol=trabajador o encargado_seccion." });
+      return;
+    }
   }
 
   if (seccionesAsignadas !== undefined && !esArregloDeUUIDs(seccionesAsignadas)) {

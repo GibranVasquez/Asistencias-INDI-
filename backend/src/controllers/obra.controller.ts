@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
-import { editarObraActual, obtenerObraActual } from "../services/obra.service";
+import { editarObraActual, listarObras, obtenerObraActual } from "../services/obra.service";
+
+export async function listar(_req: Request, res: Response): Promise<void> {
+  res.json({ obras: await listarObras() });
+}
 
 export async function obtenerActual(_req: Request, res: Response): Promise<void> {
   res.json({ obra: await obtenerObraActual() });

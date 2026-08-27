@@ -102,8 +102,24 @@ export async function registrarAsistencia(
     throw new AppError(400, "La sección indicada no existe.");
   }
 
-  // terminalOrigenId no se valida contra la BD aquí: terminalAuthMiddleware
-  // ya garantizó que corresponde a un Terminal existente y activo.
+  // La terminal es el punto de captura, no el Frente del trabajador. Solo
+  // valida el límite de Obra: un dispositivo asignado a una Obra no puede
+  // escribir asistencias en otra. Durante expand, una terminal sin obra se
+  // permite únicamente mientras exista una sola Obra inequívoca.
+  const terminal = await prisma.terminal.findUnique({ where: { id: terminalOrigenId }, select: { activo: true, obraId: true } });
+  if (!terminal || !terminal.activo) {
+    throw new AppError(403, "La terminal no está autorizada.");
+  }
+  if (terminal.obraId && terminal.obraId !== seccion.obraId) {
+    throw new AppError(403, "La terminal y el Frente pertenecen a Obras distintas.");
+  }
+  if (!terminal.obraId) {
+    const obras = await prisma.obra.count();
+    if (obras !== 1) {
+      throw new AppError(403, "La terminal no tiene una Obra asignada.");
+    }
+  }
+
   const fecha = aFechaUTC(datos.fecha);
   const hora = new Date(`1970-01-01T${normalizarHora(datos.hora)}Z`);
 

@@ -22,6 +22,7 @@ vi.mock("@/features/auth/ContextoAutenticacion", () => ({
 
 vi.mock("@/core/api/resources/obras", () => ({
   obtenerObraActual: vi.fn().mockResolvedValue({ obra: { id: "obra-1", nombre: "Obra ficticia", timezoneObra: null } }),
+  listarObras: vi.fn().mockResolvedValue({ obras: [{ id: "obra-1", nombre: "Obra ficticia", timezoneObra: null }] }),
   editarObraActual: vi.fn(),
 }));
 

@@ -15,7 +15,7 @@ const ETIQUETA_ROL: Record<string, string> = {
   administrador: "Administrador",
   rh: "Recursos Humanos",
   recepcion: "Recepción",
-  encargado_seccion: "Responsable del tramo",
+  encargado_seccion: "Encargado de Frente",
   trabajador: "Trabajador",
 };
 

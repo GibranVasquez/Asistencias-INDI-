@@ -3,12 +3,9 @@ import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { registrarAsistencia } from "./asistencia.service";
 
-// Sección/turno fijos para todo lo que llegue de un terminal tipo="adms":
-// el lector de oficina (ZKTeco MB10-VL) es de un solo punto físico, no
-// requiere que el equipo indique sección — confirmado con el usuario
-// 2026-07-25. "Oficina" (turno) replica la convención ya usada en el
-// Kiosco manual, donde turno = nombre del Horario (ver KioscoPage.tsx).
-const SECCION_OFICINA_NOMBRE = "Oficina";
+// El dispositivo ADMS solo aporta el punto de captura. La sección/Frente de
+// una asistencia se toma de la asignación diaria del trabajador; nunca se
+// infiere por la ubicación o el nombre de la terminal (incluida "Oficina").
 const TURNO_OFICINA = "Oficina";
 
 // Mapeo verify-code -> MetodoAsistencia. 1=huella y 15=rostro son los
@@ -106,15 +103,13 @@ export async function resolverTerminalPorSN(sn: string | undefined): Promise<Ter
   return terminal;
 }
 
-async function obtenerSeccionOficinaId(): Promise<string> {
-  const seccion = await prisma.seccion.findFirst({ where: { nombre: SECCION_OFICINA_NOMBRE } });
-  if (!seccion) {
-    // No debería pasar (la sección se siembra en prisma/seed.ts), pero si
-    // alguien la borra manualmente, mejor un error claro que una asistencia
-    // huérfana o un crash distinto más abajo.
-    throw new AppError(500, `No existe la sección "${SECCION_OFICINA_NOMBRE}" — revisa el seed.`);
-  }
-  return seccion.id;
+async function obtenerSeccionAsignadaId(trabajadorId: string, fechaCivil: string, obraId: string | null | undefined): Promise<string | null> {
+  const asignacion = await prisma.asignacionDiaria.findUnique({
+    where: { trabajadorId_fecha: { trabajadorId, fecha: fechaCivilAFechaPrisma(fechaCivil) } },
+    include: { seccion: { select: { id: true, obraId: true } } },
+  });
+  if (!asignacion || (obraId && asignacion.seccion.obraId !== obraId)) return null;
+  return asignacion.seccion.id;
 }
 
 async function yaExisteAsistencia(trabajadorId: string, terminalId: string, fechaCivil: string, horaCivil: string): Promise<boolean> {
@@ -211,7 +206,15 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       continue;
     }
 
-    const seccionId = await obtenerSeccionOficinaId();
+    const seccionId = await obtenerSeccionAsignadaId(trabajador.id, registro.fechaCivil, terminal.obraId);
+    if (!seccionId) {
+      // El trabajador es conocido, pero no existe una asignación diaria
+      // inequívoca dentro de la Obra del dispositivo. Se conserva el evento
+      // para revisión posterior en vez de inventar un Frente "Oficina".
+      await registrarEventoNoReconciliado(terminal.id, terminal.obraId ?? null, registro);
+      noReconciliados++;
+      continue;
+    }
     // Fallback a huella si el código no está en el mapa: MetodoAsistencia es
     // un enum de solo 2 valores, así que algo hay que elegir — se prefiere
     // no perder la asistencia (ya sabemos QUIÉN es) por un código de verify

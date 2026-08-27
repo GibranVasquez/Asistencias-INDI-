@@ -7,6 +7,12 @@ export interface ObraActual {
   timezoneObra: string | null;
 }
 
+export type ObraResumen = ObraActual;
+
+export function listarObras(token: string) {
+  return apiClient.get<{ obras: ObraResumen[] }>("/obras", token);
+}
+
 export function obtenerObraActual(token: string) {
   return apiClient.get<{ obra: ObraActual }>("/obras/actual", token);
 }
