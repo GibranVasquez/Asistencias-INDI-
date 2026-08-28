@@ -52,3 +52,13 @@ export interface ResultadoAsignacion {
 export function asignarSeccionDelDia(token: string, datos: DatosAsignacion) {
   return apiClient.post<ResultadoAsignacion>("/asignaciones", datos, token);
 }
+
+export interface AsignacionesActuales {
+  seccionId: string;
+  fecha: string;
+  trabajadores: { trabajadorId: string; nombreCompleto: string; numeroChecador: number | null; estatus: string }[];
+}
+
+export function obtenerAsignaciones(token: string, seccionId: string, fecha: string) {
+  return apiClient.get<AsignacionesActuales>(`/asignaciones?seccionId=${encodeURIComponent(seccionId)}&fecha=${encodeURIComponent(fecha)}`, token);
+}

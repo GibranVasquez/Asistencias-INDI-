@@ -29,8 +29,35 @@ export interface ResultadoAsignacion {
   movidos: TrabajadorMovido[];
 }
 
+export interface AsignacionesActuales {
+  seccionId: string;
+  fecha: string;
+  trabajadores: { trabajadorId: string; nombreCompleto: string; numeroChecador: number | null; estatus: string }[];
+}
+
 function aFechaUTC(fechaISO: string): Date {
   return new Date(`${fechaISO}T00:00:00Z`);
+}
+
+export async function obtenerAsignacionesActuales(
+  usuarioId: string,
+  rol: RolUsuario,
+  seccionId: string,
+  fechaISO: string
+): Promise<AsignacionesActuales> {
+  await verificarAccesoSeccion(usuarioId, rol, seccionId);
+  const seccion = await prisma.seccion.findUnique({ where: { id: seccionId }, select: { id: true } });
+  if (!seccion) throw new AppError(404, "La sección indicada no existe.");
+  const asignaciones = await prisma.asignacionDiaria.findMany({
+    where: { seccionId, fecha: aFechaUTC(fechaISO) },
+    select: { trabajador: { select: { id: true, nombreCompleto: true, numeroChecador: true, estatus: true } } },
+    orderBy: { trabajador: { nombreCompleto: "asc" } },
+  });
+  return {
+    seccionId,
+    fecha: fechaISO,
+    trabajadores: asignaciones.map(({ trabajador }) => ({ trabajadorId: trabajador.id, nombreCompleto: trabajador.nombreCompleto, numeroChecador: trabajador.numeroChecador, estatus: trabajador.estatus })),
+  };
 }
 
 function esFinDeSemana(fecha: Date): boolean {
