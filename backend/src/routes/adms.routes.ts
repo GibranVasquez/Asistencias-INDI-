@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 import { devicecmd, getrequest, handshake, registry, subirDatos } from "../controllers/adms.controller";
 import { restringirPorIP } from "../middlewares/restringirPorIP";
+import { limitadorAdms } from "../middlewares/rateLimit";
 
 export const admsRouter = Router();
 
@@ -8,14 +9,14 @@ export const admsRouter = Router();
 // ADMS): el protocolo no tiene autenticación propia, así que esto corre
 // ANTES que cualquier otra cosa — ni siquiera llega a resolverTerminalPorSN
 // si la IP no está en la lista blanca.
-admsRouter.use("/iclock", restringirPorIP);
+admsRouter.use("/iclock", limitadorAdms, restringirPorIP);
 
 // El equipo ADMS no manda Content-Type: application/json (manda texto
 // plano o nada), así que express.json() global (app.ts) no lo toca —
 // pero tampoco alcanza a parsear el cuerpo por nosotros. `type: () => true`
 // fuerza a leer el body como texto sin importar qué (o ningún) Content-Type
 // traiga la petición.
-const cuerpoComoTexto = express.text({ type: () => true });
+const cuerpoComoTexto = express.text({ type: () => true, limit: "1mb" });
 
 // Rutas fijas por el firmware del equipo (no configurables de nuestro
 // lado) — ver CLAUDE.md para el resto del protocolo ADMS. Sin

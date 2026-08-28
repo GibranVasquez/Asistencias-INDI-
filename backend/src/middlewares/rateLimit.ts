@@ -6,6 +6,19 @@ import { verificarTokenJWT } from "../utils/jwt";
 
 const QUINCE_MINUTOS_MS = 15 * 60 * 1000;
 
+// ADMS puede reenviar lotes ATTLOG y hacer polling de getrequest desde redes
+// variables. Este límite independiente es deliberadamente holgado (600/15m)
+// y sigue siendo un backstop contra abuso; la identidad del dispositivo la
+// valida el SN en los handlers, no esta cuota.
+export const limitadorAdms = rateLimit({
+  windowMs: QUINCE_MINUTOS_MS,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Demasiadas solicitudes ADMS. Intenta de nuevo más tarde." },
+  keyGenerator: (req) => `adms:${req.ip ?? "sin-ip"}`,
+});
+
 // El keyGenerator por defecto de express-rate-limit cuenta por IP. Este
 // limitador se monta en app.ts ANTES del router (y por lo tanto antes de
 // authMiddleware/terminalAuthMiddleware, que son por-router), así que con el

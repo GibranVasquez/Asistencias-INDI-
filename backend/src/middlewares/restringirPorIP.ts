@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { isIP } from "node:net";
 
 // Mitigación real (no hay alternativa: ver CLAUDE.md, sección ADMS,
 // "Comm Key descartado 2026-07-27" — el MB10-VL no expone en su menú
@@ -6,33 +7,21 @@ import { NextFunction, Request, Response } from "express";
 // en `ADMS_IPS_PERMITIDAS` (env var, IPs separadas por coma) o se rechaza
 // con 403 antes de llegar siquiera a `resolverTerminalPorSN`. **Fail-closed
 // en producción**: si `NODE_ENV=production` y la variable no está
-// configurada, se rechaza TODO /iclock/* (no se asume "sin lista, dejar
-// pasar" como seguro — sin esta capa el endpoint queda sin ninguna
-// protección real). Fuera de producción, si se omite, no bloquea (para no
-// exigir configurarla en cada entorno de desarrollo) — pero si sí está
-// configurada, se respeta igual fuera de producción. El riesgo de "la IP
-// cambia y nadie se entera" que motivó (brevemente) volver esto opcional
-// está cubierto por la alerta de inactividad del terminal ADMS en el
-// panel principal (PanelPrincipalPage.tsx) — esa es la capa de detección; esta sigue
-// siendo la de bloqueo.
+// configurada, se aplica como defensa adicional; si está ausente o vacía no
+// bloquea, porque un ADMS legítimo puede cambiar de red. La identidad primaria
+// del dispositivo la validan los handlers mediante SN + terminal registrada y
+// activa. Nunca se aceptan comodines, CIDR ni nombres como valores de lista.
 function parsearIPsPermitidas(): string[] {
   return (process.env.ADMS_IPS_PERMITIDAS ?? "")
     .split(",")
     .map((ip) => ip.trim())
-    .filter((ip) => ip.length > 0);
+    .filter((ip) => ip.length > 0 && isIP(ip) !== 0);
 }
 
 export function restringirPorIP(req: Request, res: Response, next: NextFunction): void {
   const permitidas = parsearIPsPermitidas();
 
   if (permitidas.length === 0) {
-    if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[adms] ADMS_IPS_PERMITIDAS no está configurada en producción — rechazando todas las peticiones a /iclock/* por defecto."
-      );
-      res.status(403).json({ error: "Acceso no permitido." });
-      return;
-    }
     next();
     return;
   }

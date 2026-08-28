@@ -67,13 +67,15 @@ export async function getrequest(req: Request, res: Response): Promise<void> {
 // POST /iclock/devicecmd — el equipo confirma la ejecución de un comando
 // que nunca le mandamos. No debería llamarse en la práctica, pero se
 // responde igual para no dejar al equipo esperando.
-export async function devicecmd(_req: Request, res: Response): Promise<void> {
+export async function devicecmd(req: Request, res: Response): Promise<void> {
+  await resolverTerminalPorSN(req.query.SN as string | undefined);
   res.type("text/plain").send("OK");
 }
 
 // GET/POST /iclock/registry — algunos firmwares lo llaman al conectar por
 // primera vez con sus capacidades (modelo, versión, etc.). No se persiste
 // nada de esto todavía; se reconoce para no bloquear el resto del handshake.
-export async function registry(_req: Request, res: Response): Promise<void> {
+export async function registry(req: Request, res: Response): Promise<void> {
+  await resolverTerminalPorSN(req.query.SN as string | undefined);
   res.type("text/plain").send("OK");
 }
