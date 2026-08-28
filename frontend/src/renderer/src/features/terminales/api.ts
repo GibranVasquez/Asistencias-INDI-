@@ -7,6 +7,7 @@ export interface Terminal {
   ubicacion: string;
   numeroSerie: string | null;
   obraId: string | null;
+  obraNombre?: string | null;
   activo: boolean;
   estadoConexion: string;
   ultimaSincronizacion: string | null;

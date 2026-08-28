@@ -40,6 +40,17 @@ export function validarAltaTerminal(req: Request, res: Response, next: NextFunct
     return;
   }
 
+  if (tipo === "adms") {
+    if (!esStringNoVacia(numeroSerie, LONGITUD_MAXIMA_TEXTO)) {
+      res.status(400).json({ error: "numeroSerie es requerido para terminales ADMS." });
+      return;
+    }
+    if (!esUUID(obraId)) {
+      res.status(400).json({ error: "obraId es requerido para terminales ADMS." });
+      return;
+    }
+  }
+
   if (obraId !== undefined && obraId !== null && !esUUID(obraId)) {
     res.status(400).json({ error: "obraId debe ser un UUID válido si se envía." });
     return;

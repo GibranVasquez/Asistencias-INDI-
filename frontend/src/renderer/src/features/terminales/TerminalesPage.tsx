@@ -15,6 +15,7 @@ import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ModalConfirmacion from "@/shared/components/ModalConfirmacion";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
+import { listarObras, ObraResumen } from "@/core/api/resources/obras";
 
 const estilosCampo = {
   padding: "10px 12px",
@@ -36,7 +37,7 @@ function horasDesdeSincronizacion(ultimaSincronizacion: string | null): number |
 }
 
 function formularioAltaVacio(): DatosAltaTerminal {
-  return { username: "", password: "", tipo: "", ubicacion: "", numeroSerie: "" };
+  return { username: "", password: "", tipo: "adms", ubicacion: "", numeroSerie: "", obraId: "" };
 }
 
 export default function TerminalesPage() {
@@ -46,6 +47,7 @@ export default function TerminalesPage() {
   const [terminales, setTerminales] = useState<Terminal[] | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [obras, setObras] = useState<ObraResumen[]>([]);
 
   const [mostrarAlta, setMostrarAlta] = useState(false);
   const [formularioAlta, setFormularioAlta] = useState<DatosAltaTerminal>(formularioAltaVacio());
@@ -75,6 +77,7 @@ export default function TerminalesPage() {
   }
 
   useEffect(cargar, [token]);
+  useEffect(() => { listarObras(token).then((r) => setObras(r.obras)).catch(() => setObras([])); }, [token]);
 
   async function enviarAlta(e: FormEvent) {
     e.preventDefault();
@@ -87,6 +90,7 @@ export default function TerminalesPage() {
         tipo: formularioAlta.tipo,
         ubicacion: formularioAlta.ubicacion,
         numeroSerie: formularioAlta.numeroSerie || null,
+        obraId: formularioAlta.tipo === "adms" ? (formularioAlta.obraId || null) : null,
       });
       setMostrarAlta(false);
       setFormularioAlta(formularioAltaVacio());
@@ -173,8 +177,10 @@ export default function TerminalesPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)", textTransform: "uppercase", letterSpacing: ".04em" }}>
-                  <th style={{ padding: "10px 20px" }}>Usuario</th>
+                  <th style={{ padding: "10px 20px" }}>Alias</th>
                   <th style={{ padding: "10px 12px" }}>Tipo</th>
+                  <th style={{ padding: "10px 12px" }}>Serial / SN</th>
+                  <th style={{ padding: "10px 12px" }}>Obra</th>
                   <th style={{ padding: "10px 12px" }}>Ubicación</th>
                   <th style={{ padding: "10px 12px" }}>Conexión</th>
                   <th style={{ padding: "10px 12px" }}>Última sincronización</th>
@@ -191,6 +197,8 @@ export default function TerminalesPage() {
                       <tr style={{ borderTop: "1px solid var(--line)", fontSize: 13.5 }}>
                         <td style={{ padding: "11px 20px", fontWeight: 600, color: "var(--ink)" }}>{t.username}</td>
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.tipo}</td>
+                        <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.numeroSerie ?? "No configurado"}</td>
+                        <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.obraNombre ?? t.obraId ?? "No configurada"}</td>
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.ubicacion}</td>
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.estadoConexion}</td>
                         <td style={{ padding: "11px 12px", color: inactivo ? "var(--err)" : "var(--muted)" }}>
@@ -218,7 +226,7 @@ export default function TerminalesPage() {
                             tamano="pequeno"
                             onClick={() => {
                               setEditando(t);
-                              setFormularioEdicion({ ubicacion: t.ubicacion, numeroSerie: t.numeroSerie });
+                              setFormularioEdicion({ ubicacion: t.ubicacion, numeroSerie: t.numeroSerie, obraId: t.obraId });
                               setErrorEdicion(null);
                             }}
                           >
@@ -237,7 +245,7 @@ export default function TerminalesPage() {
                       </tr>
                       {erroresFila[t.id] && (
                         <tr>
-                          <td colSpan={7} style={{ padding: "0 20px 10px", color: "var(--err)", fontSize: 12.5 }}>
+                          <td colSpan={9} style={{ padding: "0 20px 10px", color: "var(--err)", fontSize: 12.5 }}>
                             {erroresFila[t.id]}
                           </td>
                         </tr>
@@ -266,7 +274,7 @@ export default function TerminalesPage() {
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)" }}>Nuevo terminal</h2>
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
-              Usuario
+              Alias del dispositivo
               <input
                 type="text"
                 required
@@ -278,14 +286,10 @@ export default function TerminalesPage() {
 
             <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
               Tipo
-              <input
-                type="text"
-                required
-                placeholder="huella, rostro, adms…"
-                value={formularioAlta.tipo}
-                onChange={(e) => setFormularioAlta((f) => ({ ...f, tipo: e.target.value }))}
-                style={estilosCampo}
-              />
+              <select required value={formularioAlta.tipo} onChange={(e) => setFormularioAlta((f) => ({ ...f, tipo: e.target.value }))} style={estilosCampo}>
+                <option value="adms">ADMS</option>
+                <option value="kiosco">Kiosco</option>
+              </select>
             </label>
 
             {formularioAlta.tipo !== "adms" && (
@@ -316,11 +320,22 @@ export default function TerminalesPage() {
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
                 Número de serie
                 <input
-                  type="text"
-                  value={formularioAlta.numeroSerie ?? ""}
+                type="text"
+                required
+                value={formularioAlta.numeroSerie ?? ""}
                   onChange={(e) => setFormularioAlta((f) => ({ ...f, numeroSerie: e.target.value }))}
                   style={estilosCampo}
                 />
+              </label>
+            )}
+
+            {formularioAlta.tipo === "adms" && (
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
+                Obra
+                <select required value={formularioAlta.obraId ?? ""} onChange={(e) => setFormularioAlta((f) => ({ ...f, obraId: e.target.value }))} style={estilosCampo}>
+                  <option value="">Selecciona una obra</option>
+                  {obras.map((obra) => <option key={obra.id} value={obra.id}>{obra.nombre}</option>)}
+                </select>
               </label>
             )}
 
@@ -379,6 +394,16 @@ export default function TerminalesPage() {
                   onChange={(e) => setFormularioEdicion((f) => ({ ...f, numeroSerie: e.target.value }))}
                   style={estilosCampo}
                 />
+              </label>
+            )}
+
+            {editando.tipo === "adms" && (
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
+                Obra
+                <select required value={formularioEdicion.obraId ?? ""} onChange={(e) => setFormularioEdicion((f) => ({ ...f, obraId: e.target.value }))} style={estilosCampo}>
+                  <option value="">Selecciona una obra</option>
+                  {obras.map((obra) => <option key={obra.id} value={obra.id}>{obra.nombre}</option>)}
+                </select>
               </label>
             )}
 

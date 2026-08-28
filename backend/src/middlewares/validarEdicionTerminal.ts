@@ -12,6 +12,11 @@ export function validarEdicionTerminal(req: Request, res: Response, next: NextFu
   const body = req.body ?? {};
   const { ubicacion, numeroSerie, activo, obraId } = body;
 
+  if (Object.prototype.hasOwnProperty.call(body, "tipo")) {
+    res.status(400).json({ error: "El tipo de terminal no se puede modificar." });
+    return;
+  }
+
   if (ubicacion !== undefined && !esStringNoVacia(ubicacion, LONGITUD_MAXIMA_TEXTO)) {
     res.status(400).json({ error: "ubicacion debe ser un texto válido." });
     return;

@@ -35,11 +35,14 @@ export interface DatosEdicionTerminal {
 }
 
 export async function listarTerminales(): Promise<TerminalPublico[]> {
-  const terminales = await prisma.terminal.findMany({ orderBy: { ubicacion: "asc" } });
+  const terminales = await prisma.terminal.findMany({ orderBy: { ubicacion: "asc" }, include: { obra: { select: { nombre: true } } } });
   return terminales.map(serializarTerminal);
 }
 
 export async function crearTerminal(usuarioCreadorId: string, datos: DatosAltaTerminal): Promise<TerminalPublico> {
+  datos.username = datos.username.trim();
+  datos.ubicacion = datos.ubicacion.trim();
+  if (datos.numeroSerie) datos.numeroSerie = datos.numeroSerie.trim();
   const existente = await prisma.terminal.findUnique({ where: { username: datos.username } });
   if (existente) {
     throw new AppError(409, "Ya existe un terminal con ese username.");
@@ -120,7 +123,16 @@ export async function editarTerminal(
     throw new AppError(404, "Terminal no encontrado.");
   }
 
+  if (datos.numeroSerie !== undefined && datos.numeroSerie !== null) datos.numeroSerie = datos.numeroSerie.trim();
+  if (datos.ubicacion !== undefined) datos.ubicacion = datos.ubicacion.trim();
   await verificarNumeroSerieDisponible(datos.numeroSerie, id);
+
+  if (actual.tipo === "adms" && datos.numeroSerie === null) {
+    throw new AppError(400, "Una terminal ADMS debe conservar su número de serie.");
+  }
+  if (actual.tipo === "adms" && datos.obraId === null) {
+    throw new AppError(400, "Una terminal ADMS debe conservar su Obra.");
+  }
 
   if (datos.obraId !== undefined && datos.obraId !== null) {
     const obra = await prisma.obra.findUnique({ where: { id: datos.obraId }, select: { id: true } });
