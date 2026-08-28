@@ -10,6 +10,7 @@ import { crearOpcionesCors } from "./config/cors";
 import { errorHandler } from "./middlewares/errorHandler";
 import { limitadorGlobal } from "./middlewares/rateLimit";
 import { bloquearDuranteMantenimiento } from "./middlewares/maintenance";
+import { registrarSolicitudAdms } from "./middlewares/admsRequestLogging";
 import { router } from "./routes";
 
 validarVariablesDeEntorno();
@@ -37,5 +38,6 @@ app.use(express.json({ limit: "1mb" }));
 // la única excepción funcional es /health.
 app.use(bloquearDuranteMantenimiento);
 app.use(limitadorGlobal);
+app.use("/iclock", registrarSolicitudAdms);
 app.use(router);
 app.use(errorHandler);
