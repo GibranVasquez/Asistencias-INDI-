@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../utils/prisma";
 import {
+  calcularOffsetZonaHoraria,
   generarRespuestaHandshake,
   procesarLoteAttlog,
   resolverTerminalPorSN,
@@ -16,12 +17,15 @@ export async function handshake(req: Request, res: Response): Promise<void> {
   const sn = req.query.SN as string | undefined;
   const terminal = await resolverTerminalPorSN(sn);
 
-  await prisma.terminal.update({
+  const terminalActualizada = await prisma.terminal.update({
     where: { id: terminal.id },
     data: { estadoConexion: "conectado", ultimaSincronizacion: new Date() },
+    select: { obra: { select: { timezoneObra: true } } },
   });
 
-  res.type("text/plain").send(generarRespuestaHandshake(sn!));
+  const zonaHoraria = terminalActualizada.obra?.timezoneObra;
+  const offsetZonaHoraria = zonaHoraria ? calcularOffsetZonaHoraria(zonaHoraria) : undefined;
+  res.type("text/plain").send(generarRespuestaHandshake(sn!, offsetZonaHoraria));
 }
 
 // POST /iclock/cdata?SN=...&table=ATTLOG|OPERLOG&Stamp=... — el equipo

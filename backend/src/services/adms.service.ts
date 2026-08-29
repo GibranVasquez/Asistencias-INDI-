@@ -259,9 +259,36 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
 // Persistir el último Stamp real por terminal (para que el equipo sepa que
 // no hace falta reenviar nada) evitaría ese costo, pero es una optimización
 // pendiente, no una corrección de un bug.
-export function generarRespuestaHandshake(sn: string): string {
+export function calcularOffsetZonaHoraria(zonaHoraria: string, instante: Date = new Date()): number {
+  if (Number.isNaN(instante.getTime())) {
+    throw new Error("No se puede calcular el offset de una fecha inválida.");
+  }
+
+  let nombreOffset: string | undefined;
+  try {
+    nombreOffset = new Intl.DateTimeFormat("en-US", {
+      timeZone: zonaHoraria,
+      timeZoneName: "longOffset",
+    }).formatToParts(instante).find((parte) => parte.type === "timeZoneName")?.value;
+  } catch (causa) {
+    throw new Error(`No se pudo resolver la zona horaria IANA "${zonaHoraria}".`, { cause: causa });
+  }
+
+  if (nombreOffset === "GMT") return 0;
+  const coincidencia = /^GMT([+-])(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(nombreOffset ?? "");
+  if (!coincidencia) {
+    throw new Error(`No se pudo resolver el offset de la zona horaria IANA "${zonaHoraria}".`);
+  }
+
+  const [, signo, horas, minutos, segundos = "0"] = coincidencia;
+  const offset = Number(horas) + Number(minutos) / 60 + Number(segundos) / 3600;
+  return signo === "+" ? offset : -offset;
+}
+
+export function generarRespuestaHandshake(sn: string, offsetZonaHoraria?: number): string {
   return [
     `GET OPTION FROM:${sn}`,
+    ...(offsetZonaHoraria === undefined ? [] : [`TimeZone=${offsetZonaHoraria}`]),
     "ATTLOGStamp=None",
     "OPERLOGStamp=None",
     "ATTPHOTOStamp=None",

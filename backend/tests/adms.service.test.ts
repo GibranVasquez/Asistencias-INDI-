@@ -9,7 +9,7 @@ vi.mock("../src/utils/prisma", () => ({ prisma: {
 } }));
 vi.mock("../src/services/asistencia.service", () => ({ registrarAsistencia: mocks.registrar }));
 
-import { parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
+import { calcularOffsetZonaHoraria, generarRespuestaHandshake, parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
 
 const terminal = { id: "term-adms", numeroSerie: "SN-LOCAL", activo: true, obraId: "obra-1" } as never;
 
@@ -24,6 +24,25 @@ beforeEach(() => {
 });
 
 describe("ADMS", () => {
+  it("calcula el TimeZone ADMS desde la zona IANA de la obra", () => {
+    expect(calcularOffsetZonaHoraria("America/Matamoros", new Date("2026-08-29T15:00:00Z"))).toBe(-5);
+    expect(calcularOffsetZonaHoraria("America/Matamoros", new Date("2026-01-15T15:00:00Z"))).toBe(-6);
+  });
+
+  it("falla claramente si la zona IANA no se puede resolver", () => {
+    expect(() => calcularOffsetZonaHoraria("Zona/Inexistente")).toThrow(
+      'No se pudo resolver la zona horaria IANA "Zona/Inexistente".'
+    );
+  });
+
+  it("incluye TimeZone en el handshake", () => {
+    expect(generarRespuestaHandshake("SN-LOCAL", -5)).toContain("\nTimeZone=-5\n");
+  });
+
+  it("mantiene el handshake anterior cuando no hay zona horaria", () => {
+    expect(generarRespuestaHandshake("SN-LOCAL")).not.toContain("TimeZone=");
+  });
+
   it("parsea un ATTLOG válido", () => {
     expect(parsearLineaAttlog("42\t2026-08-08 08:15:30\t0\t15")).toEqual({
       pin: "42",
