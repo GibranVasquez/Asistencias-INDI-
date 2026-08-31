@@ -14,6 +14,7 @@ import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import TarjetaKPI from "@/shared/components/TarjetaKPI";
 import Boton from "@/shared/components/Boton";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
+import EstadoVacio from "@/shared/components/EstadoVacio";
 import ResponsablesPorFrentePage from "@/features/encargado/ResponsablesPorFrentePage";
 
 const INTERVALO_POLL_MS = 20_000;
@@ -47,7 +48,7 @@ interface EstadoResumenSeccion {
   error: string | null;
 }
 
-function MiFrentePage() {
+function MiFrentePage({ esRh = false }: { esRh?: boolean } = {}) {
   const { sesion } = useAutenticacion();
   const token = sesion!.token;
   const rol = sesion!.usuario.rol;
@@ -176,8 +177,8 @@ function MiFrentePage() {
   return (
     <div style={{ padding: "26px 30px 36px" }}>
       <EncabezadoPagina
-        titulo="Mi frente · hoy"
-        descripcion="Supervisa el personal y la asistencia correspondiente a tu área de responsabilidad."
+        titulo={esRh ? "Asignación diaria · hoy" : "Mi frente · hoy"}
+        descripcion={esRh ? "Configura el personal esperado y revisa la asistencia de cada frente." : "Supervisa el personal y la asistencia correspondiente a tu área de responsabilidad."}
         metadata="Supervisión operativa"
         accion={<div style={{ textAlign: "right" }}>
           <div style={{ fontFamily: "Montserrat", fontWeight: 800, fontSize: 32, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>
@@ -256,11 +257,80 @@ function MiFrentePage() {
   );
 }
 
+function VistaRhPage() {
+  const [vista, setVista] = useState<"responsables" | "asignacion">("responsables");
+
+  return (
+    <>
+      <div
+        className="configuracion-tabs"
+        role="tablist"
+        aria-label="Gestión de frentes"
+        style={{ display: "flex", gap: 4, background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 10, padding: 4, margin: "18px 30px 0", width: "fit-content" }}
+      >
+        <button
+          type="button"
+          role="tab"
+          id="tab-responsables-frente"
+          aria-controls="panel-responsables-frente"
+          aria-selected={vista === "responsables"}
+          onClick={() => setVista("responsables")}
+          style={{
+            padding: "9px 14px",
+            borderRadius: 8,
+            border: "1px solid var(--line)",
+            background: vista === "responsables" ? "var(--indi2)" : "var(--surface)",
+            color: vista === "responsables" ? "#fff" : "var(--ink)",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Responsables por frente
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-asignacion-diaria"
+          aria-controls="panel-asignacion-diaria"
+          aria-selected={vista === "asignacion"}
+          onClick={() => setVista("asignacion")}
+          style={{
+            padding: "9px 14px",
+            borderRadius: 8,
+            border: "1px solid var(--line)",
+            background: vista === "asignacion" ? "var(--indi2)" : "var(--surface)",
+            color: vista === "asignacion" ? "#fff" : "var(--ink)",
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          Asignación diaria
+        </button>
+      </div>
+
+      <section
+        id={vista === "asignacion" ? "panel-asignacion-diaria" : "panel-responsables-frente"}
+        role="tabpanel"
+        aria-labelledby={vista === "asignacion" ? "tab-asignacion-diaria" : "tab-responsables-frente"}
+      >
+        {vista === "asignacion" ? <MiFrentePage esRh /> : <ResponsablesPorFrentePage />}
+      </section>
+    </>
+  );
+}
+
 export default function EncargadoPage() {
   const { sesion } = useAutenticacion();
-  if (sesion?.usuario.rol === "rh" || sesion?.usuario.rol === "administrador") {
+
+  if (sesion?.usuario.rol === "administrador") {
     return <ResponsablesPorFrentePage />;
   }
+
+  if (sesion?.usuario.rol === "rh") {
+    return <VistaRhPage />;
+  }
+
   return <MiFrentePage />;
 }
 
@@ -275,27 +345,11 @@ function agruparAvisoMovidos(movidos: TrabajadorMovido[]): string {
 
 function EstadoSinAsignacion({ onCargar }: { onCargar: () => void }) {
   return (
-    <div
-      className="modal-backdrop"
-      style={{
-        marginTop: 30,
-        background: "var(--surface)",
-        border: "1px dashed var(--line)",
-        borderRadius: 14,
-        padding: "50px 30px",
-        textAlign: "center",
-      }}
-    >
-      <div style={{ fontSize: 40 }}>📋</div>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)", marginTop: 12 }}>Sin asignación cargada hoy</h2>
-      <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 6, maxWidth: 380, marginInline: "auto" }}>
-        Todavía no se ha cargado la lista de trabajadores esperados hoy en este frente. Las marcaciones reales de
-        hoy no se pierden — se pueden ver en cuanto cargues la asignación.
-      </p>
-      <Boton onClick={onCargar} style={{ marginTop: 18 }}>
-        Cargar asignación de hoy
-      </Boton>
-    </div>
+    <EstadoVacio
+      titulo="Sin asignación cargada hoy"
+      descripcion="Todavía no se ha cargado la lista de trabajadores esperados hoy en este frente. Las marcaciones reales de hoy no se pierden — se pueden ver en cuanto cargues la asignación."
+      accion={<Boton onClick={onCargar}>Cargar asignación de hoy</Boton>}
+    />
   );
 }
 
