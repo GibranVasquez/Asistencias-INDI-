@@ -63,7 +63,7 @@ export default function AsistenciasPage() {
   // filtrar por sección en absoluto.
   const seccionesDisponibles = useMemo(() => {
     const mapa = new Map<string, string>();
-    asistencias?.forEach((a) => mapa.set(a.seccionId, a.seccionNombre));
+    asistencias?.forEach((a) => { if (a.seccionId) mapa.set(a.seccionId, a.seccionNombre); });
     return [...mapa.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [asistencias]);
 

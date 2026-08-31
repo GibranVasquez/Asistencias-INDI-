@@ -41,6 +41,13 @@ describe("analítica pura de asistencia", () => {
       .toBeNull();
   });
 
+  it("cuenta presente sin sección y no evalúa puntualidad", () => {
+    const resumen = calcularResumen([
+      { trabajadorId: "t1", seccionId: null, fecha: d("2026-08-03T00:00:00Z"), hora: d("2026-08-03T08:00:00Z") },
+    ], { seccionHorario: new Map() }, [d("2026-08-03T00:00:00Z")], 1, false);
+    expect(resumen).toMatchObject({ presentes: 1, aTiempo: 0, tardanzas: 0, porcentajePuntualidad: null });
+  });
+
   it("conserva granularidad y buckets inclusivos por día, semana y mes", () => {
     const inicio = d("2026-08-03T00:00:00Z");
     expect(granularidadPara(inicio, d("2026-09-16T00:00:00Z"))).toBe("dia");

@@ -20,7 +20,7 @@ export default function PanelUltimasMarcaciones({ asistencias, trabajadores, sec
         const trabajador = mapaTrabajadores.get(asistencia.trabajadorId);
         const nombre = trabajador?.nombreCompleto ?? `ID ${asistencia.trabajadorId.slice(0, 8)}…`;
         const iniciales = trabajador ? trabajador.nombreCompleto.split(" ").slice(0, 2).map((parte) => parte[0]).join("").toUpperCase() : "—";
-        const horarioId = mapaSecciones.get(asistencia.seccionId)?.horarioId;
+        const horarioId = asistencia.seccionId ? mapaSecciones.get(asistencia.seccionId)?.horarioId : undefined;
         const horario = horarioId ? mapaHorarios.get(horarioId) ?? null : null;
         const puntual = horario ? llegoATiempo(asistencia.hora, horario) : null;
         return <div key={asistencia.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: i === ultimasMarcaciones.length - 1 ? "none" : "1px solid var(--line)" }}>

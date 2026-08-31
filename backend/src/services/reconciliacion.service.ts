@@ -99,6 +99,7 @@ export async function reconciliarEventoAdms(
     const asistenciaData = {
       trabajadorId: trabajador.id,
       terminalOrigenId: terminal.id,
+      obraId: evento.obraId,
       fecha,
       hora,
       seccionId: seccion.id,

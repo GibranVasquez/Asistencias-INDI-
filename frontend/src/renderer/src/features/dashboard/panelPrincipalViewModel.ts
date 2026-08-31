@@ -104,7 +104,7 @@ export function calcularPuntualidad(
   let aTiempo = 0;
   let tarde = 0;
   for (const asistencia of primeraMarcacionPorTrabajadorDia(asistencias)) {
-    const horarioId = mapaSecciones.get(asistencia.seccionId)?.horarioId;
+    const horarioId = asistencia.seccionId ? mapaSecciones.get(asistencia.seccionId)?.horarioId : undefined;
     const horario = horarioId ? mapaHorarios.get(horarioId) : undefined;
     if (!horario) continue;
     if (llegoATiempo(asistencia.hora, horario)) aTiempo++;

@@ -213,6 +213,7 @@ model Obra {
 
   secciones Seccion[]
   terminales Terminal[]
+  asistencias AsistenciaDiaria[]
   eventosNoReconciliados EventoNoReconciliado[]
 
   @@map("obras")
@@ -274,11 +275,12 @@ model Horario {
 model AsistenciaDiaria {
   id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   trabajadorId     String           @map("trabajador_id") @db.Uuid
+  obraId           String?          @map("obra_id") @db.Uuid
   fecha            DateTime         @db.Date
   hora             DateTime         @db.Time(0)
   // La seccion se registra junto con la asistencia del dia (un trabajador NO
   // pertenece de forma fija a una seccion, puede cambiar de un dia a otro).
-  seccionId        String           @map("seccion_id") @db.Uuid
+  seccionId        String?          @map("seccion_id") @db.Uuid
   turno            String
   metodoUsado      MetodoAsistencia @map("metodo_usado")
   terminalOrigenId String           @map("terminal_origen_id") @db.Uuid
@@ -286,11 +288,13 @@ model AsistenciaDiaria {
   creadoEn         DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
 
   trabajador     Trabajador @relation(fields: [trabajadorId], references: [id])
-  seccion        Seccion    @relation(fields: [seccionId], references: [id])
+  obra           Obra?      @relation(fields: [obraId], references: [id])
+  seccion        Seccion?   @relation(fields: [seccionId], references: [id])
   terminalOrigen Terminal   @relation(fields: [terminalOrigenId], references: [id])
   eventosReconciliados EventoNoReconciliado[]
 
   @@index([trabajadorId, fecha], map: "idx_asistencias_trabajador_fecha")
+  @@index([obraId, fecha], map: "idx_asistencias_obra_fecha")
   @@index([seccionId, fecha], map: "idx_asistencias_seccion_fecha")
   // Mismo natural key que ya usa adms.service.ts (yaExisteAsistencia) para
   // detectar reenvios del mismo backlog -- antes solo era un chequeo de

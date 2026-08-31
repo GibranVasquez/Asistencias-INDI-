@@ -103,13 +103,14 @@ export async function resolverTerminalPorSN(sn: string | undefined): Promise<Ter
   return terminal;
 }
 
-async function obtenerSeccionAsignadaId(trabajadorId: string, fechaCivil: string, obraId: string | null | undefined): Promise<string | null> {
+async function obtenerSeccionAsignada(trabajadorId: string, fechaCivil: string, obraId: string | null | undefined): Promise<{ seccionId: string | null; incompatible: boolean }> {
   const asignacion = await prisma.asignacionDiaria.findUnique({
     where: { trabajadorId_fecha: { trabajadorId, fecha: fechaCivilAFechaPrisma(fechaCivil) } },
     include: { seccion: { select: { id: true, obraId: true } } },
   });
-  if (!asignacion || (obraId && asignacion.seccion.obraId !== obraId)) return null;
-  return asignacion.seccion.id;
+  if (!asignacion) return { seccionId: null, incompatible: false };
+  if (!obraId || asignacion.seccion.obraId !== obraId) return { seccionId: null, incompatible: true };
+  return { seccionId: asignacion.seccion.id, incompatible: false };
 }
 
 async function yaExisteAsistencia(trabajadorId: string, terminalId: string, fechaCivil: string, horaCivil: string): Promise<boolean> {
@@ -194,6 +195,18 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       continue;
     }
 
+    // Una terminal ADMS sin Obra no aporta contexto operativo suficiente:
+    // nunca se crea una asistencia con obraId NULL.
+    if (!terminal.obraId) {
+      if (await yaExisteEventoNoReconciliado(terminal.id, registro)) {
+        duplicados++;
+        continue;
+      }
+      await registrarEventoNoReconciliado(terminal.id, null, registro);
+      noReconciliados++;
+      continue;
+    }
+
     // Chequeo de aplicación para el caso comun (backlog reenviado
     // secuencialmente, ya verificado en vivo — ver CLAUDE.md). Para el
     // caso realmente concurrente (dos POST /iclock/cdata superpuestos),
@@ -206,11 +219,10 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       continue;
     }
 
-    const seccionId = await obtenerSeccionAsignadaId(trabajador.id, registro.fechaCivil, terminal.obraId);
-    if (!seccionId) {
-      // El trabajador es conocido, pero no existe una asignación diaria
-      // inequívoca dentro de la Obra del dispositivo. Se conserva el evento
-      // para revisión posterior en vez de inventar un Frente "Oficina".
+    const asignacion = await obtenerSeccionAsignada(trabajador.id, registro.fechaCivil, terminal.obraId);
+    if (asignacion.incompatible) {
+      // Una asignación de otra Obra es un conflicto real, no ausencia de
+      // planeación; se conserva para revisión y nunca se cruza el aislamiento.
       await registrarEventoNoReconciliado(terminal.id, terminal.obraId ?? null, registro);
       noReconciliados++;
       continue;
@@ -230,7 +242,8 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
     await registrarAsistencia(trabajador.id, terminal.id, {
       fecha: registro.fechaCivil,
       hora: registro.horaCivil,
-      seccionId,
+      obraId: terminal.obraId,
+      seccionId: asignacion.seccionId,
       turno: TURNO_OFICINA,
       metodoUsado: metodoUsado ?? MetodoAsistencia.huella,
     });

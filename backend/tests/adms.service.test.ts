@@ -114,10 +114,23 @@ describe("ADMS", () => {
     expect(mocks.registrar).not.toHaveBeenCalled();
   });
 
-  it("no inventa un Frente Oficina si falta asignación diaria", async () => {
+  it("registra asistencia sin sección si falta asignación diaria", async () => {
     mocks.asignacion.mockResolvedValue(null);
+    await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 1, duplicados: 0, noReconciliados: 0 });
+    expect(mocks.registrar).toHaveBeenCalledWith("t1", "term-adms", expect.objectContaining({ obraId: "obra-1", seccionId: null }));
+    expect(mocks.eventoCrear).not.toHaveBeenCalled();
+  });
+
+  it("rechaza una asignación diaria de otra Obra", async () => {
+    mocks.asignacion.mockResolvedValue({ seccion: { id: "seccion-otra", obraId: "obra-2" } });
     await expect(procesarLoteAttlog(terminal, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 0, noReconciliados: 1 });
-    expect(mocks.eventoCrear).toHaveBeenCalledWith({ data: expect.objectContaining({ pinDispositivo: "42", obraId: "obra-1" }) });
+    expect(mocks.registrar).not.toHaveBeenCalled();
+    expect(mocks.eventoCrear).toHaveBeenCalledWith({ data: expect.objectContaining({ obraId: "obra-1", pinDispositivo: "42" }) });
+  });
+
+  it("no crea asistencia para una terminal ADMS sin Obra", async () => {
+    const terminalSinObra = { ...terminal, obraId: null } as never;
+    await expect(procesarLoteAttlog(terminalSinObra, "42\t2026-08-08 08:15:30\t0\t1")).resolves.toEqual({ procesados: 0, duplicados: 0, noReconciliados: 1 });
     expect(mocks.registrar).not.toHaveBeenCalled();
   });
 

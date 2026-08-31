@@ -15,9 +15,10 @@ export interface DatosRegistroAsistencia {
 export interface AsistenciaRegistrada {
   id: string;
   trabajadorId: string;
+  obraId: string;
   fecha: string;
   hora: string;
-  seccionId: string;
+  seccionId: string | null;
   turno: string;
   metodoUsado: MetodoAsistencia;
   terminalOrigenId: string;

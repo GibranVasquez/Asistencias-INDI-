@@ -61,10 +61,12 @@ describe("registro de asistencia", () => {
     expect(mocks.crear).not.toHaveBeenCalled();
   });
 
-  it("permite terminal sin Obra en el modo transitorio de una sola Obra", async () => {
+  it("rechaza terminal sin Obra aunque exista una sola Obra", async () => {
     mocks.terminal.mockResolvedValue({ activo: true, obraId: null });
     mocks.obraCount.mockResolvedValue(1);
-    await expect(registrarAsistencia("t1", "terminal-sin-obra", base)).resolves.toBeDefined();
+    await expect(registrarAsistencia("t1", "terminal-sin-obra", base)).rejects.toMatchObject({ status: 403 });
+    expect(mocks.obraCount).not.toHaveBeenCalled();
+    expect(mocks.crear).not.toHaveBeenCalled();
   });
 
   it("rechaza terminal sin Obra cuando hay varias Obras", async () => {

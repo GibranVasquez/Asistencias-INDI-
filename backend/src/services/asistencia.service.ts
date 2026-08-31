@@ -10,7 +10,8 @@ import { verificarAccesoSeccion } from "../utils/accesoSeccion";
 // la razon de ser de ese rol. Evita ademas tener que ampliarle a recepcion
 // el acceso a esos catalogos completos (categoria, jefeInmediato, etc.)
 // solo para resolver un nombre.
-export interface AsistenciaListada extends AsistenciaDiaria {
+export interface AsistenciaListada extends Omit<AsistenciaDiaria, "obraId"> {
+  obraId: string;
   trabajadorNombre: string;
   seccionNombre: string;
   trabajadorCategoria: string;
@@ -24,7 +25,10 @@ export interface AsistenciaListada extends AsistenciaDiaria {
 export interface DatosRegistroAsistencia {
   fecha: string; // YYYY-MM-DD
   hora: string; // HH:MM o HH:MM:SS
-  seccionId: string;
+  /** Frente diario; null es válido únicamente para marcaciones ADMS sin planeación. */
+  seccionId: string | null;
+  /** Contexto de Obra validado por el punto de captura. */
+  obraId?: string | null;
   turno: string;
   metodoUsado: MetodoAsistencia;
   ubicacionGPS?: string | null;
@@ -42,11 +46,11 @@ export interface FiltrosAsistencia {
 
 const RELACIONES_ASISTENCIA = {
   trabajador: { select: { nombreCompleto: true, categoria: true, huellaRegistrada: true } },
+  obra: { select: { nombre: true } },
   seccion: {
     select: {
       nombre: true,
       tramoUbicacion: true,
-      obra: { select: { nombre: true } },
       responsablesTramo: {
         where: { estatus: TrabajadorEstatus.activo },
         select: { id: true, nombreCompleto: true, categoria: true },
@@ -60,17 +64,19 @@ type AsistenciaConRelaciones = Prisma.AsistenciaDiariaGetPayload<{
   include: typeof RELACIONES_ASISTENCIA;
 }>;
 
-function aAsistenciaListada({ trabajador, seccion, ...resto }: AsistenciaConRelaciones): AsistenciaListada {
+function aAsistenciaListada({ trabajador, obra, seccion, ...resto }: AsistenciaConRelaciones): AsistenciaListada {
+  if (!obra) throw new AppError(500, "Asistencia sin Obra: integridad inesperada.");
   return {
     ...resto,
+    obraId: resto.obraId!,
     trabajadorNombre: trabajador.nombreCompleto,
     trabajadorCategoria: trabajador.categoria,
     trabajadorHuellaRegistrada: trabajador.huellaRegistrada,
-    seccionNombre: seccion.nombre,
-    seccionTramoUbicacion: seccion.tramoUbicacion,
-    seccionResponsables: seccion.responsablesTramo,
-    obraNombre: seccion.obra.nombre,
-    horarioNombre: seccion.horario?.nombre ?? null,
+    seccionNombre: seccion?.nombre ?? "Sin asignación",
+    seccionTramoUbicacion: seccion?.tramoUbicacion ?? null,
+    seccionResponsables: seccion?.responsablesTramo ?? [],
+    obraNombre: obra.nombre,
+    horarioNombre: seccion?.horario?.nombre ?? null,
   };
 }
 
@@ -97,27 +103,20 @@ export async function registrarAsistencia(
     throw new AppError(403, "El trabajador no está activo.");
   }
 
-  const seccion = await prisma.seccion.findUnique({ where: { id: datos.seccionId } });
-  if (!seccion) {
-    throw new AppError(400, "La sección indicada no existe.");
-  }
-
-  // La terminal es el punto de captura, no el Frente del trabajador. Solo
-  // valida el límite de Obra: un dispositivo asignado a una Obra no puede
-  // escribir asistencias en otra. Durante expand, una terminal sin obra se
-  // permite únicamente mientras exista una sola Obra inequívoca.
+  // La terminal es el punto de captura y la única fuente de contexto de Obra:
+  // una asistencia nueva nunca puede inventar una Obra a partir del catálogo.
   const terminal = await prisma.terminal.findUnique({ where: { id: terminalOrigenId }, select: { activo: true, obraId: true } });
   if (!terminal || !terminal.activo) {
     throw new AppError(403, "La terminal no está autorizada.");
   }
-  if (terminal.obraId && terminal.obraId !== seccion.obraId) {
-    throw new AppError(403, "La terminal y el Frente pertenecen a Obras distintas.");
-  }
-  if (!terminal.obraId) {
-    const obras = await prisma.obra.count();
-    if (obras !== 1) {
-      throw new AppError(403, "La terminal no tiene una Obra asignada.");
-    }
+  const obraId = terminal.obraId;
+  if (!obraId) throw new AppError(403, "La terminal no tiene una Obra asignada.");
+  if (datos.obraId && datos.obraId !== obraId) throw new AppError(403, "La Obra indicada no coincide con la terminal.");
+
+  if (datos.seccionId) {
+    const seccion = await prisma.seccion.findUnique({ where: { id: datos.seccionId }, select: { obraId: true } });
+    if (!seccion) throw new AppError(400, "La sección indicada no existe.");
+    if (seccion.obraId !== obraId) throw new AppError(403, "La terminal y el Frente pertenecen a Obras distintas.");
   }
 
   const fecha = aFechaUTC(datos.fecha);
@@ -127,6 +126,7 @@ export async function registrarAsistencia(
     return await prisma.asistenciaDiaria.create({
       data: {
         trabajadorId,
+        obraId,
         fecha,
         hora,
         seccionId: datos.seccionId,

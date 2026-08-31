@@ -3,7 +3,7 @@ const UN_DIA_MS = 24 * 60 * 60 * 1000;
 export interface AsistenciaCruda {
   fecha: Date;
   hora: Date;
-  seccionId: string;
+  seccionId: string | null;
   trabajadorId: string;
 }
 
@@ -74,7 +74,7 @@ export function calcularResumen(
   let tardanzas = 0;
 
   for (const a of asistencias) {
-    const horario = mapas.seccionHorario.get(a.seccionId);
+    const horario = a.seccionId ? mapas.seccionHorario.get(a.seccionId) : null;
     if (!horario) continue;
     if (llegoATiempo(a.hora, horario)) aTiempo++;
     else tardanzas++;

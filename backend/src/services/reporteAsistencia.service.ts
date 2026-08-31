@@ -21,7 +21,7 @@ function aFechaUTC(fechaISO: string): Date {
 export type { ResumenAsistencia } from "./analiticaAsistencia";
 
 export interface FilaSeccionAsistencia {
-  seccionId: string;
+  seccionId: string | null;
   seccionNombre: string;
   presentes: number;
   aTiempo: number;
@@ -80,7 +80,7 @@ export async function obtenerReporteAsistencia(
   const resumen = calcularResumen(asistencias, mapas, diasHabiles, totalActivos, !!seccionId);
 
   const nombrePorSeccion = new Map(secciones.map((s) => [s.id, s.nombre]));
-  const porSeccionMap = new Map<string, AsistenciaCruda[]>();
+  const porSeccionMap = new Map<string | null, AsistenciaCruda[]>();
   for (const a of asistencias) {
     if (!porSeccionMap.has(a.seccionId)) porSeccionMap.set(a.seccionId, []);
     porSeccionMap.get(a.seccionId)!.push(a);
@@ -90,7 +90,7 @@ export async function obtenerReporteAsistencia(
       const r = calcularResumen(lista, mapas, diasHabiles, totalActivos, true);
       return {
         seccionId: sid,
-        seccionNombre: nombrePorSeccion.get(sid) ?? "Sección eliminada",
+        seccionNombre: sid === null ? "Sin asignación" : nombrePorSeccion.get(sid) ?? "Sección eliminada",
         presentes: r.presentes,
         aTiempo: r.aTiempo,
         tardanzas: r.tardanzas,
@@ -174,12 +174,12 @@ export async function obtenerHistoricoTrabajador(
     if (!asistencia) {
       return { fecha: clave, hora: null, seccionId: null, seccionNombre: null, presente: false, aTiempo: null };
     }
-    const horario = mapas.seccionHorario.get(asistencia.seccionId);
+    const horario = asistencia.seccionId ? mapas.seccionHorario.get(asistencia.seccionId) : null;
     return {
       fecha: clave,
       hora: asistencia.hora.toISOString().slice(11, 19),
       seccionId: asistencia.seccionId,
-      seccionNombre: asistencia.seccion.nombre,
+      seccionNombre: asistencia.seccion?.nombre ?? "Sin asignación",
       presente: true,
       aTiempo: horario ? llegoATiempo(asistencia.hora, horario) : null,
     };

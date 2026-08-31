@@ -316,7 +316,7 @@ export async function obtenerVistaPreviaNomina(periodoInicioISO: string, periodo
     const diasConAsistencia = new Set(asistenciasTrabajador.map((a) => aClaveDia(a.fecha)));
     const movimientosQueCuentan = movimientosPorTrabajador.get(trabajador.id) ?? [];
     const diasLaborados = contarDiasLaboradosPuro(diasConAsistencia, movimientosQueCuentan, periodoInicio, periodoFin);
-    const seccionesTrabajadas = [...new Set(asistenciasTrabajador.map((a) => a.seccion.nombre))];
+    const seccionesTrabajadas = [...new Set(asistenciasTrabajador.map((a) => a.seccion?.nombre ?? "Sin asignación"))];
     const nominaExistente = nominaPorTrabajador.get(trabajador.id);
 
     return {
