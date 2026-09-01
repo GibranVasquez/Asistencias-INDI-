@@ -1,4 +1,11 @@
-import { AsistenciaListada } from "@/features/asistencias/api";
+import { AsistenciaListada, TipoMarcacion } from "@/features/asistencias/api";
+
+export type MarcasPorTipo = Record<TipoMarcacion, string[]>;
+export const TIPOS_MARCACION: TipoMarcacion[] = ["entrada", "salida_descanso", "entrada_descanso", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
+
+function marcasVacias(): MarcasPorTipo {
+  return { entrada: [], salida: [], salida_descanso: [], entrada_descanso: [], entrada_tiempo_extra: [], salida_tiempo_extra: [] };
+}
 
 export interface FilaListaSemanal {
   trabajadorId: string;
@@ -7,6 +14,8 @@ export interface FilaListaSemanal {
   huellaRegistrada: boolean;
   frentes: string[];
   porDia: Map<string, AsistenciaListada[]>;
+  marcasPorDia: Map<string, MarcasPorTipo>;
+  sinClasificarPorDia: Map<string, AsistenciaListada[]>;
 }
 
 export function aFechaLocal(fechaISO: string): Date {
@@ -71,6 +80,8 @@ export function agruparAsistenciasPorTrabajador(asistencias: AsistenciaListada[]
       huellaRegistrada: asistencia.trabajadorHuellaRegistrada,
       frentes: [],
       porDia: new Map<string, AsistenciaListada[]>(),
+      marcasPorDia: new Map<string, MarcasPorTipo>(),
+      sinClasificarPorDia: new Map<string, AsistenciaListada[]>(),
     };
     if (!fila.frentes.includes(asistencia.seccionNombre)) fila.frentes.push(asistencia.seccionNombre);
     const dia = asistencia.fecha.slice(0, 10);
@@ -78,6 +89,16 @@ export function agruparAsistenciasPorTrabajador(asistencias: AsistenciaListada[]
     registrosDelDia.push(asistencia);
     registrosDelDia.sort((a, b) => a.hora.localeCompare(b.hora));
     fila.porDia.set(dia, registrosDelDia);
+    if (asistencia.tipoMarcacion) {
+      const marcas = fila.marcasPorDia.get(dia) ?? marcasVacias();
+      marcas[asistencia.tipoMarcacion].push(asistencia.hora.slice(11, 16));
+      marcas[asistencia.tipoMarcacion].sort();
+      fila.marcasPorDia.set(dia, marcas);
+    } else {
+      const legacy = fila.sinClasificarPorDia.get(dia) ?? [];
+      legacy.push(asistencia);
+      fila.sinClasificarPorDia.set(dia, legacy);
+    }
     filas.set(asistencia.trabajadorId, fila);
   }
   return [...filas.values()].sort((a, b) => a.trabajadorNombre.localeCompare(b.trabajadorNombre));

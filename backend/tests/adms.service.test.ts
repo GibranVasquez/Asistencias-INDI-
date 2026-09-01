@@ -9,7 +9,7 @@ vi.mock("../src/utils/prisma", () => ({ prisma: {
 } }));
 vi.mock("../src/services/asistencia.service", () => ({ registrarAsistencia: mocks.registrar }));
 
-import { calcularOffsetZonaHoraria, generarRespuestaHandshake, parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
+import { calcularOffsetZonaHoraria, generarRespuestaHandshake, mapearPunchMarcacion, parseFechaHoraCivilAdms, parsearLineaAttlog, procesarLoteAttlog, resolverTerminalPorSN } from "../src/services/adms.service";
 
 const terminal = { id: "term-adms", numeroSerie: "SN-LOCAL", activo: true, obraId: "obra-1" } as never;
 
@@ -24,6 +24,16 @@ beforeEach(() => {
 });
 
 describe("ADMS", () => {
+  it.each([
+    [0, "entrada"], [1, "salida"], [2, "salida_descanso"], [3, "entrada_descanso"],
+    [4, "entrada_tiempo_extra"], [5, "salida_tiempo_extra"],
+  ])("mapea punch %s a %s", (punch, tipo) => expect(mapearPunchMarcacion(punch)).toBe(tipo));
+
+  it("deja punch desconocido sin categoría", () => {
+    expect(mapearPunchMarcacion(99)).toBeNull();
+    expect(parsearLineaAttlog("42\t2026-08-08 08:15:30\t99\t1")).toMatchObject({ punchCrudo: 99, tipoMarcacion: null });
+    expect(parsearLineaAttlog("42\t2026-08-08 08:15:30\tno-disponible\t1")).toMatchObject({ punchCrudo: null, tipoMarcacion: null });
+  });
   it("calcula el TimeZone ADMS desde la zona IANA de la obra", () => {
     expect(calcularOffsetZonaHoraria("America/Matamoros", new Date("2026-08-29T15:00:00Z"))).toBe(-5);
     expect(calcularOffsetZonaHoraria("America/Matamoros", new Date("2026-01-15T15:00:00Z"))).toBe(-6);
@@ -50,6 +60,8 @@ describe("ADMS", () => {
       horaCivil: "08:15:30",
       fechaHora: new Date("2026-08-08T08:15:30Z"),
       metodoVerifyCrudo: "15",
+      punchCrudo: 0,
+      tipoMarcacion: "entrada",
     });
   });
 

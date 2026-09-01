@@ -1,3 +1,5 @@
+import { TipoMarcacion } from "@prisma/client";
+
 const UN_DIA_MS = 24 * 60 * 60 * 1000;
 
 export interface AsistenciaCruda {
@@ -5,6 +7,7 @@ export interface AsistenciaCruda {
   hora: Date;
   seccionId: string | null;
   trabajadorId: string;
+  tipoMarcacion?: TipoMarcacion | null;
 }
 
 export interface MapaHorarios {
@@ -62,6 +65,11 @@ export function unaMarcaPorDia(asistencias: AsistenciaCruda[]): AsistenciaCruda[
   return [...porClave.values()];
 }
 
+/** Primera entrada explícita por trabajador y día para evaluar puntualidad. */
+export function unaEntradaPorDia(asistencias: AsistenciaCruda[]): AsistenciaCruda[] {
+  return unaMarcaPorDia(asistencias.filter((a) => a.tipoMarcacion === TipoMarcacion.entrada));
+}
+
 export function calcularResumen(
   asistenciasCrudas: AsistenciaCruda[],
   mapas: MapaHorarios,
@@ -70,10 +78,11 @@ export function calcularResumen(
   seccionFiltrada: boolean
 ): ResumenAsistencia {
   const asistencias = unaMarcaPorDia(asistenciasCrudas);
+  const entradas = unaEntradaPorDia(asistenciasCrudas);
   let aTiempo = 0;
   let tardanzas = 0;
 
-  for (const a of asistencias) {
+  for (const a of entradas) {
     const horario = a.seccionId ? mapas.seccionHorario.get(a.seccionId) : null;
     if (!horario) continue;
     if (llegoATiempo(a.hora, horario)) aTiempo++;

@@ -67,6 +67,17 @@ enum MetodoAsistencia {
   @@map("metodo_asistencia")
 }
 
+enum TipoMarcacion {
+  entrada
+  salida
+  salida_descanso
+  entrada_descanso
+  entrada_tiempo_extra
+  salida_tiempo_extra
+
+  @@map("tipo_marcacion")
+}
+
 enum NominaEstatus {
   pendiente
   pagado
@@ -278,6 +289,8 @@ model AsistenciaDiaria {
   obraId           String?          @map("obra_id") @db.Uuid
   fecha            DateTime         @db.Date
   hora             DateTime         @db.Time(0)
+  tipoMarcacion    TipoMarcacion?   @map("tipo_marcacion")
+  punchCrudo       Int?             @map("punch_crudo")
   // La seccion se registra junto con la asistencia del dia (un trabajador NO
   // pertenece de forma fija a una seccion, puede cambiar de un dia a otro).
   seccionId        String?          @map("seccion_id") @db.Uuid

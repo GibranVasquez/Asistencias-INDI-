@@ -1,4 +1,4 @@
-import { MetodoAsistencia, Terminal, TrabajadorEstatus } from "@prisma/client";
+import { MetodoAsistencia, Terminal, TrabajadorEstatus, TipoMarcacion } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { registrarAsistencia } from "./asistencia.service";
@@ -27,6 +27,18 @@ export interface RegistroAttlog {
   /** Representación técnica UTC únicamente para EventoNoReconciliado.marcadoEn. */
   fechaHora: Date;
   metodoVerifyCrudo: string;
+  punchCrudo: number | null;
+  tipoMarcacion: TipoMarcacion | null;
+}
+
+export function mapearPunchMarcacion(punch: number | null): TipoMarcacion | null {
+  if (punch === 0) return TipoMarcacion.entrada;
+  if (punch === 1) return TipoMarcacion.salida;
+  if (punch === 2) return TipoMarcacion.salida_descanso;
+  if (punch === 3) return TipoMarcacion.entrada_descanso;
+  if (punch === 4) return TipoMarcacion.entrada_tiempo_extra;
+  if (punch === 5) return TipoMarcacion.salida_tiempo_extra;
+  return null;
 }
 
 export interface FechaHoraCivilAdms {
@@ -67,23 +79,28 @@ function fechaHoraCivilATimestampTecnico({ fechaCivil, horaCivil }: FechaHoraCiv
 }
 
 /**
- * Una línea ATTLOG es tab-separated: PIN, fecha-hora, status, verify,
+ * Una línea ATTLOG es tab-separated: PIN, fecha-hora, punch, verify,
  * workcode, reservado, reservado (el orden exacto y la cantidad de campos
  * reservados varía por firmware — solo los primeros 4 importan aquí).
- * `status` (el 3er campo — entrada/salida/etc.) no se usa: este sistema ya
- * calcula puntualidad/tardanza a partir de sección+horario, no de lo que
- * el equipo interprete como "tipo" de marcación.
+ * `punch` (el 3er campo) es la categoría funcional seleccionada en el S922;
+ * se conserva crudo y se mapea a TipoMarcacion. El status no se usa como
+ * categoría (el firmware lo envía en otro campo/según el formato).
  */
 export function parsearLineaAttlog(linea: string): RegistroAttlog | null {
   const campos = linea.split("\t");
   if (campos.length < 4) return null;
 
-  const [pin, fechaHoraTexto, , verify] = campos;
+  const [pin, fechaHoraTexto, punchTexto, verify] = campos;
   if (!pin?.trim() || !fechaHoraTexto?.trim()) return null;
 
   const civil = parseFechaHoraCivilAdms(fechaHoraTexto.trim());
   if (!civil) return null;
-  return { pin: pin.trim(), ...civil, fechaHora: fechaHoraCivilATimestampTecnico(civil), metodoVerifyCrudo: verify?.trim() ?? "" };
+  const punchTextoNormalizado = punchTexto?.trim() ?? "";
+  const punchNumero = /^[-+]?\d+$/.test(punchTextoNormalizado) ? Number(punchTextoNormalizado) : NaN;
+  // Prisma Int/PostgreSQL integer range: valores numéricos fuera de rango no
+  // son un punch interpretable y no deben provocar un error de persistencia.
+  const punchCrudo = Number.isSafeInteger(punchNumero) && punchNumero >= -2147483648 && punchNumero <= 2147483647 ? punchNumero : null;
+  return { pin: pin.trim(), ...civil, fechaHora: fechaHoraCivilATimestampTecnico(civil), metodoVerifyCrudo: verify?.trim() ?? "", punchCrudo, tipoMarcacion: mapearPunchMarcacion(punchCrudo) };
 }
 
 export async function resolverTerminalPorSN(sn: string | undefined): Promise<Terminal> {
@@ -238,6 +255,9 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
         `[adms] código de verificación desconocido "${registro.metodoVerifyCrudo}" (terminal ${terminal.id}, PIN ${registro.pin}) — usando "huella" por default.`
       );
     }
+    if (registro.punchCrudo !== null && registro.tipoMarcacion === null) {
+      console.warn(`[adms] punch desconocido "${registro.punchCrudo}" (terminal ${terminal.id}, PIN ${registro.pin}); se conserva sin categoría.`);
+    }
 
     await registrarAsistencia(trabajador.id, terminal.id, {
       fecha: registro.fechaCivil,
@@ -246,6 +266,8 @@ export async function procesarLoteAttlog(terminal: Terminal, cuerpoCrudo: string
       seccionId: asignacion.seccionId,
       turno: TURNO_OFICINA,
       metodoUsado: metodoUsado ?? MetodoAsistencia.huella,
+      tipoMarcacion: registro.tipoMarcacion,
+      punchCrudo: registro.punchCrudo,
     });
     procesados++;
   }

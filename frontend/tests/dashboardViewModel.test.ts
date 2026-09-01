@@ -23,9 +23,9 @@ describe("modelo puro del panel principal", () => {
   it("clasifica puntualidad por horario de sección e ignora secciones sin horario", () => {
     const resultado = calcularPuntualidad(
       [
-        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:05:00.000Z" },
-        { trabajadorId: "t2", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:20:00.000Z" },
-        { trabajadorId: "t3", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s2", hora: "1970-01-01T08:00:00.000Z" },
+        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:05:00.000Z", tipoMarcacion: "entrada" },
+        { trabajadorId: "t2", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:20:00.000Z", tipoMarcacion: "entrada" },
+        { trabajadorId: "t3", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s2", hora: "1970-01-01T08:00:00.000Z", tipoMarcacion: "entrada" },
       ],
       [{ id: "s1", horarioId: "h1" }, { id: "s2", horarioId: null }],
       [{ id: "h1", horaEntrada: "2026-08-19T08:00:00.000Z", toleranciaMinutos: 10 }]
@@ -37,9 +37,9 @@ describe("modelo puro del panel principal", () => {
     const horario = { id: "h1", horaEntrada: "2026-08-19T08:00:00.000Z", toleranciaMinutos: 10 };
     const resultado = calcularPuntualidad(
       [
-        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T07:59:00.000Z" },
-        { trabajadorId: "t2", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:10:00.000Z" },
-        { trabajadorId: "t3", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:11:00.000Z" },
+        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T07:59:00.000Z", tipoMarcacion: "entrada" },
+        { trabajadorId: "t2", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:10:00.000Z", tipoMarcacion: "entrada" },
+        { trabajadorId: "t3", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:11:00.000Z", tipoMarcacion: "entrada" },
       ],
       [{ id: "s1", horarioId: "h1" }],
       [horario]
@@ -50,13 +50,22 @@ describe("modelo puro del panel principal", () => {
   it("selecciona solo la primera marcación civil por trabajador y día", () => {
     const resultado = calcularPuntualidad(
       [
-        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:20:00.000Z" },
-        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:00:00.000Z" },
+        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:20:00.000Z", tipoMarcacion: "entrada" },
+        { trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T08:00:00.000Z", tipoMarcacion: "entrada" },
       ],
       [{ id: "s1", horarioId: "h1" }],
       [{ id: "h1", horaEntrada: "2026-08-19T08:00:00.000Z", toleranciaMinutos: 10 }]
     );
     expect(resultado).toEqual({ aTiempo: 1, tarde: 0 });
+  });
+
+  it("ignora salidas y descansos para puntualidad", () => {
+    const resultado = calcularPuntualidad(
+      [{ trabajadorId: "t1", fecha: "2026-08-19T00:00:00.000Z", seccionId: "s1", hora: "1970-01-01T07:00:00.000Z", tipoMarcacion: "salida" }],
+      [{ id: "s1", horarioId: "h1" }],
+      [{ id: "h1", horaEntrada: "2026-08-19T08:00:00.000Z", toleranciaMinutos: 10 }]
+    );
+    expect(resultado).toEqual({ aTiempo: 0, tarde: 0 });
   });
 
   it("mantiene la fecha y hora civiles sin depender del timezone del proceso", () => {

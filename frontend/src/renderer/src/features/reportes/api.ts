@@ -11,7 +11,7 @@ export interface ResumenAsistencia {
 }
 
 export interface FilaSeccionAsistencia {
-  seccionId: string;
+  seccionId: string | null;
   seccionNombre: string;
   presentes: number;
   aTiempo: number;

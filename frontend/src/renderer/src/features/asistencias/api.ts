@@ -2,6 +2,15 @@ import { apiClient } from "@/core/api/client";
 import { descargarExportacion } from "@/core/api/descargarExportacion";
 
 export type MetodoAsistencia = "huella" | "rostro";
+export type TipoMarcacion = "entrada" | "salida" | "salida_descanso" | "entrada_descanso" | "entrada_tiempo_extra" | "salida_tiempo_extra";
+export const ETIQUETA_TIPO_MARCACION: Record<TipoMarcacion, string> = {
+  entrada: "Entrada",
+  salida: "Salida",
+  salida_descanso: "Salida de descanso",
+  entrada_descanso: "Entrada de descanso",
+  entrada_tiempo_extra: "Entrada T.E.",
+  salida_tiempo_extra: "Salida T.E.",
+};
 
 export interface DatosRegistroAsistencia {
   trabajadorId: string;
@@ -10,6 +19,8 @@ export interface DatosRegistroAsistencia {
   seccionId: string;
   turno: string;
   metodoUsado: MetodoAsistencia;
+  tipoMarcacion?: TipoMarcacion | null;
+  punchCrudo?: number | null;
 }
 
 export interface AsistenciaRegistrada {
@@ -22,6 +33,8 @@ export interface AsistenciaRegistrada {
   turno: string;
   metodoUsado: MetodoAsistencia;
   terminalOrigenId: string;
+  tipoMarcacion: TipoMarcacion | null;
+  punchCrudo: number | null;
 }
 
 export function registrarAsistencia(token: string, datos: DatosRegistroAsistencia) {

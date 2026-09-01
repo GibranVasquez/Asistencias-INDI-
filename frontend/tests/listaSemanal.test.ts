@@ -11,6 +11,8 @@ function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
     seccionId: parcial.seccionId ?? "frente-1",
     turno: parcial.turno ?? "diurno",
     metodoUsado: parcial.metodoUsado ?? "huella",
+    tipoMarcacion: parcial.tipoMarcacion ?? null,
+    punchCrudo: parcial.punchCrudo ?? null,
     terminalOrigenId: parcial.terminalOrigenId ?? "terminal-1",
     trabajadorNombre: parcial.trabajadorNombre ?? "Ana Pérez",
     seccionNombre: parcial.seccionNombre ?? "Frente Norte",
@@ -45,5 +47,16 @@ describe("lista semanal de asistencia", () => {
     expect(filas.map((fila) => fila.trabajadorNombre)).toEqual(["Ana Pérez", "Bruno Díaz"]);
     expect(filas[0].porDia.get("2026-08-11")?.map((registro) => registro.id)).toEqual(["1", "2"]);
     expect(filas[0].frentes).toEqual(["Frente Norte"]);
+  });
+
+  it("conserva todas las horas por tipo sin recorrer categorías", () => {
+    const fila = agruparAsistenciasPorTrabajador([
+      asistencia({ id: "e1", tipoMarcacion: "entrada", hora: "1970-01-01T08:01:00.000Z" }),
+      asistencia({ id: "e2", tipoMarcacion: "entrada", hora: "1970-01-01T08:03:00.000Z" }),
+      asistencia({ id: "s1", tipoMarcacion: "salida", hora: "1970-01-01T18:04:00.000Z" }),
+      asistencia({ id: "legacy", tipoMarcacion: null, hora: "1970-01-01T12:00:00.000Z" }),
+    ])[0];
+    expect(fila.marcasPorDia.get("2026-08-10")).toMatchObject({ entrada: ["08:01", "08:03"], salida: ["18:04"], salida_descanso: [] });
+    expect(fila.sinClasificarPorDia.get("2026-08-10")).toHaveLength(1);
   });
 });

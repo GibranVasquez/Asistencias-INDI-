@@ -1,4 +1,4 @@
-import { AsistenciaListada } from "@/features/asistencias/api";
+import { AsistenciaListada, TipoMarcacion } from "@/features/asistencias/api";
 import { Horario } from "@/core/api/resources/horarios";
 import { Seccion } from "@/core/api/resources/secciones";
 import { Terminal } from "@/features/terminales/api";
@@ -79,7 +79,7 @@ export function llegoATiempo(horaISO: string, horario: Pick<Horario, "horaEntrad
   return marcada <= limite;
 }
 
-type AsistenciaParaPuntualidad = Pick<AsistenciaListada, "trabajadorId" | "fecha" | "seccionId" | "hora">;
+type AsistenciaParaPuntualidad = Pick<AsistenciaListada, "trabajadorId" | "fecha" | "seccionId" | "hora" | "tipoMarcacion">;
 
 /** Selecciona la entrada cronológica de cada trabajador en su fecha civil. */
 export function primeraMarcacionPorTrabajadorDia<T extends AsistenciaParaPuntualidad>(asistencias: T[]): T[] {
@@ -94,6 +94,10 @@ export function primeraMarcacionPorTrabajadorDia<T extends AsistenciaParaPuntual
   return [...primeras.values()];
 }
 
+export function primeraEntradaPorTrabajadorDia<T extends AsistenciaParaPuntualidad>(asistencias: T[]): T[] {
+  return primeraMarcacionPorTrabajadorDia(asistencias.filter((a) => a.tipoMarcacion === "entrada"));
+}
+
 export function calcularPuntualidad(
   asistencias: AsistenciaParaPuntualidad[],
   secciones: Pick<Seccion, "id" | "horarioId">[],
@@ -103,7 +107,7 @@ export function calcularPuntualidad(
   const mapaSecciones = new Map(secciones.map((seccion) => [seccion.id, seccion]));
   let aTiempo = 0;
   let tarde = 0;
-  for (const asistencia of primeraMarcacionPorTrabajadorDia(asistencias)) {
+  for (const asistencia of primeraEntradaPorTrabajadorDia(asistencias)) {
     const horarioId = asistencia.seccionId ? mapaSecciones.get(asistencia.seccionId)?.horarioId : undefined;
     const horario = horarioId ? mapaHorarios.get(horarioId) : undefined;
     if (!horario) continue;

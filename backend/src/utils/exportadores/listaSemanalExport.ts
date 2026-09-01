@@ -41,10 +41,14 @@ function dias(fechaInicio: string): string[] {
   return resultado;
 }
 
-function horas(grupo: AsistenciaListada[], dia: string): [string, string] {
+function horasPorTipo(grupo: AsistenciaListada[], dia: string, tipo: AsistenciaListada["tipoMarcacion"]): string {
   const delDia = grupo.filter((a) => a.fecha.toISOString().slice(0, 10) === dia).sort((a, b) => a.hora.getTime() - b.hora.getTime());
-  return [delDia[0] ? delDia[0].hora.toISOString().slice(11, 16) : "—", delDia.length > 1 ? delDia[delDia.length - 1].hora.toISOString().slice(11, 16) : "—"];
+  const horas = delDia.filter((a) => a.tipoMarcacion === tipo).map((a) => a.hora.toISOString().slice(11, 16));
+  return horas.length ? horas.join("\n") : "—";
 }
+
+const TIPOS_EXPORTACION: NonNullable<AsistenciaListada["tipoMarcacion"]>[] = ["entrada", "salida_descanso", "entrada_descanso", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
+const ETIQUETAS_EXPORTACION = ["Entrada", "Salida descanso", "Entrada descanso", "Salida", "Entrada T.E.", "Salida T.E."];
 
 function encabezadoDia(fechaISO: string): string {
   const fecha = new Date(`${fechaISO}T00:00:00Z`);
@@ -95,10 +99,11 @@ export function generarPdfListaSemanal(lista: ListaSemanalExportable, salida: No
   let numeroTrabajador = 0;
   for (const grupo of porTrabajador(lista.asistencias).values()) {
     numeroTrabajador += 1;
-    for (const marca of ["Primera marcación", "Última marcación"]) {
-      if (marca === "Primera marcación" && doc.y > doc.page.height - 65) { doc.addPage(); dibujarEncabezado(); }
+    for (let tipoIndice = 0; tipoIndice < TIPOS_EXPORTACION.length; tipoIndice += 1) {
+      const marca = ETIQUETAS_EXPORTACION[tipoIndice];
+      if (tipoIndice === 0 && doc.y > doc.page.height - 65) { doc.addPage(); dibujarEncabezado(); }
       const primera = grupo[0];
-      const valores = [String(numeroTrabajador).padStart(3, "0"), primera.trabajadorNombre, primera.trabajadorCategoria, marca, ...diasSemana.map((dia) => horas(grupo, dia)[marca.startsWith("Primera") ? 0 : 1]), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
+      const valores = [String(numeroTrabajador).padStart(3, "0"), primera.trabajadorNombre, primera.trabajadorCategoria, marca, ...diasSemana.map((dia) => horasPorTipo(grupo, dia, TIPOS_EXPORTACION[tipoIndice])), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
       const y = doc.y; let x = doc.page.margins.left; doc.font("Helvetica").fontSize(7.5);
       valores.forEach((valor, i) => { doc.text(valor, x + 3, y + 3, { width: anchos[i] - 6, lineBreak: false }); x += anchos[i]; });
       doc.moveTo(doc.page.margins.left, y + 16).lineTo(doc.page.width - doc.page.margins.right, y + 16).strokeColor("#d6dbe3").stroke();
@@ -127,8 +132,8 @@ export async function generarExcelListaSemanal(lista: ListaSemanalExportable): P
     numeroTrabajador += 1;
     const primera = grupo[0];
     const filaInicio = fila;
-    for (const marca of ["Primera marcación", "Última marcación"]) {
-      hoja.getRow(fila).values = [String(numeroTrabajador).padStart(3, "0"), sanitizarCeldaExcel(primera.trabajadorNombre), sanitizarCeldaExcel(primera.trabajadorCategoria), marca, ...diasSemana.map((dia) => horas(grupo, dia)[marca.startsWith("Primera") ? 0 : 1]), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
+    for (let tipoIndice = 0; tipoIndice < TIPOS_EXPORTACION.length; tipoIndice += 1) {
+      hoja.getRow(fila).values = [String(numeroTrabajador).padStart(3, "0"), sanitizarCeldaExcel(primera.trabajadorNombre), sanitizarCeldaExcel(primera.trabajadorCategoria), ETIQUETAS_EXPORTACION[tipoIndice], ...diasSemana.map((dia) => horasPorTipo(grupo, dia, TIPOS_EXPORTACION[tipoIndice])), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
       hoja.getRow(fila).alignment = { vertical: "middle", wrapText: true };
       fila += 1;
     }

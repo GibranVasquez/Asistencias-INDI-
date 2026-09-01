@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AsistenciaListada, exportarListaSemanal, listarAsistencias } from "@/features/asistencias/api";
+import { Fragment } from "react";
+import { AsistenciaListada, exportarListaSemanal, listarAsistencias, ETIQUETA_TIPO_MARCACION } from "@/features/asistencias/api";
 import { ApiError } from "@/core/api/client";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import ChipEstado from "@/shared/components/ChipEstado";
@@ -8,7 +9,7 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, TIPOS_MARCACION } from "@/features/asistencias/listaSemanal";
 import { obtenerObraActual } from "@/core/api/resources/obras";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
@@ -193,27 +194,21 @@ export default function AsistenciasPage() {
           : vista === "semanal" ? (
             <div className="table-scroll asistencia-semanal-scroll">
               <table className="tabla-premium asistencia-semanal">
-                <thead><tr><th className="columna-fija">ID</th><th className="columna-fija">Trabajador</th><th className="columna-fija">Puesto / categoría</th><th>Huella</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana">{encabezadoDia(dia)}</th>)}</tr></thead>
+                <thead><tr><th className="columna-fija">ID</th><th className="columna-fija">Trabajador</th><th className="columna-fija">Puesto / categoría</th><th>Huella</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana" colSpan={6}>{encabezadoDia(dia)}</th>)}</tr><tr><th colSpan={4} />{diasSemana.flatMap((dia) => TIPOS_MARCACION.map((tipo) => <th key={`${dia}-${tipo}`}>{ETIQUETA_TIPO_MARCACION[tipo]}</th>))}</tr></thead>
                 <tbody>{filasSemanales.map((fila, indiceFila) => <tr key={fila.trabajadorId}>
                   <td className="columna-fija"><strong>{String(indiceFila + 1).padStart(3, "0")}</strong></td>
                   <td className="columna-fija"><strong>{fila.trabajadorNombre}</strong><small>{fila.frentes.join(", ")}</small></td>
                   <td className="columna-fija">{fila.trabajadorCategoria || "No especificada"}</td>
                   <td>{fila.huellaRegistrada ? "Enrolado" : "No enrolado"}</td>
                   {diasSemana.map((dia) => {
-                    const registros = fila.porDia.get(dia) ?? [];
-                    return <td key={dia} className="celda-dia" title={registros.length ? `${registros.length} marcación${registros.length === 1 ? "" : "es"}` : "Sin registro"}>
-                      {registros.length ? <button type="button" className="celda-dia-boton" onClick={() => setDetalleDia({ fila, dia })} aria-label={`Ver marcaciones de ${fila.trabajadorNombre} del ${dia}`}>
-                        <span className="marcacion-resumen"><small>Primera marcación</small>{registros[0].hora.slice(11, 16)}</span>
-                        {registros.length > 1 && <span className="marcacion-resumen"><small>Última marcación</small>{registros[registros.length - 1].hora.slice(11, 16)}</span>}
-                        {registros.length === 1 && <span className="marcacion-resumen"><small>1 marcación</small>—</span>}
-                      </button> : <span className="sin-registro">—</span>}
-                    </td>;
+                    const marcas = fila.marcasPorDia.get(dia);
+                    return <Fragment key={dia}>{TIPOS_MARCACION.map((tipo) => <td key={`${dia}-${tipo}`} className="celda-dia">{(marcas?.[tipo] ?? []).map((hora, indice) => <span key={`${hora}-${indice}`} className="marcacion-resumen">{hora}</span>)}{!(marcas?.[tipo]?.length) && <span className="sin-registro">—</span>}</td>)}{(fila.sinClasificarPorDia.get(dia)?.length ?? 0) > 0 && <td colSpan={6} className="celda-dia"><button type="button" className="celda-dia-boton" onClick={() => setDetalleDia({ fila, dia })}>{fila.sinClasificarPorDia.get(dia)!.length} marca(s) sin clasificar</button></td>}</Fragment>;
                   })}
                 </tr>)}</tbody>
               </table>
             </div>
           ) : (
-            <div className="table-scroll"><table className="tabla-premium"><thead><tr><th>Trabajador</th><th>Frente</th><th>Fecha</th><th>Hora</th><th>Turno</th><th>Método</th></tr></thead><tbody>{asistenciasFiltradas.map((a) => <tr key={a.id}><td><strong>{a.trabajadorNombre}</strong></td><td>{a.seccionNombre}</td><td>{a.fecha.slice(0, 10)}</td><td className="numeric-cell">{a.hora.slice(11, 16)}</td><td>{a.turno}</td><td><ChipEstado tamano={26} color="indi" icono={a.metodoUsado === "rostro" ? "🙂" : "👆"} titulo={ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado} /> {ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado}</td></tr>)}</tbody></table></div>
+            <div className="table-scroll"><table className="tabla-premium"><thead><tr><th>Trabajador</th><th>Frente</th><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Turno</th><th>Método</th></tr></thead><tbody>{asistenciasFiltradas.map((a) => <tr key={a.id}><td><strong>{a.trabajadorNombre}</strong></td><td>{a.seccionNombre}</td><td>{a.fecha.slice(0, 10)}</td><td className="numeric-cell">{a.hora.slice(11, 16)}</td><td>{a.tipoMarcacion ? ETIQUETA_TIPO_MARCACION[a.tipoMarcacion] : "Sin clasificar"}</td><td>{a.turno}</td><td><ChipEstado tamano={26} color="indi" icono={a.metodoUsado === "rostro" ? "🙂" : "👆"} titulo={ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado} /> {ETIQUETA_METODO[a.metodoUsado] ?? a.metodoUsado}</td></tr>)}</tbody></table></div>
           )}
       </div>
       {detalleDia && (() => {

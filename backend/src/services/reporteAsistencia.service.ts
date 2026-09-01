@@ -1,4 +1,4 @@
-import { TrabajadorEstatus } from "@prisma/client";
+import { TipoMarcacion, TrabajadorEstatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import {
@@ -69,7 +69,7 @@ export async function obtenerReporteAsistencia(
   const [asistencias, mapas, totalActivos, secciones] = await Promise.all([
     prisma.asistenciaDiaria.findMany({
       where: { fecha: { gte: desde, lte: hasta }, ...(seccionId ? { seccionId } : {}) },
-      select: { fecha: true, hora: true, seccionId: true, trabajadorId: true },
+      select: { fecha: true, hora: true, seccionId: true, trabajadorId: true, tipoMarcacion: true },
     }),
     cargarMapaHorarios(),
     prisma.trabajador.count({ where: { estatus: TrabajadorEstatus.activo } }),
@@ -159,12 +159,17 @@ export async function obtenerHistoricoTrabajador(
     cargarMapaHorarios(),
   ]);
 
-  // Si hay más de una marca el mismo día, se queda con la más temprana (ver
-  // unaMarcaPorDia) — orderBy hora:asc + "primera que llega gana" en el Map.
+  // Presencia y puntualidad son conceptos independientes: cualquier marca
+  // hace presente el día, pero solo la primera entrada explícita se evalúa.
   const asistenciaPorDia = new Map<string, (typeof asistencias)[number]>();
+  const entradaPorDia = new Map<string, (typeof asistencias)[number]>();
   for (const a of asistencias) {
     const clave = aClaveDia(a.fecha);
     if (!asistenciaPorDia.has(clave)) asistenciaPorDia.set(clave, a);
+    if (a.tipoMarcacion === TipoMarcacion.entrada) {
+      const entrada = entradaPorDia.get(clave);
+      if (!entrada || a.hora.getTime() < entrada.hora.getTime()) entradaPorDia.set(clave, a);
+    }
   }
   const diasHabiles = diasHabilesEnRango(desde, hasta);
 
@@ -174,14 +179,15 @@ export async function obtenerHistoricoTrabajador(
     if (!asistencia) {
       return { fecha: clave, hora: null, seccionId: null, seccionNombre: null, presente: false, aTiempo: null };
     }
-    const horario = asistencia.seccionId ? mapas.seccionHorario.get(asistencia.seccionId) : null;
+    const entrada = entradaPorDia.get(clave);
+    const horario = entrada?.seccionId ? mapas.seccionHorario.get(entrada.seccionId) : null;
     return {
       fecha: clave,
       hora: asistencia.hora.toISOString().slice(11, 19),
       seccionId: asistencia.seccionId,
       seccionNombre: asistencia.seccion?.nombre ?? "Sin asignación",
       presente: true,
-      aTiempo: horario ? llegoATiempo(asistencia.hora, horario) : null,
+      aTiempo: horario && entrada ? llegoATiempo(entrada.hora, horario) : null,
     };
   });
 
@@ -190,6 +196,7 @@ export async function obtenerHistoricoTrabajador(
     hora: a.hora,
     seccionId: a.seccionId,
     trabajadorId,
+    tipoMarcacion: a.tipoMarcacion,
   }));
   // ausentes aquí sí es significativo (totalActivos=1: este único trabajador).
   const resumen = calcularResumen(crudas, mapas, diasHabiles, 1, false);

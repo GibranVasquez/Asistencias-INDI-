@@ -1,4 +1,4 @@
-import { AsistenciaDiaria, MetodoAsistencia, Prisma, RolUsuario, TrabajadorEstatus } from "@prisma/client";
+import { AsistenciaDiaria, MetodoAsistencia, Prisma, RolUsuario, TrabajadorEstatus, TipoMarcacion } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../utils/AppError";
 import { verificarAccesoSeccion } from "../utils/accesoSeccion";
@@ -31,6 +31,8 @@ export interface DatosRegistroAsistencia {
   obraId?: string | null;
   turno: string;
   metodoUsado: MetodoAsistencia;
+  tipoMarcacion?: TipoMarcacion | null;
+  punchCrudo?: number | null;
   ubicacionGPS?: string | null;
 }
 
@@ -132,6 +134,8 @@ export async function registrarAsistencia(
         seccionId: datos.seccionId,
         turno: datos.turno,
         metodoUsado: datos.metodoUsado,
+        tipoMarcacion: datos.tipoMarcacion ?? null,
+        punchCrudo: datos.punchCrudo ?? null,
         terminalOrigenId,
         ubicacionGPS: datos.ubicacionGPS ?? null,
       },

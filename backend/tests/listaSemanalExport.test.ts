@@ -25,7 +25,7 @@ describe("exportación de lista semanal", () => {
     expect(hoja.getCell("A2").value).toBe("ÁREA");
     expect(hoja.getCell("B2").value).toContain("Tren del Golfo");
     expect(hoja.getRow(11).values).toContain("HUELLA");
-    expect(hoja.getRow(12).values).toContain("Primera marcación");
+    expect(hoja.getRow(12).values).toContain("Entrada");
   });
 
   it("genera un PDF no vacío con el encabezado de la lista", async () => {

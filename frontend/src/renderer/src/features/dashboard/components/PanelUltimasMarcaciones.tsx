@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AsistenciaListada } from "@/features/asistencias/api";
+import { AsistenciaListada, ETIQUETA_TIPO_MARCACION } from "@/features/asistencias/api";
 import { Trabajador } from "@/features/trabajadores/api";
 import { Horario } from "@/core/api/resources/horarios";
 import { Seccion } from "@/core/api/resources/secciones";
@@ -25,7 +25,7 @@ export default function PanelUltimasMarcaciones({ asistencias, trabajadores, sec
         const puntual = horario ? llegoATiempo(asistencia.hora, horario) : null;
         return <div key={asistencia.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: i === ultimasMarcaciones.length - 1 ? "none" : "1px solid var(--line)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}><span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--pastel)", color: "var(--indi)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{iniciales}</span><span style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{nombre}</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{puntual !== null && <ChipEstado tamano={26} color={puntual ? "ok" : "warn"} icono={puntual ? "✓" : "⏱"} titulo={puntual ? "A tiempo" : "Tardanza"} />}<span style={{ fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: puntual === null ? "var(--muted)" : puntual ? "var(--ok)" : "var(--warn)" }}>{new Date(asistencia.hora).toISOString().slice(11, 16)}</span></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{puntual !== null && <ChipEstado tamano={26} color={puntual ? "ok" : "warn"} icono={puntual ? "✓" : "⏱"} titulo={puntual ? "A tiempo" : "Tardanza"} />}<span style={{ fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: puntual === null ? "var(--muted)" : puntual ? "var(--ok)" : "var(--warn)" }}>{new Date(asistencia.hora).toISOString().slice(11, 16)} · {asistencia.tipoMarcacion ? ETIQUETA_TIPO_MARCACION[asistencia.tipoMarcacion] : "Sin clasificar"}</span></div>
         </div>;
       })}
     </div>}
