@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Fragment } from "react";
 import { AsistenciaListada, exportarListaSemanal, listarAsistencias, ETIQUETA_TIPO_MARCACION } from "@/features/asistencias/api";
 import { ApiError } from "@/core/api/client";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
@@ -9,7 +8,8 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, TIPOS_MARCACION } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
+import MarcacionesDiaCell from "@/features/asistencias/MarcacionesDiaCell";
 import { obtenerObraActual } from "@/core/api/resources/obras";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
@@ -194,15 +194,14 @@ export default function AsistenciasPage() {
           : vista === "semanal" ? (
             <div className="table-scroll asistencia-semanal-scroll">
               <table className="tabla-premium asistencia-semanal">
-                <thead><tr><th className="columna-fija">ID</th><th className="columna-fija">Trabajador</th><th className="columna-fija">Puesto / categoría</th><th>Huella</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana" colSpan={6}>{encabezadoDia(dia)}</th>)}</tr><tr><th colSpan={4} />{diasSemana.flatMap((dia) => TIPOS_MARCACION.map((tipo) => <th key={`${dia}-${tipo}`}>{ETIQUETA_TIPO_MARCACION[tipo]}</th>))}</tr></thead>
+                <thead><tr><th className="columna-fija">ID</th><th className="columna-fija">Trabajador</th><th className="columna-fija">Puesto / categoría</th>{diasSemana.map((dia) => <th key={dia} className="dia-semana">{encabezadoDia(dia)}</th>)}</tr></thead>
                 <tbody>{filasSemanales.map((fila, indiceFila) => <tr key={fila.trabajadorId}>
                   <td className="columna-fija"><strong>{String(indiceFila + 1).padStart(3, "0")}</strong></td>
                   <td className="columna-fija"><strong>{fila.trabajadorNombre}</strong><small>{fila.frentes.join(", ")}</small></td>
                   <td className="columna-fija">{fila.trabajadorCategoria || "No especificada"}</td>
-                  <td>{fila.huellaRegistrada ? "Enrolado" : "No enrolado"}</td>
                   {diasSemana.map((dia) => {
                     const marcas = fila.marcasPorDia.get(dia);
-                    return <Fragment key={dia}>{TIPOS_MARCACION.map((tipo) => <td key={`${dia}-${tipo}`} className="celda-dia">{(marcas?.[tipo] ?? []).map((hora, indice) => <span key={`${hora}-${indice}`} className="marcacion-resumen">{hora}</span>)}{!(marcas?.[tipo]?.length) && <span className="sin-registro">—</span>}</td>)}{(fila.sinClasificarPorDia.get(dia)?.length ?? 0) > 0 && <td colSpan={6} className="celda-dia"><button type="button" className="celda-dia-boton" onClick={() => setDetalleDia({ fila, dia })}>{fila.sinClasificarPorDia.get(dia)!.length} marca(s) sin clasificar</button></td>}</Fragment>;
+                    return <MarcacionesDiaCell key={dia} fecha={encabezadoDia(dia)} marcas={marcas} sinClasificar={fila.sinClasificarPorDia.get(dia)?.length ?? 0} onVerSinClasificar={() => setDetalleDia({ fila, dia })} />;
                   })}
                 </tr>)}</tbody>
               </table>
