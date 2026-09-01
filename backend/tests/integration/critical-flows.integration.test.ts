@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import ExcelJS from "exceljs";
 import jwt from "jsonwebtoken";
 import request from "supertest";
-import { MetodoAsistencia, RolUsuario, TrabajadorEstatus } from "@prisma/client";
+import { MetodoAsistencia, RolUsuario, TrabajadorEstatus, TipoMarcacion } from "@prisma/client";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { app } from "../../src/app";
 import { corregirNominaSemanal, generarNominaSemanal } from "../../src/services/nomina.service";
@@ -244,7 +244,7 @@ describe("PostgreSQL real: analítica de asistencia", () => {
       [trabajadores[1], "2026-08-04", "08:10:00"],
       [trabajadores[0], "2026-08-05", "08:11:00"],
     ] as const) {
-      await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: (await prisma.terminal.findFirstOrThrow()).id, seccionId: seccion.id, fecha: FECHA(fecha), hora: HORA(hora), turno: "Día", metodoUsado: MetodoAsistencia.huella } });
+      await prisma.asistenciaDiaria.create({ data: { trabajadorId: trabajador.id, terminalOrigenId: (await prisma.terminal.findFirstOrThrow()).id, seccionId: seccion.id, fecha: FECHA(fecha), hora: HORA(hora), turno: "Día", metodoUsado: MetodoAsistencia.huella, tipoMarcacion: TipoMarcacion.entrada } });
     }
     const reporte = await obtenerReporteAsistencia("2026-08-03", "2026-08-07");
     expect(reporte.resumen).toMatchObject({ presentes: 3, aTiempo: 2, tardanzas: 1, ausentes: 7, diasHabiles: 5, porcentajePuntualidad: 67 });
@@ -257,8 +257,8 @@ describe("PostgreSQL real: analítica de asistencia", () => {
     const seccionB = await prisma.seccion.create({ data: { nombre: "Frente B", obraId: seccion.obraId, horarioId: horarioB.id } });
     await prisma.seccion.update({ where: { id: seccion.id }, data: { horarioId: horarioA.id } });
     await prisma.asistenciaDiaria.createMany({ data: [
-      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
-      { trabajadorId: trabajadores[1].id, terminalOrigenId: terminal.id, seccionId: seccionB.id, fecha: FECHA("2026-08-05"), hora: HORA("09:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella, tipoMarcacion: TipoMarcacion.entrada },
+      { trabajadorId: trabajadores[1].id, terminalOrigenId: terminal.id, seccionId: seccionB.id, fecha: FECHA("2026-08-05"), hora: HORA("09:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella, tipoMarcacion: TipoMarcacion.entrada },
     ] });
     const reporte = await obtenerReporteAsistencia("2026-08-05", "2026-08-05");
     expect(reporte.resumen).toMatchObject({ presentes: 2, aTiempo: 1, tardanzas: 1, porcentajePuntualidad: 50, diasHabiles: 1 });
@@ -273,8 +273,8 @@ describe("PostgreSQL real: analítica de asistencia", () => {
     const horario = await prisma.horario.create({ data: { nombre: "Turno histórico", horaEntrada: HORA("08:00:00"), horaSalida: HORA("17:00:00"), toleranciaMinutos: 10 } });
     await prisma.seccion.update({ where: { id: seccion.id }, data: { horarioId: horario.id } });
     await prisma.asistenciaDiaria.createMany({ data: [
-      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
-      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella },
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-03"), hora: HORA("08:00:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella, tipoMarcacion: TipoMarcacion.entrada },
+      { trabajadorId: trabajadores[0].id, terminalOrigenId: terminal.id, seccionId: seccion.id, fecha: FECHA("2026-08-05"), hora: HORA("08:11:00"), turno: "Día", metodoUsado: MetodoAsistencia.huella, tipoMarcacion: TipoMarcacion.entrada },
     ] });
     const historico = await obtenerHistoricoTrabajador(trabajadores[0].id, "2026-08-03", "2026-08-07");
     expect(historico.dias.map((dia) => dia.fecha)).toEqual(["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07"]);
