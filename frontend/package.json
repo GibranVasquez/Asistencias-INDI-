@@ -50,6 +50,7 @@
     "files": [
       "out/**/*"
     ],
+    "extraResources": [{ "from": "resources/terminal-adapters", "to": "terminal-adapters" }],
     "directories": {
       "output": "dist"
     },

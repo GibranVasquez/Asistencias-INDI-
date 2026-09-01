@@ -1,0 +1,4 @@
+export interface TerminalConnectionConfig { adapterKey: string; host: string; puerto: number; numeroSerieEsperado?: string | null; }
+export interface InfoTerminalLocal { serial: string; model?: string | null; firmware?: string | null; }
+export interface MarcacionTerminalNormalizada { trabajadorExternoId: string; fechaHoraLocal: string; tipoMarcacion: "entrada" | "salida" | "salida_descanso" | "entrada_descanso" | "entrada_tiempo_extra" | "salida_tiempo_extra" | null; codigoCrudo: number | null; metodoVerificacion: string | null; terminalSerial: string; eventoOrigenId: string | null; metadata?: { status?: number | null }; }
+export interface TerminalAdapter { probarConexion(config: TerminalConnectionConfig): Promise<InfoTerminalLocal>; descargarMarcaciones(config: TerminalConnectionConfig): Promise<{ info: InfoTerminalLocal; marcaciones: MarcacionTerminalNormalizada[] }>; }

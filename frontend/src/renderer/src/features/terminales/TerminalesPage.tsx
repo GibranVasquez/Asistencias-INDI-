@@ -7,6 +7,7 @@ import {
   editarTerminal,
   listarTerminales,
   Terminal,
+  sincronizarMarcaciones,
 } from "@/features/terminales/api";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import Boton from "@/shared/components/Boton";
@@ -62,6 +63,36 @@ export default function TerminalesPage() {
   const [erroresFila, setErroresFila] = useState<Record<string, string>>({});
   const [filaEnProceso, setFilaEnProceso] = useState<string | null>(null);
   const [confirmandoActivo, setConfirmandoActivo] = useState<Terminal | null>(null);
+  const [configLocal, setConfigLocal] = useState<{ terminal: Terminal; host: string; puerto: number; guardando: boolean; estado: string | null }>({ terminal: null as unknown as Terminal, host: "", puerto: 4370, guardando: false, estado: null });
+  const [resultadoSync, setResultadoSync] = useState<{ terminal: Terminal; resultado?: Awaited<ReturnType<typeof sincronizarMarcaciones>>; error?: string } | null>(null);
+
+  const bridgeTerminales = window.indiApp?.terminales;
+
+  async function abrirConexion(t: Terminal) {
+    const guardada = bridgeTerminales ? await bridgeTerminales.leerConfig(t.id) as { host?: string; puerto?: number } | null : null;
+    setConfigLocal({ terminal: t, host: guardada?.host ?? "", puerto: guardada?.puerto ?? 4370, guardando: false, estado: null });
+  }
+
+  async function probarConexionLocal() {
+    const t = configLocal.terminal; if (!t || !bridgeTerminales) return;
+    setConfigLocal((c) => ({ ...c, guardando: true, estado: null }));
+    try {
+      const config = { terminalId: t.id, numeroSerieEsperado: t.numeroSerie, adapterKey: "zkteco-s922", host: configLocal.host, puerto: configLocal.puerto };
+      await bridgeTerminales.guardarConfig(config); const info = await bridgeTerminales.probarConexion(config) as { serial: string; model?: string; firmware?: string };
+      setConfigLocal((c) => ({ ...c, guardando: false, estado: `Conectado · SN ${info.serial}${info.model ? ` · ${info.model}` : ""}` }));
+    } catch (e) { setConfigLocal((c) => ({ ...c, guardando: false, estado: e instanceof Error ? e.message : "No se pudo conectar." })); }
+  }
+
+  async function sincronizarLocal() {
+    const t = configLocal.terminal; if (!t || !bridgeTerminales) return;
+    setConfigLocal((c) => ({ ...c, guardando: true, estado: null }));
+    try {
+      const config = { terminalId: t.id, numeroSerieEsperado: t.numeroSerie, adapterKey: "zkteco-s922", host: configLocal.host, puerto: configLocal.puerto };
+      await bridgeTerminales.guardarConfig(config); const lectura = await bridgeTerminales.descargarMarcaciones(config) as { marcaciones: unknown[]; info: unknown };
+      const resultado = await sincronizarMarcaciones(token, t.id, lectura.marcaciones);
+      setResultadoSync({ terminal: t, resultado }); setConfigLocal((c) => ({ ...c, guardando: false, estado: "Sincronización completada" })); cargar();
+    } catch (e) { setConfigLocal((c) => ({ ...c, guardando: false, estado: null })); setResultadoSync({ terminal: t, error: e instanceof ApiError ? e.message : "No se pudo sincronizar el terminal." }); }
+  }
 
   function cargar() {
     setCargando(true);
@@ -241,6 +272,7 @@ export default function TerminalesPage() {
                           >
                             {filaEnProceso === t.id ? "…" : t.activo ? "Desactivar" : "Activar"}
                           </Boton>
+                          {t.tipo === "adms" && <Boton variante="outline" tamano="pequeno" onClick={() => void abrirConexion(t)}>Sincronizar</Boton>}
                         </td>
                       </tr>
                       {erroresFila[t.id] && (
@@ -355,6 +387,21 @@ export default function TerminalesPage() {
             </div>
           </form>
         </div>
+      )}
+      {configLocal.terminal?.id && (
+        <div className="modal-backdrop" onClick={() => setConfigLocal((c) => ({ ...c, terminal: null as unknown as Terminal }))}>
+          <div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420, display: "flex", flexDirection: "column", gap: 14 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--ink)" }}>Sincronizar terminal</h2>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: 13 }}>Se descargarán las marcaciones almacenadas. No se eliminará información del dispositivo.</p>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>Host / IP<input value={configLocal.host} onChange={(e) => setConfigLocal((c) => ({ ...c, host: e.target.value }))} placeholder="IP local del terminal" /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>Puerto<input type="number" min={1} max={65535} value={configLocal.puerto} onChange={(e) => setConfigLocal((c) => ({ ...c, puerto: Number(e.target.value) }))} /></label>
+            {configLocal.estado && <div style={{ color: configLocal.estado.startsWith("Conectado") || configLocal.estado === "Sincronización completada" ? "var(--ok)" : "var(--err)", fontSize: 13 }}>{configLocal.estado}</div>}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}><Boton type="button" variante="outline" onClick={() => void probarConexionLocal()} disabled={configLocal.guardando}>Probar conexión</Boton><Boton type="button" onClick={() => void sincronizarLocal()} disabled={configLocal.guardando || !configLocal.host}>Sincronizar marcaciones</Boton><Boton type="button" variante="outline" onClick={() => setConfigLocal((c) => ({ ...c, terminal: null as unknown as Terminal }))}>Cerrar</Boton></div>
+          </div>
+        </div>
+      )}
+      {resultadoSync && (
+        <div className="modal-backdrop" onClick={() => setResultadoSync(null)}><div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420 }}><h2 style={{ fontSize: 18, color: "var(--ink)" }}>Resultado de sincronización</h2>{resultadoSync.error ? <p style={{ color: "var(--err)" }}>{resultadoSync.error}</p> : <><p>Leídas: {resultadoSync.resultado?.recibidas}</p><p>Nuevas: {resultadoSync.resultado?.nuevas}</p><p>Duplicadas: {resultadoSync.resultado?.duplicadas}</p><p>Errores: {resultadoSync.resultado?.errores}</p></>}<Boton type="button" onClick={() => setResultadoSync(null)}>Cerrar</Boton></div></div>
       )}
 
       {editando && (

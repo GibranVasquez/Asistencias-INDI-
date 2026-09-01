@@ -4,6 +4,7 @@ import { resolverApiBaseUrl } from "./apiConfig";
 import { construirContentSecurityPolicy, esNavegacionAlMismoDocumento } from "./contentSecurityPolicy";
 import { registrarHandlersSecureStore } from "./secureStore";
 import { registrarHandlerGuardarExportacion } from "./exportaciones";
+import { registrarHandlersTerminalLocal } from "./terminalLocal";
 
 // Electron 43 + NVIDIA bajo Wayland pierde el contexto EGL de forma repetida
 // (eglCreateImage 0x3009) hasta terminar el proceso GPU. En esa combinación
@@ -129,6 +130,7 @@ void app.whenReady().then(() => {
     return;
   }
   registrarHandlersSecureStore();
+  registrarHandlersTerminalLocal();
   registrarHandlerGuardarExportacion();
   registrarDescargas();
   registrarPoliticaDeContenido(apiBaseUrl);

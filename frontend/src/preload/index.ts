@@ -32,4 +32,10 @@ contextBridge.exposeInMainWorld("indiApp", {
     leer: (): Promise<string | null> => ipcRenderer.invoke("terminal-secure-store:leer"),
     borrar: (): Promise<void> => ipcRenderer.invoke("terminal-secure-store:borrar"),
   },
+  terminales: {
+    leerConfig: (terminalId: string): Promise<unknown> => ipcRenderer.invoke("terminal-local:leer-config", terminalId),
+    guardarConfig: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:guardar-config", config),
+    probarConexion: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:probar", config),
+    descargarMarcaciones: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:descargar", config),
+  },
 });
