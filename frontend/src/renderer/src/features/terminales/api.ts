@@ -43,7 +43,18 @@ export function editarTerminal(token: string, id: string, datos: DatosEdicionTer
   return apiClient.patch<{ terminal: Terminal }>(`/terminales/${id}`, datos, token);
 }
 
-export interface ResultadoSincronizacion { recibidas: number; nuevas: number; duplicadas: number; errores: number; detallesErrores: { indice: number; trabajadorExternoId: string; codigo: string; mensaje: string }[]; }
+export interface ResultadoSincronizacion {
+  recibidas: number;
+  nuevas: number;
+  duplicadas: number;
+  errores: number;
+  detallesErrores: Array<{
+    indice?: number;
+    trabajadorExternoId?: string;
+    codigo: string;
+    mensaje: string;
+  }>;
+}
 export function sincronizarMarcaciones(token: string, terminalId: string, marcaciones: unknown[]) {
   return apiClient.post<ResultadoSincronizacion>(`/terminales/${terminalId}/sincronizar-marcaciones`, { marcaciones }, token);
 }

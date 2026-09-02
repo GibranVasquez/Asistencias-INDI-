@@ -9,6 +9,7 @@ import {
   Terminal,
   sincronizarMarcaciones,
 } from "@/features/terminales/api";
+import { ResultadoSincronizacionModal } from "@/features/terminales/ResultadoSincronizacionModal";
 import { useAutenticacion } from "@/features/auth/ContextoAutenticacion";
 import Boton from "@/shared/components/Boton";
 import EstadoVacio from "@/shared/components/EstadoVacio";
@@ -401,7 +402,7 @@ export default function TerminalesPage() {
         </div>
       )}
       {resultadoSync && (
-        <div className="modal-backdrop" onClick={() => setResultadoSync(null)}><div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()} style={{ background: "var(--surface)", borderRadius: 14, padding: 26, width: 420 }}><h2 style={{ fontSize: 18, color: "var(--ink)" }}>Resultado de sincronización</h2>{resultadoSync.error ? <p style={{ color: "var(--err)" }}>{resultadoSync.error}</p> : <><p>Leídas: {resultadoSync.resultado?.recibidas}</p><p>Nuevas: {resultadoSync.resultado?.nuevas}</p><p>Duplicadas: {resultadoSync.resultado?.duplicadas}</p><p>Errores: {resultadoSync.resultado?.errores}</p></>}<Boton type="button" onClick={() => setResultadoSync(null)}>Cerrar</Boton></div></div>
+        resultadoSync.error ? <div className="modal-backdrop" onClick={() => setResultadoSync(null)}><div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}><p style={{ color: "var(--err)" }}>{resultadoSync.error}</p><Boton type="button" onClick={() => setResultadoSync(null)}>Cerrar</Boton></div></div> : resultadoSync.resultado ? <ResultadoSincronizacionModal resultado={resultadoSync.resultado} onCerrar={() => setResultadoSync(null)} /> : null
       )}
 
       {editando && (
