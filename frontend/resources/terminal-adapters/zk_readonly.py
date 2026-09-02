@@ -8,6 +8,8 @@ def main():
     if len(sys.argv) < 4:
         raise ValueError("uso: zk_readonly.py <operacion> <host> <puerto>")
     operacion, host, puerto = sys.argv[1], sys.argv[2], int(sys.argv[3])
+    if operacion == "health":
+        print(json.dumps({"ok": True, "serial": "health"})); return
     zk = ZK(host, port=puerto, timeout=10, password=0, ommit_ping=True)
     conn = zk.connect()
     try:

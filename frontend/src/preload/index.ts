@@ -37,5 +37,6 @@ contextBridge.exposeInMainWorld("indiApp", {
     guardarConfig: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:guardar-config", config),
     probarConexion: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:probar", config),
     descargarMarcaciones: (config: unknown): Promise<unknown> => ipcRenderer.invoke("terminal-local:descargar", config),
+    descubrir: (terminales: unknown[]): Promise<unknown> => ipcRenderer.invoke("terminal-local:descubrir", terminales),
   },
 });

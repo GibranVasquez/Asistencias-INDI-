@@ -1,4 +1,4 @@
-import { Fragment, FormEvent, useEffect, useState } from "react";
+import { Fragment, FormEvent, useCallback, useEffect, useState } from "react";
 import { ApiError } from "@/core/api/client";
 import {
   crearTerminal,
@@ -66,8 +66,21 @@ export default function TerminalesPage() {
   const [confirmandoActivo, setConfirmandoActivo] = useState<Terminal | null>(null);
   const [configLocal, setConfigLocal] = useState<{ terminal: Terminal; host: string; puerto: number; guardando: boolean; estado: string | null }>({ terminal: null as unknown as Terminal, host: "", puerto: 4370, guardando: false, estado: null });
   const [resultadoSync, setResultadoSync] = useState<{ terminal: Terminal; resultado?: Awaited<ReturnType<typeof sincronizarMarcaciones>>; error?: string } | null>(null);
+  const [detecciones, setDetecciones] = useState<Record<string, { serial: string; host: string; puerto: number; model?: string | null }>>({});
+  const [buscando, setBuscando] = useState(false);
 
   const bridgeTerminales = window.indiApp?.terminales;
+
+  const buscarTerminales = useCallback(async () => {
+    if (!bridgeTerminales || !terminales?.length) return;
+    setBuscando(true);
+    try {
+      const encontrados = await bridgeTerminales.descubrir(terminales) as { terminalId: string | null; serial: string; host: string; puerto: number; model?: string | null }[];
+      const porId: Record<string, { serial: string; host: string; puerto: number; model?: string | null }> = {};
+      for (const encontrado of encontrados) if (encontrado.terminalId) { porId[encontrado.terminalId] = encontrado; await bridgeTerminales.guardarConfig({ terminalId: encontrado.terminalId, numeroSerieEsperado: encontrado.serial, adapterKey: "zkteco-s922", host: encontrado.host, puerto: encontrado.puerto }); }
+      setDetecciones(porId);
+    } finally { setBuscando(false); }
+  }, [bridgeTerminales, terminales]);
 
   async function abrirConexion(t: Terminal) {
     const guardada = bridgeTerminales ? await bridgeTerminales.leerConfig(t.id) as { host?: string; puerto?: number } | null : null;
@@ -109,6 +122,7 @@ export default function TerminalesPage() {
   }
 
   useEffect(cargar, [token]);
+  useEffect(() => { if (terminales) void buscarTerminales(); }, [terminales, buscarTerminales]);
   useEffect(() => { listarObras(token).then((r) => setObras(r.obras)).catch(() => setObras([])); }, [token]);
 
   async function enviarAlta(e: FormEvent) {
@@ -197,7 +211,7 @@ export default function TerminalesPage() {
       )}
 
       <div className="tarjeta-admin" style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, marginTop: 16, overflow: "hidden" }}>
-        <EncabezadoSeccion titulo="Dispositivos autorizados" descripcion="Vinculación, ubicación y estado de las terminales registradas." />
+        <EncabezadoSeccion titulo="Dispositivos autorizados" descripcion="Vinculación, ubicación y estado de las terminales registradas." accion={<Boton type="button" variante="outline" tamano="pequeno" onClick={() => void buscarTerminales()} disabled={buscando}>{buscando ? "Buscando…" : "Buscar terminales"}</Boton>} />
         {error ? (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--err)", fontSize: 13.5 }}>{error}</div>
         ) : cargando ? (
@@ -232,7 +246,7 @@ export default function TerminalesPage() {
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.numeroSerie ?? "No configurado"}</td>
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.obraNombre ?? t.obraId ?? "No configurada"}</td>
                         <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.ubicacion}</td>
-                        <td style={{ padding: "11px 12px", color: "var(--muted)" }}>{t.estadoConexion}</td>
+                        <td style={{ padding: "11px 12px", color: detecciones[t.id] ? "var(--ok)" : "var(--muted)" }}>{detecciones[t.id] ? `Conectado · SN ${detecciones[t.id].serial} · ${detecciones[t.id].host}:${detecciones[t.id].puerto}` : t.estadoConexion}</td>
                         <td style={{ padding: "11px 12px", color: inactivo ? "var(--err)" : "var(--muted)" }}>
                           {t.ultimaSincronizacion ? new Date(t.ultimaSincronizacion).toLocaleString("es-MX") : "—"}
                         </td>

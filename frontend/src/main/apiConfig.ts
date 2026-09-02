@@ -18,7 +18,10 @@ function leerConfigArchivo(): unknown {
   if (!existsSync(ruta)) {
     const contenido = {
       _comentario: "URL base del backend Express. Edita apiBaseUrl y reinicia la app -- no hace falta recompilar ni reinstalar.",
-      apiBaseUrl: urlApiPorDefecto(app.isPackaged),
+      // Las instalaciones nuevas apuntan al backend local. El usuario puede
+      // cambiarlo explícitamente en este archivo o mediante la variable de
+      // entorno INDI_API_BASE_URL.
+      apiBaseUrl: urlApiPorDefecto(false),
     };
     try {
       mkdirSync(app.getPath("userData"), { recursive: true });
@@ -39,15 +42,14 @@ function leerConfigArchivo(): unknown {
 
 /**
  * Resuelve la URL base de la API en tiempo de ejecución (nunca horneada en
- * el build): INDI_API_BASE_URL (variable de entorno, override rápido sin
- * tocar archivos) > apiBaseUrl en config.json bajo userData (editable sin
- * recompilar) > localhost en desarrollo / API pública en producción.
+ * el build): apiBaseUrl en config.json bajo userData (editable sin
+ * recompilar) > INDI_API_BASE_URL (override explícito de entorno) > fallback
+ * local.
  */
 export function resolverApiBaseUrl(): string {
-  if (process.env.INDI_API_BASE_URL) {
-    return validarApiBaseUrl(process.env.INDI_API_BASE_URL);
-  }
-
   const config = leerConfigArchivo();
-  return extraerApiBaseUrl(config) ?? urlApiPorDefecto(app.isPackaged);
+  const configurada = extraerApiBaseUrl(config);
+  if (configurada) return configurada;
+  if (process.env.INDI_API_BASE_URL) return validarApiBaseUrl(process.env.INDI_API_BASE_URL);
+  return urlApiPorDefecto(false);
 }
