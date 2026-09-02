@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AsistenciaListada } from "@/features/asistencias/api";
-import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, rangoExportacion } from "@/features/asistencias/listaSemanal";
 
 function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
   return {
@@ -26,6 +26,10 @@ function asistencia(parcial: Partial<AsistenciaListada>): AsistenciaListada {
 }
 
 describe("lista semanal de asistencia", () => {
+  it("construye rangos de exportación diario y semanal sin desplazar fechas", () => {
+    expect(rangoExportacion("dia", "2026-09-02", "2026-08-31", "2026-09-06")).toEqual({ fechaInicio: "2026-09-02", fechaFin: "2026-09-02" });
+    expect(rangoExportacion("semana", "2026-09-02", "2026-08-31", "2026-09-06")).toEqual({ fechaInicio: "2026-08-31", fechaFin: "2026-09-06" });
+  });
   it("calcula lunes y rango de siete días sin mover la fecha por UTC", () => {
     const lunes = lunesDeSemana(new Date(2026, 7, 12));
     expect(aISO(lunes)).toBe("2026-08-10");

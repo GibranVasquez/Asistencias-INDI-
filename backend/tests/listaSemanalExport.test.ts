@@ -10,7 +10,7 @@ function registro(parcial: Partial<AsistenciaListada> = {}): AsistenciaListada {
     seccionId: "frente-1", turno: "Diurno", metodoUsado: "huella", terminalOrigenId: "terminal-1",
     trabajadorNombre: "Ana Pérez", trabajadorCategoria: "Operadora", trabajadorHuellaRegistrada: true,
     seccionNombre: "Frente 03", seccionTramoUbicacion: "No especificado", seccionResponsables: [{ id: "t1", nombreCompleto: "Responsable de prueba", categoria: "Operador" }],
-    obraNombre: "Tren del Golfo de México — Segmentos 19 y 20", horarioNombre: "Diurno", ...parcial,
+    obraNombre: "Tren del Golfo de México — Segmentos 19 y 20", horarioNombre: "Diurno", tipoMarcacion: "entrada", punchCrudo: 0, ...parcial,
   };
 }
 
@@ -24,8 +24,20 @@ describe("exportación de lista semanal", () => {
     const hoja = libro.getWorksheet("Lista semanal")!;
     expect(hoja.getCell("A2").value).toBe("ÁREA");
     expect(hoja.getCell("B2").value).toContain("Tren del Golfo");
-    expect(hoja.getRow(11).values).toContain("HUELLA");
-    expect(hoja.getRow(12).values).toContain("Entrada");
+    expect(hoja.getRow(11).values).toContain("LUN 10-AGO Entrada");
+    expect(hoja.getRow(11).values).toContain("DOM 16-AGO Salida T.E.");
+    expect(hoja.getRow(12).values).toContain("07:01");
+  });
+
+  it("genera una lista diaria con una fila por trabajador y cuatro tipos", async () => {
+    const buffer = await generarExcelListaSemanal({ contexto: { ...contexto, fechaInicio: "2026-08-10", fechaFin: "2026-08-10" }, asistencias: [registro(), registro({ id: "s", tipoMarcacion: "salida", hora: new Date("1970-01-01T18:02:00Z") }), registro({ id: "sc", tipoMarcacion: null, hora: new Date("1970-01-01T12:00:00Z") }), registro({ id: "rest", tipoMarcacion: "entrada_descanso" })] });
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(buffer as Buffer);
+    const hoja = libro.getWorksheet("Lista diaria")!;
+    expect(hoja.getRow(11).values).toEqual(expect.arrayContaining(["Entrada", "Salida", "Entrada T.E.", "Salida T.E.", "SIN CLASIFICAR"]));
+    expect(hoja.rowCount).toBe(12);
+    expect(hoja.getRow(12).values).toContain("07:01");
+    expect(hoja.getRow(12).values).toContain("12:00");
   });
 
   it("genera un PDF no vacío con el encabezado de la lista", async () => {

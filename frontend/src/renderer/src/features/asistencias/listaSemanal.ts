@@ -2,6 +2,10 @@ import { AsistenciaListada, TipoMarcacion } from "@/features/asistencias/api";
 
 export type MarcasPorTipo = Record<TipoMarcacion, string[]>;
 export const TIPOS_MARCACION: TipoMarcacion[] = ["entrada", "salida_descanso", "entrada_descanso", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
+export const TIPOS_MARCACION_OPERATIVOS: TipoMarcacion[] = ["entrada", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
+export function rangoExportacion(modo: "dia" | "semana", fechaDia: string, fechaInicio: string, fechaFin: string): { fechaInicio: string; fechaFin: string } {
+  return modo === "dia" ? { fechaInicio: fechaDia, fechaFin: fechaDia } : { fechaInicio, fechaFin };
+}
 
 function marcasVacias(): MarcasPorTipo {
   return { entrada: [], salida: [], salida_descanso: [], entrada_descanso: [], entrada_tiempo_extra: [], salida_tiempo_extra: [] };

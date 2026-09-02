@@ -1248,12 +1248,20 @@ input {
 .asistencia-semanal .dia-semana { text-align: center; min-width: 155px; width: 155px; white-space: nowrap; }
 .asistencia-semanal .celda-marcaciones-dia { min-width: 155px; width: 155px; padding: 9px 10px; vertical-align: top; font-variant-numeric: tabular-nums; }
 .marcaciones-dia-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 5px 8px; }
-.marcacion-tipo { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: baseline; gap: 4px; min-width: 0; white-space: nowrap; }
-.marcacion-tipo-etiqueta { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .02em; }
+.marcacion-tipo { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; }
+.marcacion-tipo-etiqueta { color: var(--muted); font-size: 10.5px; font-weight: 800; letter-spacing: .01em; }
 .marcacion-tipo-horas { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-size: 12px; font-weight: 700; }
-.marcacion-tipo-horas.vacio { color: var(--muted); font-weight: 500; }
+.sin-marcaciones-dia { color: var(--muted); font-size: 12px; font-style: italic; }
 .sin-clasificar-dia { display: block; width: 100%; margin-top: 8px; padding: 3px 5px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 10.5px; text-align: left; cursor: pointer; }
 .sin-clasificar-dia:hover, .sin-clasificar-dia:focus-visible { color: var(--ink); outline: 2px solid color-mix(in srgb, var(--indi) 45%, transparent); outline-offset: 1px; }
+.detalle-asistencia-modal { width: min(520px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px)); overflow: auto; }
+.detalle-asistencia-subtitulo { margin: 20px 0 10px; color: var(--ink); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+.detalle-marcaciones-operativas { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--surface) 86%, var(--indi) 14%); }
+.detalle-marcaciones-operativas > div, .detalle-sin-clasificar { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; font-size: 13px; }
+.detalle-marcaciones-operativas span, .detalle-sin-clasificar span { color: var(--muted); }
+.detalle-marcaciones-operativas strong, .detalle-sin-clasificar strong { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+.detalle-marcaciones-operativas p { margin: 0; color: var(--muted); font-size: 13px; font-style: italic; }
+.detalle-sin-clasificar { margin-top: 10px; padding: 9px 12px; border: 1px dashed var(--line); border-radius: 8px; }
 .asistencia-semanal-scroll { max-width: 100%; }
 .celda-dia-boton { display: grid; gap: 2px; width: 100%; padding: 3px 4px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .celda-dia-boton:hover, .celda-dia-boton:focus-visible { background: color-mix(in srgb, var(--indi) 10%, transparent); outline: 2px solid color-mix(in srgb, var(--indi) 45%, transparent); outline-offset: 1px; }

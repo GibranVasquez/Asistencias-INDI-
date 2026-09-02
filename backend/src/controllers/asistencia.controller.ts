@@ -35,12 +35,13 @@ export async function listar(req: Request, res: Response): Promise<void> {
 }
 
 export async function exportarListaSemanal(req: Request, res: Response): Promise<void> {
-  const { fechaInicio, fechaFin, seccionId, turno, categoria, formato } = req.query;
+  const { fechaInicio, fechaFin, seccionId, trabajadorId, turno, categoria, formato } = req.query;
   const [asistencias, obra] = await Promise.all([
     listarAsistencias(req.user!.usuarioId, req.user!.rol, {
     fechaInicio: fechaInicio as string,
     fechaFin: fechaFin as string,
     seccionId: seccionId as string | undefined,
+    trabajadorId: trabajadorId as string | undefined,
     turno: turno as string | undefined,
     categoria: categoria as string | undefined,
     }),

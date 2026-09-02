@@ -3,146 +3,24 @@ import PDFDocument from "pdfkit";
 import { AsistenciaListada } from "../../services/asistencia.service";
 import { sanitizarCeldaExcel } from "./sanitizarCeldaExcel";
 
-export interface ContextoListaExportacion {
-  area: string;
-  frente: string;
-  tramoUbicacion: string;
-  responsableTramo: string;
-  categoria: string;
-  turno: string;
-  semana: string;
-  fechaInicio: string;
-  fechaFin: string;
-}
+export interface ContextoListaExportacion { area: string; frente: string; tramoUbicacion: string; responsableTramo: string; categoria: string; turno: string; semana: string; fechaInicio: string; fechaFin: string; }
+export interface ListaSemanalExportable { contexto: ContextoListaExportacion; asistencias: AsistenciaListada[]; }
+type TipoOperativo = "entrada" | "salida" | "entrada_tiempo_extra" | "salida_tiempo_extra";
+const TIPOS: TipoOperativo[] = ["entrada", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
+const ETIQUETAS: Record<TipoOperativo, string> = { entrada: "Entrada", salida: "Salida", entrada_tiempo_extra: "Entrada T.E.", salida_tiempo_extra: "Salida T.E." };
+const CORTAS: Record<TipoOperativo, string> = { entrada: "E", salida: "S", entrada_tiempo_extra: "ETE", salida_tiempo_extra: "STE" };
 
-export interface ListaSemanalExportable {
-  contexto: ContextoListaExportacion;
-  asistencias: AsistenciaListada[];
-}
+function gruposPorTrabajador(asistencias: AsistenciaListada[]): Map<string, AsistenciaListada[]> { const grupos = new Map<string, AsistenciaListada[]>(); for (const asistencia of asistencias) grupos.set(asistencia.trabajadorId, [...(grupos.get(asistencia.trabajadorId) ?? []), asistencia]); return grupos; }
+function diasRango(inicio: string, fin: string): string[] { const cantidad = inicio === fin ? 1 : 7; const fechaInicial = new Date(`${inicio}T00:00:00Z`); return Array.from({ length: cantidad }, (_, indice) => { const fecha = new Date(fechaInicial); fecha.setUTCDate(fecha.getUTCDate() + indice); return fecha.toISOString().slice(0, 10); }); }
+function horas(grupo: AsistenciaListada[], dia: string, tipo: TipoOperativo | null): string[] { return grupo.filter((a) => a.fecha.toISOString().slice(0, 10) === dia && a.tipoMarcacion === tipo).sort((a, b) => a.hora.getTime() - b.hora.getTime()).map((a) => a.hora.toISOString().slice(11, 16)); }
+function lineaDia(grupo: AsistenciaListada[], dia: string): string { const lineas = TIPOS.flatMap((tipo) => { const lista = horas(grupo, dia, tipo); return lista.length ? [`${CORTAS[tipo]} ${lista.join(" / ")}`] : []; }); const sinTipo = horas(grupo, dia, null); if (sinTipo.length) lineas.push(`SC ${sinTipo.join(" / ")}`); return lineas.join("\n") || "—"; }
+function nombreFrente(grupo: AsistenciaListada[]): string { return [...new Set(grupo.map((a) => a.seccionNombre))].join(", ") || "Sin asignación"; }
+function periodo(inicio: string, fin: string): string { const a = new Date(`${inicio}T00:00:00Z`); const b = new Date(`${fin}T00:00:00Z`); if (inicio === fin) return a.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" }); return `${a.toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "UTC" })} al ${b.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}`; }
+function diaLabel(dia: string): string { const fecha = new Date(`${dia}T00:00:00Z`); return `${fecha.toLocaleDateString("es-MX", { weekday: "short", timeZone: "UTC" }).replace(".", "").toUpperCase()} ${fecha.toLocaleDateString("es-MX", { day: "2-digit", month: "short", timeZone: "UTC" }).replace(".", "").toUpperCase()}`; }
+function contextoPdf(doc: PDFKit.PDFDocument, lista: ListaSemanalExportable, titulo: string): void { doc.font("Helvetica-Bold").fontSize(16).text(titulo); doc.font("Helvetica").fontSize(9); const c = lista.contexto; for (const [k, v] of [["OBRA", c.area], ["FRENTE", c.frente], ["TRAMO O UBICACIÓN", c.tramoUbicacion], ["ENCARGADO", c.responsableTramo], ["TURNO", c.turno], ["CATEGORÍA", c.categoria], ["PERIODO", periodo(c.fechaInicio, c.fechaFin)]]) doc.font("Helvetica-Bold").text(`${k}: `, { continued: true }).font("Helvetica").text(v); doc.moveDown(0.6); }
+function tablaPdf(doc: PDFKit.PDFDocument, encabezados: string[], filas: string[][], anchos: number[]): void { const dibujar = (valores: string[], esEncabezado: boolean) => { const alto = Math.max(24, Math.max(...valores.map((v) => v.split("\n").length)) * 11 + 8); if (doc.y + alto > doc.page.height - doc.page.margins.bottom) doc.addPage(); const y = doc.y; let x = doc.page.margins.left; valores.forEach((valor, i) => { doc.rect(x, y, anchos[i], alto).strokeColor("#d6dbe3").stroke(); doc.font(esEncabezado ? "Helvetica-Bold" : "Helvetica").fontSize(esEncabezado ? 7.5 : 7).fillColor("#000").text(valor, x + 3, y + 4, { width: anchos[i] - 6, height: alto - 6 }); x += anchos[i]; }); doc.y = y + alto; }; dibujar(encabezados, true); filas.forEach((fila) => dibujar(fila, false)); }
 
-function porTrabajador(asistencias: AsistenciaListada[]): Map<string, AsistenciaListada[]> {
-  const grupos = new Map<string, AsistenciaListada[]>();
-  for (const asistencia of asistencias) {
-    const grupo = grupos.get(asistencia.trabajadorId) ?? [];
-    grupo.push(asistencia);
-    grupos.set(asistencia.trabajadorId, grupo);
-  }
-  return grupos;
-}
+export function generarPdfListaSemanal(lista: ListaSemanalExportable, salida: NodeJS.WritableStream): void { const diario = lista.contexto.fechaInicio === lista.contexto.fechaFin; const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 28 }); doc.pipe(salida); contextoPdf(doc, lista, diario ? "LISTA DE ASISTENCIA" : "LISTA SEMANAL DE ASISTENCIA"); const dias = diasRango(lista.contexto.fechaInicio, lista.contexto.fechaFin); const grupos = [...gruposPorTrabajador(lista.asistencias).values()]; if (diario) { const haySinClasificar = grupos.some((g) => horas(g, dias[0], null).length > 0); const encabezados = ["ID", "TRABAJADOR", "PUESTO / CATEGORÍA", "FRENTE", "TURNO", ...TIPOS.map((tipo) => ETIQUETAS[tipo]), ...(haySinClasificar ? ["SIN CLASIFICAR"] : [])]; const anchos = [34, 112, 92, 90, 55, 65, 65, 72, 72, ...(haySinClasificar ? [72] : [])]; const filas = grupos.map((grupo, i) => { const p = grupo[0]; return [String(i + 1).padStart(3, "0"), p.trabajadorNombre, p.trabajadorCategoria || "No especificada", nombreFrente(grupo), p.turno || "No especificado", ...TIPOS.map((tipo) => horas(grupo, dias[0], tipo).join(" / ") || "—"), ...(haySinClasificar ? [horas(grupo, dias[0], null).join(" / ") || "—"] : [])]; }); tablaPdf(doc, encabezados, filas, anchos); } else { const encabezados = ["ID", "TRABAJADOR", "PUESTO / CATEGORÍA", "FRENTE", ...dias.map(diaLabel)]; const anchos = [34, 112, 92, 96, ...dias.map(() => 70)]; tablaPdf(doc, encabezados, grupos.map((grupo, i) => [String(i + 1).padStart(3, "0"), grupo[0].trabajadorNombre, grupo[0].trabajadorCategoria || "No especificada", nombreFrente(grupo), ...dias.map((dia) => lineaDia(grupo, dia))]), anchos); doc.moveDown(0.5); doc.font("Helvetica").fontSize(8).text("Leyenda: E = Entrada · S = Salida · ETE = Entrada T.E. · STE = Salida T.E. · SC = Sin clasificar"); } doc.end(); }
 
-function dias(fechaInicio: string): string[] {
-  const resultado: string[] = [];
-  const inicio = new Date(`${fechaInicio}T00:00:00Z`);
-  for (let indice = 0; indice < 7; indice += 1) {
-    const fecha = new Date(inicio);
-    fecha.setUTCDate(fecha.getUTCDate() + indice);
-    resultado.push(fecha.toISOString().slice(0, 10));
-  }
-  return resultado;
-}
-
-function horasPorTipo(grupo: AsistenciaListada[], dia: string, tipo: AsistenciaListada["tipoMarcacion"]): string {
-  const delDia = grupo.filter((a) => a.fecha.toISOString().slice(0, 10) === dia).sort((a, b) => a.hora.getTime() - b.hora.getTime());
-  const horas = delDia.filter((a) => a.tipoMarcacion === tipo).map((a) => a.hora.toISOString().slice(11, 16));
-  return horas.length ? horas.join("\n") : "—";
-}
-
-const TIPOS_EXPORTACION: NonNullable<AsistenciaListada["tipoMarcacion"]>[] = ["entrada", "salida_descanso", "entrada_descanso", "salida", "entrada_tiempo_extra", "salida_tiempo_extra"];
-const ETIQUETAS_EXPORTACION = ["Entrada", "Salida descanso", "Entrada descanso", "Salida", "Entrada T.E.", "Salida T.E."];
-
-function encabezadoDia(fechaISO: string): string {
-  const fecha = new Date(`${fechaISO}T00:00:00Z`);
-  const dia = fecha.toLocaleDateString("es-MX", { weekday: "short", timeZone: "UTC" }).replace(".", "").toUpperCase();
-  const numero = fecha.toLocaleDateString("es-MX", { day: "2-digit", month: "short", timeZone: "UTC" }).replace(".", "").toUpperCase();
-  return `${dia}\n${numero}`;
-}
-
-function periodoLegible(fechaInicio: string, fechaFin: string): string {
-  const inicio = new Date(`${fechaInicio}T00:00:00Z`);
-  const fin = new Date(`${fechaFin}T00:00:00Z`);
-  const opcionesInicio: Intl.DateTimeFormatOptions = inicio.getUTCMonth() === fin.getUTCMonth() ? { day: "numeric", timeZone: "UTC" } : { day: "numeric", month: "long", timeZone: "UTC" };
-  const inicioTexto = inicio.toLocaleDateString("es-MX", opcionesInicio);
-  const finTexto = fin.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-  return `${inicioTexto} al ${finTexto}`;
-}
-
-export function generarPdfListaSemanal(lista: ListaSemanalExportable, salida: NodeJS.WritableStream): void {
-  const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 28 });
-  doc.pipe(salida);
-  doc.font("Helvetica-Bold").fontSize(16).text("LISTA DE ASISTENCIA");
-  doc.font("Helvetica").fontSize(9);
-  const c = lista.contexto;
-  const campo = (etiqueta: string, valor: string) => {
-    doc.font("Helvetica-Bold").text(etiqueta);
-    doc.font("Helvetica").text(valor);
-  };
-  campo("ÁREA / OBRA", c.area);
-  campo("FRENTE", c.frente);
-  campo("TRAMO O UBICACIÓN DE LA OBRA", c.tramoUbicacion);
-  campo("RESPONSABLE DEL TRAMO", c.responsableTramo);
-  campo("CATEGORÍA", c.categoria);
-  campo("TURNO", c.turno);
-  campo("SEMANA", c.semana);
-  campo("PERIODO", periodoLegible(c.fechaInicio, c.fechaFin));
-  doc.moveDown(0.8);
-  const diasSemana = dias(c.fechaInicio);
-  const columnas = ["ID", "NOMBRE", "PUESTO / CATEGORÍA", "MARCA", ...diasSemana.map(encabezadoDia), "HUELLA"];
-  const anchos = [38, 112, 92, 96, 52, 52, 52, 52, 52, 52, 52, 74];
-  const dibujarEncabezado = () => {
-    const y = doc.y;
-    let x = doc.page.margins.left;
-    doc.font("Helvetica-Bold").fontSize(8);
-    columnas.forEach((columna, i) => { doc.text(columna, x + 3, y, { width: anchos[i] - 6, lineBreak: false }); x += anchos[i]; });
-    doc.y = y + 28;
-  };
-  dibujarEncabezado();
-  let numeroTrabajador = 0;
-  for (const grupo of porTrabajador(lista.asistencias).values()) {
-    numeroTrabajador += 1;
-    for (let tipoIndice = 0; tipoIndice < TIPOS_EXPORTACION.length; tipoIndice += 1) {
-      const marca = ETIQUETAS_EXPORTACION[tipoIndice];
-      if (tipoIndice === 0 && doc.y > doc.page.height - 65) { doc.addPage(); dibujarEncabezado(); }
-      const primera = grupo[0];
-      const valores = [String(numeroTrabajador).padStart(3, "0"), primera.trabajadorNombre, primera.trabajadorCategoria, marca, ...diasSemana.map((dia) => horasPorTipo(grupo, dia, TIPOS_EXPORTACION[tipoIndice])), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
-      const y = doc.y; let x = doc.page.margins.left; doc.font("Helvetica").fontSize(7.5);
-      valores.forEach((valor, i) => { doc.text(valor, x + 3, y + 3, { width: anchos[i] - 6, lineBreak: false }); x += anchos[i]; });
-      doc.moveTo(doc.page.margins.left, y + 16).lineTo(doc.page.width - doc.page.margins.right, y + 16).strokeColor("#d6dbe3").stroke();
-      doc.y = y + 16;
-    }
-  }
-  doc.end();
-}
-
-export async function generarExcelListaSemanal(lista: ListaSemanalExportable): Promise<ExcelJS.Buffer> {
-  const libro = new ExcelJS.Workbook();
-  const hoja = libro.addWorksheet("Lista semanal");
-  const c = lista.contexto;
-  hoja.mergeCells("A1:L1"); hoja.getCell("A1").value = "LISTA DE ASISTENCIA"; hoja.getCell("A1").font = { bold: true, size: 16 };
-  [["ÁREA", c.area], ["FRENTE", c.frente], ["TRAMO O UBICACIÓN DE LA OBRA", c.tramoUbicacion], ["RESPONSABLE DEL TRAMO", c.responsableTramo], ["CATEGORÍA", c.categoria], ["TURNO", c.turno], ["SEMANA", c.semana], ["PERIODO", periodoLegible(c.fechaInicio, c.fechaFin)]].forEach(([etiqueta, valor], indice) => { hoja.getCell(indice + 2, 1).value = etiqueta; hoja.getCell(indice + 2, 1).font = { bold: true }; hoja.mergeCells(indice + 2, 2, indice + 2, 12); hoja.getCell(indice + 2, 2).value = sanitizarCeldaExcel(String(valor)); });
-  const filaEncabezado = 11;
-  const diasSemana = dias(c.fechaInicio);
-  hoja.getRow(filaEncabezado).values = ["ID", "NOMBRE", "PUESTO / CATEGORÍA", "MARCA", ...diasSemana.map(encabezadoDia), "HUELLA"];
-  hoja.getRow(filaEncabezado).font = { bold: true, color: { argb: "FFFFFFFF" } };
-  hoja.getRow(filaEncabezado).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF173B68" } };
-  hoja.getRow(filaEncabezado).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  hoja.getRow(filaEncabezado).height = 30;
-  let fila = filaEncabezado + 1;
-  let numeroTrabajador = 0;
-  for (const grupo of porTrabajador(lista.asistencias).values()) {
-    numeroTrabajador += 1;
-    const primera = grupo[0];
-    const filaInicio = fila;
-    for (let tipoIndice = 0; tipoIndice < TIPOS_EXPORTACION.length; tipoIndice += 1) {
-      hoja.getRow(fila).values = [String(numeroTrabajador).padStart(3, "0"), sanitizarCeldaExcel(primera.trabajadorNombre), sanitizarCeldaExcel(primera.trabajadorCategoria), ETIQUETAS_EXPORTACION[tipoIndice], ...diasSemana.map((dia) => horasPorTipo(grupo, dia, TIPOS_EXPORTACION[tipoIndice])), primera.trabajadorHuellaRegistrada ? "Enrolado" : "No enrolado"];
-      hoja.getRow(fila).alignment = { vertical: "middle", wrapText: true };
-      fila += 1;
-    }
-    for (const columna of [1, 2, 3, 12]) hoja.mergeCells(filaInicio, columna, fila - 1, columna);
-  }
-  for (let filaTabla = filaEncabezado; filaTabla < fila; filaTabla += 1) {
-    for (let columna = 1; columna <= 12; columna += 1) hoja.getCell(filaTabla, columna).border = { top: { style: "thin", color: { argb: "FFD6DBE3" } }, bottom: { style: "thin", color: { argb: "FFD6DBE3" } }, left: { style: "thin", color: { argb: "FFD6DBE3" } }, right: { style: "thin", color: { argb: "FFD6DBE3" } } };
-  }
-  hoja.columns.forEach((columna, indice) => { columna.width = [8, 25, 22, 20, 12, 12, 12, 12, 12, 12, 12, 16][indice]; });
-  hoja.pageSetup.orientation = "landscape"; hoja.pageSetup.fitToPage = true; hoja.pageSetup.fitToWidth = 1; hoja.pageSetup.fitToHeight = 0; hoja.pageSetup.printTitlesRow = "1:11"; hoja.pageSetup.margins = { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 };
-  return libro.xlsx.writeBuffer();
-}
+function configurarHoja(hoja: ExcelJS.Worksheet, fila: number, congelar: number): void { hoja.getRow(fila).font = { bold: true, color: { argb: "FFFFFFFF" } }; hoja.getRow(fila).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF173B68" } }; hoja.getRow(fila).alignment = { vertical: "middle", horizontal: "center", wrapText: true }; hoja.getRow(fila).height = 30; hoja.views = [{ state: "frozen", ySplit: fila, xSplit: congelar }]; hoja.autoFilter = { from: { row: fila, column: 1 }, to: { row: hoja.rowCount, column: hoja.columnCount } }; }
+export async function generarExcelListaSemanal(lista: ListaSemanalExportable): Promise<ExcelJS.Buffer> { const diario = lista.contexto.fechaInicio === lista.contexto.fechaFin; const libro = new ExcelJS.Workbook(); const hoja = libro.addWorksheet(diario ? "Lista diaria" : "Lista semanal"); const dias = diasRango(lista.contexto.fechaInicio, lista.contexto.fechaFin); const grupos = [...gruposPorTrabajador(lista.asistencias).values()]; const haySinClasificar = grupos.some((g) => dias.some((dia) => horas(g, dia, null).length > 0)); hoja.mergeCells("A1:L1"); hoja.getCell("A1").value = diario ? "LISTA DE ASISTENCIA" : "LISTA SEMANAL DE ASISTENCIA"; hoja.getCell("A1").font = { bold: true, size: 16 }; const contexto = [["ÁREA", lista.contexto.area], ["FRENTE", lista.contexto.frente], ["TRAMO", lista.contexto.tramoUbicacion], ["ENCARGADO", lista.contexto.responsableTramo], ["CATEGORÍA", lista.contexto.categoria], ["TURNO", lista.contexto.turno], ["SEMANA", lista.contexto.semana], ["PERIODO", periodo(lista.contexto.fechaInicio, lista.contexto.fechaFin)]]; contexto.forEach(([k, v], i) => { const fila = i + 2; hoja.getCell(fila, 1).value = k; hoja.getCell(fila, 1).font = { bold: true }; hoja.mergeCells(fila, 2, fila, diario ? 10 : 33); hoja.getCell(fila, 2).value = sanitizarCeldaExcel(v); }); const filaEncabezado = 11; if (diario) { const encabezados = ["ID", "TRABAJADOR", "PUESTO / CATEGORÍA", "FRENTE", "TURNO", "FECHA", ...TIPOS.map((tipo) => ETIQUETAS[tipo]), ...(haySinClasificar ? ["SIN CLASIFICAR"] : [])]; hoja.getRow(filaEncabezado).values = encabezados; grupos.forEach((grupo, i) => { const p = grupo[0]; hoja.addRow([String(i + 1).padStart(3, "0"), sanitizarCeldaExcel(p.trabajadorNombre), sanitizarCeldaExcel(p.trabajadorCategoria || "No especificada"), sanitizarCeldaExcel(nombreFrente(grupo)), sanitizarCeldaExcel(p.turno || "No especificado"), lista.contexto.fechaInicio, ...TIPOS.map((tipo) => horas(grupo, dias[0], tipo).join(" / ") || "—"), ...(haySinClasificar ? [horas(grupo, dias[0], null).join(" / ") || "—"] : [])]); }); } else { const encabezados = ["ID", "TRABAJADOR", "PUESTO / CATEGORÍA", "FRENTE", "TURNO", ...dias.flatMap((dia) => TIPOS.map((tipo) => `${diaLabel(dia)} ${ETIQUETAS[tipo]}`))]; hoja.getRow(filaEncabezado).values = encabezados; grupos.forEach((grupo, i) => { const p = grupo[0]; hoja.addRow([String(i + 1).padStart(3, "0"), sanitizarCeldaExcel(p.trabajadorNombre), sanitizarCeldaExcel(p.trabajadorCategoria || "No especificada"), sanitizarCeldaExcel(nombreFrente(grupo)), sanitizarCeldaExcel(p.turno || "No especificado"), ...dias.flatMap((dia) => TIPOS.map((tipo) => horas(grupo, dia, tipo).join(" / ") || "—"))]); }); } configurarHoja(hoja, filaEncabezado, diario ? 6 : 5); hoja.columns.forEach((col, i) => { col.width = i < (diario ? 6 : 5) ? [8, 28, 22, 20, 14, 13][i] ?? 16 : 17; }); hoja.pageSetup.orientation = "landscape"; hoja.pageSetup.fitToPage = true; hoja.pageSetup.fitToWidth = 1; hoja.pageSetup.fitToHeight = 0; return libro.xlsx.writeBuffer(); }

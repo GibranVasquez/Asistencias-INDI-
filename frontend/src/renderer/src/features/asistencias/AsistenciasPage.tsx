@@ -8,7 +8,7 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, TIPOS_MARCACION_OPERATIVOS, rangoExportacion } from "@/features/asistencias/listaSemanal";
 import MarcacionesDiaCell from "@/features/asistencias/MarcacionesDiaCell";
 import { obtenerObraActual } from "@/core/api/resources/obras";
 
@@ -26,6 +26,8 @@ export default function AsistenciasPage() {
   const [turnoFiltro, setTurnoFiltro] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("");
   const [vista, setVista] = useState<"semanal" | "registros">("semanal");
+  const [modoExportacion, setModoExportacion] = useState<"semana" | "dia">("semana");
+  const [fechaExportacion, setFechaExportacion] = useState(() => aISO(new Date()));
   const [detalleDia, setDetalleDia] = useState<{ fila: ReturnType<typeof agruparAsistenciasPorTrabajador>[number]; dia: string } | null>(null);
 
   const [asistencias, setAsistencias] = useState<AsistenciaListada[] | null>(null);
@@ -82,6 +84,12 @@ export default function AsistenciasPage() {
 
   const turnosDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.turno))].sort(), [asistencias]);
   const categoriasDisponibles = useMemo(() => [...new Set((asistencias ?? []).map((a) => a.trabajadorCategoria))].filter(Boolean).sort(), [asistencias]);
+  const trabajadorFiltroId = useMemo(() => {
+    const busqueda = busquedaTrabajador.trim().toLowerCase();
+    if (!busqueda) return undefined;
+    const coincidencias = [...new Map((asistencias ?? []).filter((a) => a.trabajadorNombre.toLowerCase().includes(busqueda)).map((a) => [a.trabajadorId, a])).values()];
+    return coincidencias.length === 1 ? coincidencias[0].trabajadorId : undefined;
+  }, [asistencias, busquedaTrabajador]);
   const seccionSeleccionada = asistencias?.find((a) => a.seccionId === seccionFiltro);
   const areaVisible = seccionSeleccionada?.obraNombre || nombreObra || "No especificada";
   const responsablesVisibles = seccionSeleccionada?.seccionResponsables.map((r) => r.nombreCompleto).join(", ") || "No asignado";
@@ -116,7 +124,8 @@ export default function AsistenciasPage() {
   async function exportar(formato: "pdf" | "excel") {
     try {
       const extension = formato === "pdf" ? "pdf" : "xlsx";
-      await exportarListaSemanal(token, { fechaInicio: fechaDesde, fechaFin: fechaHasta, seccionId: seccionFiltro || undefined, turno: turnoFiltro || undefined, categoria: categoriaFiltro || undefined, formato }, `Lista_Asistencia_${fechaDesde}_${fechaHasta}.${extension}`);
+      const { fechaInicio: desde, fechaFin: hasta } = rangoExportacion(modoExportacion, fechaExportacion, fechaDesde, fechaHasta);
+      await exportarListaSemanal(token, { fechaInicio: desde, fechaFin: hasta, seccionId: seccionFiltro || undefined, trabajadorId: trabajadorFiltroId, turno: turnoFiltro || undefined, categoria: categoriaFiltro || undefined, formato }, `Lista_Asistencia_${desde}_${hasta}.${extension}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo exportar la lista semanal.");
     }
@@ -175,6 +184,8 @@ export default function AsistenciasPage() {
         </label>
         {turnosDisponibles.length > 0 && <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Turno<select value={turnoFiltro} onChange={(e) => setTurnoFiltro(e.target.value)} style={{ padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)" }}><option value="">Todos los turnos</option>{turnosDisponibles.map((turno) => <option key={turno}>{turno}</option>)}</select></label>}
         {categoriasDisponibles.length > 0 && <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Categoría<select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)} style={{ padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)" }}><option value="">Todas las categorías</option>{categoriasDisponibles.map((categoria) => <option key={categoria}>{categoria}</option>)}</select></label>}
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Periodo de exportación<select value={modoExportacion} onChange={(e) => setModoExportacion(e.target.value as "semana" | "dia")} style={{ padding: "9px 10px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)" }}><option value="semana">Semana seleccionada</option><option value="dia">Día específico</option></select></label>
+        {modoExportacion === "dia" && <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Fecha<input type="date" value={fechaExportacion} onChange={(e) => setFechaExportacion(e.target.value)} style={{ padding: "8px 10px", borderRadius: 8, border: "1.5px solid var(--line)", background: "var(--surface)", color: "var(--ink)" }} /></label>}
         <div style={{ display: "flex", gap: 6 }}><Boton type="button" variante="outline" tamano="pequeno" onClick={() => exportar("pdf")} textoEnProceso="Generando…">Exportar PDF</Boton><Boton type="button" variante="outline" tamano="pequeno" onClick={() => exportar("excel")} textoEnProceso="Generando…">Exportar Excel</Boton></div>
         <div role="group" aria-label="Vista de asistencia" style={{ display: "flex", gap: 6 }}>
           <Boton type="button" variante={vista === "semanal" ? "solido" : "outline"} tamano="pequeno" onClick={() => setVista("semanal")}>Lista semanal</Boton>
@@ -214,16 +225,27 @@ export default function AsistenciasPage() {
         const registros = detalleDia.fila.porDia.get(detalleDia.dia) ?? [];
         const turnos = [...new Set(registros.map((registro) => registro.turno))].join(", ");
         const metodos = [...new Set(registros.map((registro) => ETIQUETA_METODO[registro.metodoUsado] ?? registro.metodoUsado))].join(", ");
+        const marcasPorTipo = new Map(TIPOS_MARCACION_OPERATIVOS.map((tipo) => [tipo, registros.filter((registro) => registro.tipoMarcacion === tipo).map((registro) => registro.hora.slice(11, 16))]));
+        const sinClasificar = registros.filter((registro) => registro.tipoMarcacion === null);
         return <div className="modal-backdrop" onClick={() => setDetalleDia(null)}>
-          <div className="modal-panel" role="dialog" aria-modal="true" aria-label="Detalle de asistencia" onClick={(evento) => evento.stopPropagation()}>
-            <EncabezadoSeccion titulo="Detalle de asistencia" descripcion={`${detalleDia.fila.trabajadorNombre} · ${detalleDia.dia}`} />
+          <div className="modal-panel detalle-asistencia-modal" role="dialog" aria-modal="true" aria-label="Detalle de asistencia" onClick={(evento) => evento.stopPropagation()}>
+            <EncabezadoSeccion titulo="Detalle de asistencia" descripcion="Información de la jornada seleccionada" />
             <dl className="detalle-asistencia-lista">
-              <dt>Trabajador</dt><dd>{detalleDia.fila.trabajadorNombre}</dd>
-              <dt>Frentes</dt><dd>{detalleDia.fila.frentes.join(", ")}</dd>
-              <dt>Marcaciones</dt><dd>{registros.map((registro) => registro.hora.slice(11, 16)).join(" · ")}</dd>
-              <dt>Turno</dt><dd>{turnos}</dd>
-              <dt>Método</dt><dd>{metodos}</dd>
+              <dt>Trabajador</dt><dd><strong>{detalleDia.fila.trabajadorNombre}</strong></dd>
+              <dt>Fecha</dt><dd>{detalleDia.dia}</dd>
+              <dt>Frente</dt><dd>{detalleDia.fila.frentes.join(", ") || "Sin asignación"}</dd>
+              <dt>Turno</dt><dd>{turnos || "No especificado"}</dd>
+              <dt>Método</dt><dd>{metodos || "No especificado"}</dd>
             </dl>
+            <h4 className="detalle-asistencia-subtitulo">Marcaciones del día</h4>
+            <div className="detalle-marcaciones-operativas">
+              {TIPOS_MARCACION_OPERATIVOS.map((tipo) => {
+                const horas = marcasPorTipo.get(tipo) ?? [];
+                return horas.length ? <div key={tipo}><span>{ETIQUETA_TIPO_MARCACION[tipo]}</span><strong>{horas.join(" · ")}</strong></div> : null;
+              })}
+              {!TIPOS_MARCACION_OPERATIVOS.some((tipo) => (marcasPorTipo.get(tipo) ?? []).length) && <p>Sin marcaciones operativas</p>}
+            </div>
+            {sinClasificar.length > 0 && <div className="detalle-sin-clasificar"><span>Sin clasificar</span><strong>{sinClasificar.map((registro) => registro.hora.slice(11, 16)).join(" · ")}</strong></div>}
             <Boton type="button" onClick={() => setDetalleDia(null)}>Cerrar</Boton>
           </div>
         </div>;

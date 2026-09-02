@@ -92,7 +92,7 @@ export function validarFiltroAsistencia(req: Request, res: Response, next: NextF
 }
 
 export function validarExportarListaSemanal(req: Request, res: Response, next: NextFunction): void {
-  const { fechaInicio, fechaFin, seccionId, formato, turno, categoria } = req.query;
+  const { fechaInicio, fechaFin, seccionId, trabajadorId, formato, turno, categoria } = req.query;
   if (!esFechaISO(fechaInicio) || !esFechaISO(fechaFin)) {
     res.status(400).json({ error: "fechaInicio y fechaFin son requeridas en formato YYYY-MM-DD." });
     return;
@@ -103,6 +103,10 @@ export function validarExportarListaSemanal(req: Request, res: Response, next: N
   }
   if (seccionId !== undefined && !esUUID(seccionId)) {
     res.status(400).json({ error: "seccionId debe ser un UUID válido si se envía." });
+    return;
+  }
+  if (trabajadorId !== undefined && !esUUID(trabajadorId)) {
+    res.status(400).json({ error: "trabajadorId debe ser un UUID válido si se envía." });
     return;
   }
   if (formato !== "pdf" && formato !== "excel") {
