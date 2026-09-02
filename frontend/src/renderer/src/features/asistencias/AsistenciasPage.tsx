@@ -8,11 +8,12 @@ import EstadoVacio from "@/shared/components/EstadoVacio";
 import EncabezadoPagina from "@/shared/components/EncabezadoPagina";
 import ResumenModulo from "@/shared/components/ResumenModulo";
 import EncabezadoSeccion from "@/shared/components/EncabezadoSeccion";
-import { agruparAsistenciasPorTrabajador, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, TIPOS_MARCACION_OPERATIVOS, rangoExportacion } from "@/features/asistencias/listaSemanal";
+import { agruparAsistenciasPorTrabajador, aFechaLocal, aISO, encabezadoDia, lunesDeSemana, numeroSemana, periodoSemanalLegible, sumarDias, TIPOS_MARCACION_OPERATIVOS, rangoExportacion } from "@/features/asistencias/listaSemanal";
 import MarcacionesDiaCell from "@/features/asistencias/MarcacionesDiaCell";
 import { obtenerObraActual } from "@/core/api/resources/obras";
 
 const ETIQUETA_METODO: Record<string, string> = { huella: "Huella", rostro: "Rostro" };
+const fechaDetalleLegible = (fechaISO: string) => aFechaLocal(fechaISO).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }).replace(/\./g, "").toUpperCase();
 
 export default function AsistenciasPage() {
   const { sesion } = useAutenticacion();
@@ -229,15 +230,15 @@ export default function AsistenciasPage() {
         const sinClasificar = registros.filter((registro) => registro.tipoMarcacion === null);
         return <div className="modal-backdrop" onClick={() => setDetalleDia(null)}>
           <div className="modal-panel detalle-asistencia-modal" role="dialog" aria-modal="true" aria-label="Detalle de asistencia" onClick={(evento) => evento.stopPropagation()}>
-            <EncabezadoSeccion titulo="Detalle de asistencia" descripcion="Información de la jornada seleccionada" />
-            <dl className="detalle-asistencia-lista">
-              <dt>Trabajador</dt><dd><strong>{detalleDia.fila.trabajadorNombre}</strong></dd>
-              <dt>Fecha</dt><dd>{detalleDia.dia}</dd>
-              <dt>Frente</dt><dd>{detalleDia.fila.frentes.join(", ") || "Sin asignación"}</dd>
-              <dt>Turno</dt><dd>{turnos || "No especificado"}</dd>
-              <dt>Método</dt><dd>{metodos || "No especificado"}</dd>
-            </dl>
-            <h4 className="detalle-asistencia-subtitulo">Marcaciones del día</h4>
+            <div className="detalle-asistencia-encabezado"><div><span className="detalle-asistencia-kicker">Detalle de asistencia</span><h2>{detalleDia.fila.trabajadorNombre}</h2><p>{fechaDetalleLegible(detalleDia.dia)} · Jornada seleccionada</p></div><button type="button" className="detalle-asistencia-cerrar-icono" aria-label="Cerrar detalle" onClick={() => setDetalleDia(null)}>×</button></div>
+            <div className="detalle-asistencia-contenido"><div className="detalle-asistencia-seccion"><h3>Información general</h3><dl className="detalle-asistencia-lista">
+              <div className="detalle-info-item"><dt>Trabajador</dt><dd><strong>{detalleDia.fila.trabajadorNombre}</strong></dd></div>
+              <div className="detalle-info-item"><dt>Fecha</dt><dd>{detalleDia.dia}</dd></div>
+              <div className="detalle-info-item"><dt>Frente</dt><dd>{detalleDia.fila.frentes.join(", ") || "Sin asignación"}</dd></div>
+              <div className="detalle-info-item"><dt>Turno</dt><dd>{turnos || "No especificado"}</dd></div>
+              <div className="detalle-info-item"><dt>Método</dt><dd>{metodos || "No especificado"}</dd></div>
+            </dl></div>
+            <div className="detalle-asistencia-seccion"><h3>Marcaciones del día</h3>
             <div className="detalle-marcaciones-operativas">
               {TIPOS_MARCACION_OPERATIVOS.map((tipo) => {
                 const horas = marcasPorTipo.get(tipo) ?? [];
@@ -245,8 +246,8 @@ export default function AsistenciasPage() {
               })}
               {!TIPOS_MARCACION_OPERATIVOS.some((tipo) => (marcasPorTipo.get(tipo) ?? []).length) && <p>Sin marcaciones operativas</p>}
             </div>
-            {sinClasificar.length > 0 && <div className="detalle-sin-clasificar"><span>Sin clasificar</span><strong>{sinClasificar.map((registro) => registro.hora.slice(11, 16)).join(" · ")}</strong></div>}
-            <Boton type="button" onClick={() => setDetalleDia(null)}>Cerrar</Boton>
+            {sinClasificar.length > 0 && <div className="detalle-sin-clasificar"><div><span>Sin clasificar</span><small>{sinClasificar.length} {sinClasificar.length === 1 ? "marcación" : "marcaciones"}</small></div><strong>{sinClasificar.map((registro) => <span className="detalle-hora-sin-clasificar" key={registro.id}>{registro.hora.slice(11, 16)}</span>)}</strong></div>}</div></div>
+            <div className="detalle-asistencia-acciones"><Boton type="button" onClick={() => setDetalleDia(null)}>Cerrar</Boton></div>
           </div>
         </div>;
       })()}
